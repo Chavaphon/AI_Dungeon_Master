@@ -38,7 +38,7 @@ Every GitHub issue carries exactly one of these labels. The WBS ID prefix tells 
 
 **Mon 28 Sep**
 
-- [ ] `1.1` **[CI]** Create repository, branch protection, issue and PR templates — *1.5h*
+- [x] `1.1` **[CI]** Create repository, branch protection, issue and PR templates — *1.5h*
       - Done when: Repo exists, main is protected, one issue label per work package
 - [ ] `1.2` **[SS]** Python skeleton: pyproject, virtual env, formatter and linter config — *1.5h* · after 1.1
       - Done when: Empty test suite and linter both run clean
