@@ -1,0 +1,60 @@
+name: Bug
+description: Something behaves differently from CLAUDE.md
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Runs must be reproducible from `(seed, scenario_id, condition)`. Include all three if the bug came from a run.
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: Cite the CLAUDE.md section if it applies (e.g. §4.5 Attack).
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: python -m adm.cli run --scenario scenarios/s01_cellar.json --condition D --seed 12345
+    validations:
+      required: true
+  - type: input
+    id: seed
+    attributes:
+      label: Seed
+  - type: input
+    id: scenario
+    attributes:
+      label: Scenario ID
+      placeholder: s01_cellar
+  - type: dropdown
+    id: condition
+    attributes:
+      label: Condition
+      options:
+        - "N/A"
+        - A
+        - B
+        - C
+        - D
+  - type: checkboxes
+    id: invariant
+    attributes:
+      label: Invariant impact
+      description: Tick if this breaks a CLAUDE.md §1.1 invariant (these invalidate the experiment).
+      options:
+        - label: Breaks a non-negotiable invariant
+  - type: textarea
+    id: logs
+    attributes:
+      label: Audit-log excerpt or traceback
+      render: text

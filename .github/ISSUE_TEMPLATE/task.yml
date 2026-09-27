@@ -1,0 +1,74 @@
+name: WBS task
+description: One task from the Work Breakdown Structure (TASK_CHECKLIST.md)
+title: "[WBS x.y] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One issue per WBS task. Copy the fields from `TASK_CHECKLIST.md`, then add the matching `wp-NN-*` label.
+  - type: input
+    id: wbs_id
+    attributes:
+      label: WBS ID
+      placeholder: "4.5"
+    validations:
+      required: true
+  - type: dropdown
+    id: work_package
+    attributes:
+      label: Work package
+      options:
+        - 1.0 Project Setup and Governance
+        - 2.0 Specification Freeze [G1]
+        - 3.0 Local Model Selection and Benchmarking [G1]
+        - 4.0 Rules Engine
+        - 5.0 Validator and State Write Path
+        - 6.0 Orchestration [M1 / G2]
+        - 7.0 Condition Harnesses
+        - 8.0 Evaluation Instrument [G3]
+        - 9.0 Experimental Execution [M2]
+        - 10.0 Analysis
+        - 11.0 Reporting and Defence [M3]
+        - 12.0 Recurring and Handover
+    validations:
+      required: true
+  - type: dropdown
+    id: owner
+    attributes:
+      label: Owner
+      options:
+        - SS (Shayanis)
+        - CI (Chavaphon)
+        - SD (Sudakarn)
+        - ALL
+    validations:
+      required: true
+  - type: input
+    id: due
+    attributes:
+      label: Due date
+      placeholder: "Sat 10 Oct"
+    validations:
+      required: true
+  - type: input
+    id: estimate
+    attributes:
+      label: Estimated hours
+      placeholder: "3"
+  - type: input
+    id: depends_on
+    attributes:
+      label: Depends on
+      description: WBS IDs that must be Done first. Nothing starts before its dependencies are Done.
+      placeholder: "4.3, 4.4"
+  - type: textarea
+    id: done_when
+    attributes:
+      label: Done when
+      description: Definition of Done, verbatim from the checklist.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
