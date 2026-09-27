@@ -38,7 +38,7 @@ Every GitHub issue carries exactly one of these labels. The WBS ID prefix tells 
 
 **Mon 28 Sep**
 
-- [ ] `1.1` **[CI]** Create repository, branch protection, issue and PR templates — *1.5h*
+- [x] `1.1` **[CI]** Create repository, branch protection, issue and PR templates — *1.5h*
       - Done when: Repo exists, main is protected, one issue label per work package
 - [ ] `1.2` **[SS]** Python skeleton: pyproject, virtual env, formatter and linter config — *1.5h* · after 1.1
       - Done when: Empty test suite and linter both run clean
@@ -58,6 +58,7 @@ Every GitHub issue carries exactly one of these labels. The WBS ID prefix tells 
 
 - [ ] `1.3` **[CI]** CI pipeline running tests and lint on every push — *2h* · after 1.2
       - Done when: Green check on main; failing test blocks merge
+      - Note: Branch protection on `main` (from 1.1) has no required status checks yet. Once the CI workflow has run at least once, add its check name as a required status check, or a failing test will not block merge.
 - [ ] `1.7` **[CI]** Decision log created (dated entries, one file) — *0.5h*
       - Done when: File exists with its first entry
 
