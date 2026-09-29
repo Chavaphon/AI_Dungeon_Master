@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Experiment output (CLAUDE.md section 3)
+runs/
+results/
