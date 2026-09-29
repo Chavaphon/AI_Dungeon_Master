@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adm"
+version = "0.1.0"
+description = "AI Dungeon Master: a hybrid rule-engine and LLM-based game master system"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2",
+    "jsonschema",
+    "httpx",
+    "typer",
+    "rich",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "hypothesis",
+]
+analysis = [
+    "pandas",
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "krippendorff",
+]
+
+[tool.setuptools.packages.find]
+include = ["adm*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["runs", "results"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["adm"]
+
+[tool.ruff.format]
+quote-style = "double"
