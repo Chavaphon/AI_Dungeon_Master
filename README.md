@@ -6,7 +6,7 @@ Run artefacts and transcripts do not go in git: `runs/` and `results/` are gitig
 
 **https://drive.google.com/drive/folders/1fIteuSKqAyhTU3uR6mfV6SzHdxLqoO9H**
 
-Access is limited to the three team members. Sign in with your `@kmutt.ac.th` account; if you are asked to request access, ask SD.
+Access is limited to the three team members. Sign in with your `@kmutt.ac.th` account; if you are asked to request access, ask Sudakarn.
 
 ```
 AI_Dungeon_Master/
