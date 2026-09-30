@@ -44,7 +44,7 @@ Every GitHub issue carries exactly one of these labels. The WBS ID prefix tells 
       - Done when: Empty test suite and linter both run clean
 - [ ] `1.5` **[SD]** Shared storage for run artefacts and transcripts — *0.5h*
       - Done when: Folder structure created and path recorded in README
-- [ ] `1.6` **[SD]** Weekly checkpoint slot and handover-note template — *0.5h*
+- [x] `1.6` **[SD]** Weekly checkpoint slot and handover-note template — *0.5h*
       - Done when: Recurring slot booked; template committed
 - [ ] `12.1` **[ALL]** Weekly checkpoint, Week 1 — *1h*
       - Done when: Notes in the decision log
