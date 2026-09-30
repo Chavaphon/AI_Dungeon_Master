@@ -59,7 +59,7 @@ Every GitHub issue carries exactly one of these labels. The WBS ID prefix tells 
 - [x] `1.3` **[CI]** CI pipeline running tests and lint on every push — *2h* · after 1.2
       - Done when: Green check on main; failing test blocks merge
       - Note: Branch protection on `main` (from 1.1) has no required status checks yet. Once the CI workflow has run at least once, add its check name as a required status check, or a failing test will not block merge.
-- [ ] `1.7` **[CI]** Decision log created (dated entries, one file) — *0.5h*
+- [x] `1.7` **[CI]** Decision log created (dated entries, one file) — *0.5h*
       - Done when: File exists with its first entry
 
 **Thu 1 Oct**
