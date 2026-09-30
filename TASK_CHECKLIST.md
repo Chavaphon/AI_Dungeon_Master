@@ -51,7 +51,7 @@ Every GitHub issue carries exactly one of these labels. The WBS ID prefix tells 
 
 **Tue 29 Sep**
 
-- [ ] `1.4` **[SS]** Module boundary and coding convention note — *1h*
+- [x] `1.4` **[SS]** Module boundary and coding convention note — *1h*
       - Done when: One page in /docs, agreed by all three members
 
 **Wed 30 Sep**
