@@ -1,5 +1,7 @@
 # Task Checklist — AI Dungeon Master
 
+> **Read-only reference.** Task status is tracked in [GitHub issues](https://github.com/Chavaphon/AI_Dungeon_Master/issues), one per WBS task, grouped by weekly milestone. Do not tick boxes here or update the WBS workbook. See CLAUDE.md §2.3.
+
 Every task from the Work Breakdown Structure, ordered by due date. Dates are derived from each task's week, its dependencies, and the owner's daily capacity, so a task's date is the day its hours run out, not an arbitrary deadline.
 
 `SS` Shayanis · `CI` Chavaphon · `SD` Sudakarn · `ALL` all three
@@ -530,4 +532,4 @@ Carried from proposal Section 13. Check triggers at each weekly checkpoint.
 
 ---
 
-Tick items here or in the WBS workbook, not both. The workbook recalculates effort from its Status column; this file is the flat, date-ordered view for day-to-day use.
+This file is a read-only reference. Task status lives in GitHub issues, one per task (see CLAUDE.md §2.3). The ticks above are frozen as of the import on 30 September 2026 and are not updated.

@@ -96,6 +96,15 @@ Model choice is frozen in `config/model.json` after the Week 2 benchmark. Until 
 
 `temperature` is 0.7 for narration and **0.0 for tool-call generation**. Two different sampling settings, one model. This is deliberate: narration wants variety, tool selection does not.
 
+### 2.3 Task tracking
+
+GitHub issues are the only place task status lives. There is one issue per WBS task, titled `[WBS x.y] <task>`, with its `wp-NN-*` label, its owner as assignee, and a weekly milestone (`W1` to `W7`). Dependencies are recorded as "blocked by" links on the issue.
+
+- Before starting a task, check that every issue blocking it is closed.
+- Close an issue through its pull request (`Closes #N`), not by hand.
+- `TASK_CHECKLIST.md` and the WBS workbook (`AI_Dungeon_Master_WBS_NEW.xlsx`) are **read-only references** for the schedule, gates, deliverables and risk register. Do not tick boxes or update the workbook's Status column to record progress. The workbook's effort recalculation is retired.
+- A new, split or re-scoped task needs a new issue and a `docs/decisions.md` entry.
+
 ---
 
 ## 3. Repository layout
