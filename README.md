@@ -57,3 +57,4 @@ No test calls the model or needs Ollama running; orchestration tests use a recor
 |---|---|
 | `tests/test_boundaries.py` | Package import boundaries from `docs/conventions.md`, and that only `adm/engine/dice.py` imports `random` |
 | `tests/test_state_schema.py` | `schemas/state.schema.json` accepts the examples in `schemas/examples/` and rejects states that break CLAUDE.md §4–5 |
+| `tests/test_scenario_schema.py` | `schemas/scenario.schema.json` accepts the example scenario and every file in `scenarios/`, and rejects scenarios that break CLAUDE.md §12 |

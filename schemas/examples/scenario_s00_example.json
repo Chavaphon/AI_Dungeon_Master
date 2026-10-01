@@ -1,0 +1,193 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s00_example",
+  "display_name": "The Cellar Rats (format example)",
+  "opening_narration": "The cellar stairs end in ankle-deep water. Somewhere behind the barrels, something with claws is scratching at the stone. At the top of the stairs the Keeper waits, arms folded.",
+  "locations": ["the cellar", "the cellar stairs", "the barrels"],
+
+  "initial_state": {
+    "combatants": {
+      "pc_lyra": {
+        "combatant_id": "pc_lyra",
+        "display_name": "Lyra",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {"str": 12, "dex": 16, "con": 14, "int": 10, "wis": 13, "cha": 11},
+        "proficient_skills": ["stealth"],
+        "armour_class": 14,
+        "max_hp": 20,
+        "current_hp": 20,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": 5,
+        "spellcasting_modifier": 3,
+        "spell_slots_1": 2
+      },
+      "npc_rat_01": {
+        "combatant_id": "npc_rat_01",
+        "display_name": "giant rat",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {"str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4},
+        "proficient_skills": ["perception"],
+        "armour_class": 12,
+        "max_hp": 11,
+        "current_hp": 11,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_rat_02": {
+        "combatant_id": "npc_rat_02",
+        "display_name": "giant rat",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {"str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4},
+        "proficient_skills": ["perception"],
+        "armour_class": 12,
+        "max_hp": 11,
+        "current_hp": 11,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+
+    "inventory": {
+      "pc_lyra": {"item_short_sword": 1, "item_torch": 2},
+      "npc_rat_01": {"item_rat_bite": 1},
+      "npc_rat_02": {"item_rat_bite": 1}
+    },
+
+    "item_definitions": {
+      "item_short_sword": {
+        "item_id": "item_short_sword",
+        "display_name": "short sword",
+        "is_weapon": true,
+        "attack_bonus": 5,
+        "damage_dice": "1d6",
+        "damage_bonus": 3
+      },
+      "item_torch": {
+        "item_id": "item_torch",
+        "display_name": "torch",
+        "is_weapon": false
+      },
+      "item_rat_bite": {
+        "item_id": "item_rat_bite",
+        "display_name": "bite",
+        "is_weapon": true,
+        "attack_bonus": 4,
+        "damage_dice": "1d4",
+        "damage_bonus": 2
+      },
+      "item_ledger": {
+        "item_id": "item_ledger",
+        "display_name": "ledger",
+        "is_weapon": false
+      }
+    },
+
+    "npc_relationships": {
+      "npc_keeper": {
+        "npc_id": "npc_keeper",
+        "display_name": "the Keeper",
+        "stance": "unfriendly",
+        "history": []
+      }
+    },
+
+    "quests": {
+      "quest_missing_ledger": {
+        "quest_id": "quest_missing_ledger",
+        "display_name": "The Missing Ledger",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 3
+      }
+    }
+  },
+
+  "encounters": [
+    {"before_input": 2, "combatant_ids": ["pc_lyra", "npc_rat_01", "npc_rat_02"]}
+  ],
+
+  "scripted_inputs": [
+    {"text": "I look around the cellar", "expected_call": null},
+    {
+      "text": "I tell the Keeper I will find the missing ledger",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {"quest_id": "quest_missing_ledger", "transition": "start"}
+      }
+    },
+    {
+      "text": "I draw my sword and attack the nearest rat",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_lyra",
+          "target_id": "npc_rat_01",
+          "weapon_id": "item_short_sword"
+        }
+      }
+    },
+    {
+      "text": "I hurl a bolt of fire at the other rat",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_lyra",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_rat_02"
+        }
+      }
+    },
+    {
+      "text": "I hold my torch up and check if anything is hidden behind the barrels",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {"actor_id": "pc_lyra", "skill": "perception", "dc": 12}
+      },
+      "check_advantage": "advantage"
+    },
+    {
+      "text": "I pull the ledger out from behind the barrels",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {"actor_id": "pc_lyra", "item_id": "item_ledger", "delta": 1}
+      }
+    },
+    {
+      "text": "I climb the stairs and hand the ledger to the Keeper",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {"actor_id": "pc_lyra", "item_id": "item_ledger", "delta": -1}
+      }
+    },
+    {
+      "text": "I tell the Keeper the rats will not trouble the cellar again",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_keeper",
+          "direction": "up",
+          "justification": "Lyra cleared the rats and returned the stolen ledger."
+        }
+      }
+    },
+    {
+      "text": "I ask the Keeper if that settles things between us",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {"quest_id": "quest_missing_ledger", "transition": "complete"}
+      }
+    }
+  ],
+
+  "notes_for_annotators": "Format example only, not part of the experiment. Input 4 grants advantage because Lyra holds up a torch. Whether both rats are down after inputs 2 and 3 depends on the seed; see open point 2 in docs/scenario_format.md."
+}
