@@ -4,6 +4,8 @@ and rejects states that break the rules in CLAUDE.md sections 4 and 5.
 `cross_field_errors` covers the rules JSON Schema cannot express (see
 docs/state_schema.md). The runtime version of these checks belongs to the
 post-write invariant assertion, WBS 5.4.
+
+Run: pytest tests/test_state_schema.py -v
 """
 
 import copy
