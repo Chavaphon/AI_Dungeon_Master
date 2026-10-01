@@ -2,6 +2,8 @@
 
 These parse source files; they import nothing from adm, so they hold even
 while the packages are empty.
+
+Run: pytest tests/test_boundaries.py -v
 """
 
 import ast
