@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Chavaphon/AI_Dungeon_Master/schemas/state.schema.json",
+  "title": "GameState",
+  "description": "State schema v0.9 (WBS 2.1). One file per run, CLAUDE.md section 5. Rules JSON Schema cannot express are listed in docs/state_schema.md and are checked in Python.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "seed",
+    "turn_number",
+    "round_number",
+    "active_combatant_id",
+    "initiative_order",
+    "encounter_active",
+    "encounter_outcome",
+    "combatants",
+    "inventory",
+    "item_definitions",
+    "npc_relationships",
+    "quests"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "scenario_id": {"$ref": "#/$defs/snake_case"},
+    "seed": {"type": "integer"},
+    "turn_number": {"type": "integer", "minimum": 0},
+    "round_number": {"type": "integer", "minimum": 0},
+    "active_combatant_id": {
+      "oneOf": [{"$ref": "#/$defs/combatant_id"}, {"type": "null"}]
+    },
+    "initiative_order": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/combatant_id"},
+      "uniqueItems": true
+    },
+    "encounter_active": {"type": "boolean"},
+    "encounter_outcome": {"enum": [null, "victory", "defeat"]},
+    "combatants": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/combatant_id"},
+      "additionalProperties": {"$ref": "#/$defs/combatant"},
+      "minProperties": 1
+    },
+    "inventory": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/combatant_id"},
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {"$ref": "#/$defs/item_id"},
+        "additionalProperties": {"type": "integer", "minimum": 0}
+      }
+    },
+    "item_definitions": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/item_id"},
+      "additionalProperties": {"$ref": "#/$defs/item"}
+    },
+    "npc_relationships": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/npc_id"},
+      "additionalProperties": {"$ref": "#/$defs/npc_relationship"}
+    },
+    "quests": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/quest_id"},
+      "additionalProperties": {"$ref": "#/$defs/quest"}
+    }
+  },
+  "allOf": [
+    {
+      "$comment": "During an encounter someone holds the turn and rounds have started (section 4.4).",
+      "if": {"properties": {"encounter_active": {"const": true}}},
+      "then": {
+        "properties": {
+          "active_combatant_id": {"$ref": "#/$defs/combatant_id"},
+          "initiative_order": {"minItems": 1},
+          "round_number": {"minimum": 1},
+          "encounter_outcome": {"const": null}
+        }
+      },
+      "else": {
+        "properties": {"active_combatant_id": {"const": null}}
+      }
+    }
+  ],
+  "$defs": {
+    "snake_case": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "pc_id": {"type": "string", "pattern": "^pc_[a-z0-9_]+$"},
+    "npc_id": {"type": "string", "pattern": "^npc_[a-z0-9_]+$"},
+    "combatant_id": {"type": "string", "pattern": "^(pc|npc)_[a-z0-9_]+$"},
+    "item_id": {"type": "string", "pattern": "^item_[a-z0-9_]+$"},
+    "quest_id": {"type": "string", "pattern": "^quest_[a-z0-9_]+$"},
+    "display_name": {"type": "string", "minLength": 1},
+    "ability_score": {"type": "integer", "minimum": 1, "maximum": 20},
+    "stance": {"enum": ["hostile", "unfriendly", "neutral", "friendly", "allied"]},
+
+    "combatant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "combatant_id",
+        "display_name",
+        "is_player_character",
+        "faction",
+        "abilities",
+        "proficient_skills",
+        "armour_class",
+        "max_hp",
+        "current_hp",
+        "status",
+        "dodging",
+        "spell_attack_bonus",
+        "spellcasting_modifier",
+        "spell_slots_1"
+      ],
+      "properties": {
+        "combatant_id": {"$ref": "#/$defs/combatant_id"},
+        "display_name": {"$ref": "#/$defs/display_name"},
+        "is_player_character": {"type": "boolean"},
+        "faction": {"enum": ["party", "hostile", "neutral"]},
+        "abilities": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["str", "dex", "con", "int", "wis", "cha"],
+          "properties": {
+            "str": {"$ref": "#/$defs/ability_score"},
+            "dex": {"$ref": "#/$defs/ability_score"},
+            "con": {"$ref": "#/$defs/ability_score"},
+            "int": {"$ref": "#/$defs/ability_score"},
+            "wis": {"$ref": "#/$defs/ability_score"},
+            "cha": {"$ref": "#/$defs/ability_score"}
+          }
+        },
+        "proficient_skills": {
+          "type": "array",
+          "items": {"enum": ["strength", "perception", "stealth"]},
+          "uniqueItems": true
+        },
+        "armour_class": {"type": "integer"},
+        "max_hp": {"type": "integer", "minimum": 1},
+        "current_hp": {"type": "integer", "minimum": 0},
+        "status": {"enum": ["active", "unconscious"]},
+        "dodging": {"type": "boolean"},
+        "spell_attack_bonus": {"type": ["integer", "null"]},
+        "spellcasting_modifier": {"type": ["integer", "null"]},
+        "spell_slots_1": {"type": ["integer", "null"], "minimum": 0}
+      },
+      "allOf": [
+        {
+          "$comment": "The id prefix matches the kind (section 5.1).",
+          "if": {"properties": {"is_player_character": {"const": true}}},
+          "then": {"properties": {"combatant_id": {"$ref": "#/$defs/pc_id"}}},
+          "else": {"properties": {"combatant_id": {"$ref": "#/$defs/npc_id"}}}
+        },
+        {
+          "$comment": "0 HP is unconscious and anything above is active (section 4.8).",
+          "if": {"properties": {"status": {"const": "unconscious"}}},
+          "then": {"properties": {"current_hp": {"const": 0}}},
+          "else": {"properties": {"current_hp": {"minimum": 1}}}
+        },
+        {
+          "$comment": "A caster has all three spell fields; a non-caster has all three null.",
+          "oneOf": [
+            {
+              "properties": {
+                "spell_attack_bonus": {"type": "integer"},
+                "spellcasting_modifier": {"type": "integer"},
+                "spell_slots_1": {"type": "integer"}
+              }
+            },
+            {
+              "properties": {
+                "spell_attack_bonus": {"type": "null"},
+                "spellcasting_modifier": {"type": "null"},
+                "spell_slots_1": {"type": "null"}
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["item_id", "display_name", "is_weapon"],
+      "properties": {
+        "item_id": {"$ref": "#/$defs/item_id"},
+        "display_name": {"$ref": "#/$defs/display_name"},
+        "is_weapon": {"type": "boolean"},
+        "attack_bonus": {"type": "integer"},
+        "damage_dice": {
+          "$comment": "XdY from section 4.2, without +Z: the modifier lives in damage_bonus so a critical doubles only the dice (section 4.5).",
+          "type": "string",
+          "pattern": "^([1-9]|1[0-9]|20)d(4|6|8|10|12|20|100)$"
+        },
+        "damage_bonus": {"type": "integer"}
+      },
+      "if": {"properties": {"is_weapon": {"const": true}}},
+      "then": {"required": ["attack_bonus", "damage_dice", "damage_bonus"]},
+      "else": {
+        "not": {
+          "anyOf": [
+            {"required": ["attack_bonus"]},
+            {"required": ["damage_dice"]},
+            {"required": ["damage_bonus"]}
+          ]
+        }
+      }
+    },
+
+    "npc_relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["npc_id", "display_name", "stance", "history"],
+      "properties": {
+        "npc_id": {"$ref": "#/$defs/npc_id"},
+        "display_name": {"$ref": "#/$defs/display_name"},
+        "stance": {"$ref": "#/$defs/stance"},
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["turn", "from", "to", "justification"],
+            "properties": {
+              "turn": {"type": "integer", "minimum": 0},
+              "from": {"$ref": "#/$defs/stance"},
+              "to": {"$ref": "#/$defs/stance"},
+              "justification": {"type": "string", "minLength": 10}
+            }
+          }
+        }
+      }
+    },
+
+    "quest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quest_id", "display_name", "state", "stage", "max_stage"],
+      "properties": {
+        "quest_id": {"$ref": "#/$defs/quest_id"},
+        "display_name": {"$ref": "#/$defs/display_name"},
+        "state": {"enum": ["not_started", "active", "completed", "failed"]},
+        "stage": {"type": "integer", "minimum": 0},
+        "max_stage": {"type": "integer", "minimum": 1}
+      },
+      "$comment": "A not_started quest is at stage 0; 'start' moves it to 1 (decision 2026-10-01).",
+      "if": {"properties": {"state": {"const": "not_started"}}},
+      "then": {"properties": {"stage": {"const": 0}}},
+      "else": {"properties": {"stage": {"minimum": 1}}}
+    }
+  }
+}

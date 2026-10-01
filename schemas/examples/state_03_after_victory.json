@@ -1,0 +1,121 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s01_cellar",
+  "seed": 12345,
+  "turn_number": 12,
+  "round_number": 5,
+  "active_combatant_id": null,
+  "initiative_order": [],
+  "encounter_active": false,
+  "encounter_outcome": "victory",
+
+  "combatants": {
+    "pc_lyra": {
+      "combatant_id": "pc_lyra",
+      "display_name": "Lyra",
+      "is_player_character": true,
+      "faction": "party",
+      "abilities": {"str": 12, "dex": 16, "con": 14, "int": 10, "wis": 13, "cha": 11},
+      "proficient_skills": ["stealth"],
+      "armour_class": 14,
+      "max_hp": 20,
+      "current_hp": 18,
+      "status": "active",
+      "dodging": false,
+      "spell_attack_bonus": 5,
+      "spellcasting_modifier": 3,
+      "spell_slots_1": 1
+    },
+    "npc_rat_01": {
+      "combatant_id": "npc_rat_01",
+      "display_name": "giant rat",
+      "is_player_character": false,
+      "faction": "hostile",
+      "abilities": {"str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4},
+      "proficient_skills": ["perception"],
+      "armour_class": 12,
+      "max_hp": 11,
+      "current_hp": 0,
+      "status": "unconscious",
+      "dodging": false,
+      "spell_attack_bonus": null,
+      "spellcasting_modifier": null,
+      "spell_slots_1": null
+    },
+    "npc_rat_02": {
+      "combatant_id": "npc_rat_02",
+      "display_name": "giant rat",
+      "is_player_character": false,
+      "faction": "hostile",
+      "abilities": {"str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4},
+      "proficient_skills": ["perception"],
+      "armour_class": 12,
+      "max_hp": 11,
+      "current_hp": 0,
+      "status": "unconscious",
+      "dodging": false,
+      "spell_attack_bonus": null,
+      "spellcasting_modifier": null,
+      "spell_slots_1": null
+    }
+  },
+
+  "inventory": {
+    "pc_lyra": {"item_short_sword": 1, "item_torch": 1, "item_ledger": 0},
+    "npc_rat_01": {"item_rat_bite": 1},
+    "npc_rat_02": {"item_rat_bite": 1}
+  },
+
+  "item_definitions": {
+    "item_short_sword": {
+      "item_id": "item_short_sword",
+      "display_name": "short sword",
+      "is_weapon": true,
+      "attack_bonus": 5,
+      "damage_dice": "1d6",
+      "damage_bonus": 3
+    },
+    "item_torch": {
+      "item_id": "item_torch",
+      "display_name": "torch",
+      "is_weapon": false
+    },
+    "item_ledger": {
+      "item_id": "item_ledger",
+      "display_name": "ledger",
+      "is_weapon": false
+    },
+    "item_rat_bite": {
+      "item_id": "item_rat_bite",
+      "display_name": "bite",
+      "is_weapon": true,
+      "attack_bonus": 4,
+      "damage_dice": "1d4",
+      "damage_bonus": 2
+    }
+  },
+
+  "npc_relationships": {
+    "npc_keeper": {
+      "npc_id": "npc_keeper",
+      "display_name": "the Keeper",
+      "stance": "friendly",
+      "history": [
+        {"turn": 4, "from": "unfriendly", "to": "neutral",
+         "justification": "Lyra returned the stolen ledger."},
+        {"turn": 12, "from": "neutral", "to": "friendly",
+         "justification": "Lyra cleared the rats out of the Keeper's cellar."}
+      ]
+    }
+  },
+
+  "quests": {
+    "quest_missing_ledger": {
+      "quest_id": "quest_missing_ledger",
+      "display_name": "The Missing Ledger",
+      "state": "completed",
+      "stage": 3,
+      "max_stage": 3
+    }
+  }
+}
