@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "tool": "update_quest",
+  "narration_facts": {
+    "quest": "The Missing Ledger",
+    "transition": "advance",
+    "state_before": "active",
+    "state_after": "active",
+    "stage_before": 2,
+    "stage_after": 3,
+    "max_stage": 3
+  },
+  "state_diff": [
+    {
+      "path": "quests.quest_missing_ledger.stage",
+      "from": 2,
+      "to": 3
+    }
+  ],
+  "rolls": []
+}

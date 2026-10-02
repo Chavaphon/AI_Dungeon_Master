@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "tool": "skill_check",
+  "narration_facts": {
+    "actor": "Lyra",
+    "skill": "perception",
+    "dc": 12,
+    "check_total": 12,
+    "advantage_mode": "normal",
+    "success": true
+  },
+  "state_diff": [],
+  "rolls": [
+    {
+      "notation": "1d20+1",
+      "individual_dice": [
+        11
+      ],
+      "modifier": 1,
+      "total": 12,
+      "advantage_mode": "normal"
+    }
+  ]
+}

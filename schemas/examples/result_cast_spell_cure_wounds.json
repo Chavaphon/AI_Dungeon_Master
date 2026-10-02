@@ -1,0 +1,41 @@
+{
+  "ok": true,
+  "tool": "cast_spell",
+  "narration_facts": {
+    "caster": "Lyra",
+    "target": "Lyra",
+    "spell": "cure wounds",
+    "healed_rolled": 9,
+    "healed_applied": 6,
+    "target_hp_before": 14,
+    "target_hp_after": 20,
+    "target_hp_max": 20,
+    "target_hp_band": "healthy",
+    "target_status": "active",
+    "revived": false,
+    "slots_remaining": 1
+  },
+  "state_diff": [
+    {
+      "path": "combatants.pc_lyra.current_hp",
+      "from": 14,
+      "to": 20
+    },
+    {
+      "path": "combatants.pc_lyra.spell_slots_1",
+      "from": 2,
+      "to": 1
+    }
+  ],
+  "rolls": [
+    {
+      "notation": "1d8+3",
+      "individual_dice": [
+        6
+      ],
+      "modifier": 3,
+      "total": 9,
+      "advantage_mode": "normal"
+    }
+  ]
+}

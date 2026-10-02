@@ -1,0 +1,8 @@
+{
+  "tool": "modify_inventory",
+  "arguments": {
+    "actor_id": "pc_lyra",
+    "item_id": "item_torch",
+    "delta": -1
+  }
+}

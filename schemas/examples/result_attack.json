@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "tool": "attack",
+  "narration_facts": {
+    "attacker": "Lyra",
+    "target": "giant rat",
+    "weapon": "short sword",
+    "hit": true,
+    "critical": false,
+    "attack_roll": 17,
+    "advantage_mode": "normal",
+    "target_ac": 12,
+    "damage": 7,
+    "target_hp_before": 11,
+    "target_hp_after": 4,
+    "target_hp_max": 11,
+    "target_hp_band": "wounded",
+    "target_status": "active"
+  },
+  "state_diff": [
+    {
+      "path": "combatants.npc_rat_01.current_hp",
+      "from": 11,
+      "to": 4
+    }
+  ],
+  "rolls": [
+    {
+      "notation": "1d20+5",
+      "individual_dice": [
+        12
+      ],
+      "modifier": 5,
+      "total": 17,
+      "advantage_mode": "normal"
+    },
+    {
+      "notation": "1d6+3",
+      "individual_dice": [
+        4
+      ],
+      "modifier": 3,
+      "total": 7,
+      "advantage_mode": "normal"
+    }
+  ]
+}

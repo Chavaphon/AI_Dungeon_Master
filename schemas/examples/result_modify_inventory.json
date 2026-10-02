@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "tool": "modify_inventory",
+  "narration_facts": {
+    "actor": "Lyra",
+    "item": "torch",
+    "delta": -1,
+    "quantity_before": 2,
+    "quantity_after": 1
+  },
+  "state_diff": [
+    {
+      "path": "inventory.pc_lyra.item_torch",
+      "from": 2,
+      "to": 1
+    }
+  ],
+  "rolls": []
+}

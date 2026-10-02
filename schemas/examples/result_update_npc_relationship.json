@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "tool": "update_npc_relationship",
+  "narration_facts": {
+    "npc": "the Keeper",
+    "stance_before": "neutral",
+    "stance_after": "friendly",
+    "justification": "Lyra paid off the Keeper's debt to the guild."
+  },
+  "state_diff": [
+    {
+      "path": "npc_relationships.npc_keeper.stance",
+      "from": "neutral",
+      "to": "friendly"
+    },
+    {
+      "path": "npc_relationships.npc_keeper.history.1",
+      "from": null,
+      "to": {
+        "turn": 7,
+        "from": "neutral",
+        "to": "friendly",
+        "justification": "Lyra paid off the Keeper's debt to the guild."
+      }
+    }
+  ],
+  "rolls": []
+}

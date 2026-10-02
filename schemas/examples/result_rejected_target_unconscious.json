@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "tool": "attack",
+  "rejection_code": "TARGET_UNCONSCIOUS",
+  "message": "npc_rat_01 is unconscious and cannot be attacked.",
+  "valid_options": {
+    "target_id": [
+      "npc_rat_02"
+    ]
+  },
+  "retry_allowed": true
+}
