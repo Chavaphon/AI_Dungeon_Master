@@ -77,6 +77,8 @@ def cross_field_errors(state: State) -> list[str]:
                 errors.append(f"inventory.{owner}: undefined item {item_id}")
 
     for npc_id, rel in state["npc_relationships"].items():
+        if npc_id in combatants and combatants[npc_id]["display_name"] != rel["display_name"]:
+            errors.append(f"{npc_id}: display_name differs between combatants and relationships")
         stance = rel["history"][0]["from"] if rel["history"] else rel["stance"]
         for entry in rel["history"]:
             if entry["from"] != stance:
@@ -197,6 +199,15 @@ def _add_second_pc(state: State) -> None:
     state["combatants"]["pc_bram"] = pc
 
 
+def _add_keeper_combatant(display_name: str) -> Callable[[State], None]:
+    def mutate(state: State) -> None:
+        keeper = copy.deepcopy(state["combatants"]["npc_rat_02"])
+        keeper.update(combatant_id="npc_keeper", display_name=display_name, faction="neutral")
+        state["combatants"]["npc_keeper"] = keeper
+
+    return mutate
+
+
 CROSS_FIELD_REJECTS = {
     "hp_above_max": _set("combatants.pc_lyra.current_hp", 21),
     "key_id_mismatch": _set("combatants.pc_lyra.combatant_id", "pc_other"),
@@ -211,6 +222,7 @@ CROSS_FIELD_REJECTS = {
     ),
     "stance_disagrees_with_history": _set("npc_relationships.npc_keeper.stance", "friendly"),
     "stage_beyond_max": _set("quests.quest_missing_ledger.stage", 4),
+    "one_id_two_names": _add_keeper_combatant("Keeper Alis"),
 }
 
 

@@ -23,7 +23,7 @@
   ],
   "properties": {
     "schema_version": {"const": "1.0"},
-    "scenario_id": {"$ref": "#/$defs/snake_case"},
+    "scenario_id": {"$ref": "#/$defs/scenario_id"},
     "seed": {"type": "integer"},
     "turn_number": {"type": "integer", "minimum": 0},
     "round_number": {"type": "integer", "minimum": 0},
@@ -86,12 +86,16 @@
     }
   ],
   "$defs": {
-    "snake_case": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
-    "pc_id": {"type": "string", "pattern": "^pc_[a-z0-9_]+$"},
-    "npc_id": {"type": "string", "pattern": "^npc_[a-z0-9_]+$"},
-    "combatant_id": {"type": "string", "pattern": "^(pc|npc)_[a-z0-9_]+$"},
-    "item_id": {"type": "string", "pattern": "^item_[a-z0-9_]+$"},
-    "quest_id": {"type": "string", "pattern": "^quest_[a-z0-9_]+$"},
+    "scenario_id": {
+      "$comment": "Namespace for every entity id in the state (docs/identifiers.md section 2).",
+      "type": "string",
+      "pattern": "^(s|long)[0-9]{2}_[a-z0-9]+(_[a-z0-9]+)*$"
+    },
+    "pc_id": {"type": "string", "pattern": "^pc_[a-z0-9]+(_[a-z0-9]+)*$"},
+    "npc_id": {"type": "string", "pattern": "^npc_[a-z0-9]+(_[a-z0-9]+)*$"},
+    "combatant_id": {"type": "string", "pattern": "^(pc|npc)_[a-z0-9]+(_[a-z0-9]+)*$"},
+    "item_id": {"type": "string", "pattern": "^item_[a-z0-9]+(_[a-z0-9]+)*$"},
+    "quest_id": {"type": "string", "pattern": "^quest_[a-z0-9]+(_[a-z0-9]+)*$"},
     "display_name": {"type": "string", "minLength": 1},
     "ability_score": {"type": "integer", "minimum": 1, "maximum": 20},
     "stance": {"enum": ["hostile", "unfriendly", "neutral", "friendly", "allied"]},
