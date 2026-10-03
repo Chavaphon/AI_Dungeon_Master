@@ -152,3 +152,11 @@ Attendees: SS, CI, SD · Note-taker: SD
 3. The weekly checkpoint moves from Monday 20:00–21:00 to **Saturday 19:00–20:00**, from Week 2 (Sat 10 Oct) to Week 7 (Sat 21 Nov). `docs/checkpoint.md` updated with the new dates.
 
 **Open, carried to next week:** design of the NPC action agent (2.6 decision 9), which needs an owner and must fit the engine work in Week 2 — all · CLAUDE.md edits at the v1.0 tag — SS (2.7)
+
+## 2026-10-03 — NPC actions are engine-controlled (WBS 2.6)
+
+Decided by: CI · Supersedes: Specifications v0.9 reviewed and signed off (WBS 2.6), decision 9
+
+**Decision:** NPC actions are chosen by the engine, not by a separate AI agent. This restores CLAUDE.md §14 as written: one PC, and everyone else is engine-controlled. The engine's call for an NPC still goes through the validator and is recorded as an `npc_action` step (`docs/audit_log.md` §2). Decision 10 of the 2.6 sign-off is unchanged: NPC actions are narrated, and the condition D narration call receives their `narration_facts` in order. The policy that picks an NPC's action and target is a simple rule-based system: fixed rules over the current state, with no model call. Its exact rules are open (`docs/scenario_format.md` §5, point 3) and are a new task, WBS 4.19 (#136, owner SS, Week 4). It may choose `attack` or `dodge`, so it depends on Dodge (4.6). Any randomness in it must come from the seeded `DiceRoller` (invariant 3).
+**Reason:** An agent that calls the model breaks the offline replay that produces the A–C ground truth (§9), since no replay or test may call the model (§13). It also makes a run depend on more than its seed (invariant 4), and it needs its own frozen prompt, failure fallback and audit fields. Enemy behaviour is not what the experiment measures, so that cost buys nothing for the research question.
+**Changed:** Nothing in the schemas or specs. CLAUDE.md §14 already says NPCs are engine-controlled, so the §14 edit planned for the v1.0 tag (2.7) is dropped. The §9.1 edit for decision 10 still applies. The checkpoint item "design of the NPC action agent" becomes "the engine's NPC action policy". New issue #136 (WBS 4.19) blocks #73 (6.11) and #76 (4.18). #65 (6.6) has a comment adding NPC facts to the narration call.
