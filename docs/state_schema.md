@@ -1,6 +1,6 @@
-# State schema v0.9
+# State schema v1.0
 
-WBS 2.1 · Owner: SS · Status: **draft, for the 2.6 joint review** · CLAUDE.md wins on any conflict.
+WBS 2.1 · Owner: SS · Status: **v1.0, frozen at tag `spec-v1.0`** (changes need a `docs/decisions.md` entry) · CLAUDE.md wins on any conflict.
 
 The schema is `schemas/state.schema.json` (JSON Schema draft 2020-12). It formalises CLAUDE.md §5, with three hand-written examples in `schemas/examples/`. `tests/test_state_schema.py` validates the examples and has one rejection test per rule.
 
@@ -43,6 +43,8 @@ These rules involve comparing two values, so JSON Schema can't express them. `cr
 - `victory` means every hostile is unconscious; `defeat` means the player character is (§4.8).
 
 ## 4. Open points for the 2.6 review
+
+All of these were settled by the 2026-10-03 WBS 2.6 entries in `docs/decisions.md` and are folded into CLAUDE.md at v1.0. They are kept here as the record of what was asked.
 
 1. **A non-caster casting Fire Bolt.** §6.3 has no rejection code for "this combatant cannot cast". Raise with task 2.3.
 2. **State after an encounter ends.** Example 3 clears `initiative_order` and keeps the last `round_number`. CLAUDE.md does not say which. The schema allows either.

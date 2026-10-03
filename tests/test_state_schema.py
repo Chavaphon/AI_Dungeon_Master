@@ -1,4 +1,4 @@
-"""State schema v0.9 (WBS 2.1): the schema validates the hand-written examples
+"""State schema v1.0 (WBS 2.1): the schema validates the hand-written examples
 and rejects states that break the rules in CLAUDE.md sections 4 and 5.
 
 `cross_field_errors` covers the rules JSON Schema cannot express (see

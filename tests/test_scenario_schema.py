@@ -1,4 +1,4 @@
-"""Scenario format v0.9 (WBS 2.5): the schema validates the example scenario and
+"""Scenario format v1.0 (WBS 2.5): the schema validates the example scenario and
 every file in scenarios/, and rejects scenarios that break CLAUDE.md section 12.
 
 `scenario_errors` covers the rules JSON Schema cannot express (see

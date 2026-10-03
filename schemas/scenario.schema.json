@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Chavaphon/AI_Dungeon_Master/schemas/scenario.schema.json",
   "title": "Scenario",
-  "description": "Scenario definition format v0.9 (WBS 2.5). One file per scenario in scenarios/, CLAUDE.md section 12. Entity definitions reuse state.schema.json. Rules JSON Schema cannot express are listed in docs/scenario_format.md and are checked in Python.",
+  "description": "Scenario definition format v1.0 (WBS 2.5). One file per scenario in scenarios/, CLAUDE.md section 12. Entity definitions reuse state.schema.json. Rules JSON Schema cannot express are listed in docs/scenario_format.md and are checked in Python.",
   "type": "object",
   "additionalProperties": false,
   "required": [

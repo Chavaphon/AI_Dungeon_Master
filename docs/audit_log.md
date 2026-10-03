@@ -1,6 +1,6 @@
-# Audit-log turn-record format v0.9
+# Audit-log turn-record format v1.0
 
-WBS 2.4 · Owner: SD · Status: **draft, for the 2.6 joint review** · CLAUDE.md wins on any conflict.
+WBS 2.4 · Owner: SD · Status: **v1.0, frozen at tag `spec-v1.0`** (changes need a `docs/decisions.md` entry) · CLAUDE.md wins on any conflict.
 
 The schema is `schemas/audit.schema.json` (JSON Schema draft 2020-12). It formalises CLAUDE.md §11. Tool calls, results, rolls and diff entries reuse `schemas/tools.schema.json` (WBS 2.3), so the audit log and the tool contract cannot disagree. `tests/test_audit_log.py` validates the examples, has one rejection test per rule, and replays the valid example: its `state_diff`, applied to `state_02_mid_combat.json`, reproduces `state_after_hash` exactly.
 
@@ -68,6 +68,8 @@ The top-level `state_diff` is the `before_call` steps, then the executed result'
 - One narration call per turn, none on a failed turn. `summary_regenerated` matches the summary call and the `summary` field.
 
 ## 4. Open points for the 2.6 review
+
+All of these were settled by the 2026-10-03 WBS 2.6 entries in `docs/decisions.md` and are folded into CLAUDE.md at v1.0. They are kept here as the record of what was asked.
 
 1. **NPC actions are not narrated.** The D narration call sees only the player's `narration_facts` (§9.1). In the valid example, a rat bites Lyra for 5 HP and the narration cannot mention it. Options: pass the NPC actions' facts to the narration call as well, or narrate them in a separate call. Either changes the frozen `d_narration.txt` input.
 2. **How NPCs choose their actions** (also 2.5 open point 3). The example's rat attacks are illustrative. The audit log can record any policy, but replay needs one fixed policy.

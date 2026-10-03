@@ -1,6 +1,6 @@
-# Scenario definition format v0.9
+# Scenario definition format v1.0
 
-WBS 2.5 · Owner: SD · Status: **draft, for the 2.6 joint review** · CLAUDE.md wins on any conflict.
+WBS 2.5 · Owner: SD · Status: **v1.0, frozen at tag `spec-v1.0`** (changes need a `docs/decisions.md` entry) · CLAUDE.md wins on any conflict.
 
 The schema is `schemas/scenario.schema.json` (JSON Schema draft 2020-12). It formalises CLAUDE.md §12 and reuses the entity definitions in `schemas/state.schema.json`, so a combatant, item, relationship or quest is valid in a scenario exactly when it is valid in a state. `schemas/examples/scenario_s00_example.json` is a worked example. `tests/test_scenario_schema.py` validates it, validates every file in `scenarios/`, and has one rejection test per rule.
 
@@ -55,6 +55,8 @@ These compare values across the file. `scenario_errors` in the test file checks 
 The 25- and 50-turn lengths in §12 are targets, so the schema does not enforce them.
 
 ## 5. Open points for the 2.6 review
+
+All of these were settled by the 2026-10-03 WBS 2.6 entries in `docs/decisions.md` and are folded into CLAUDE.md at v1.0. They are kept here as the record of what was asked.
 
 1. **Who sets the DC in condition D.** The model proposes `dc` in its `skill_check` call, but A–C are scored against the scenario's DC. If the engine uses the model's DC, condition D can end up in a different state from the ground truth even when the narration is perfect. Proposal: the engine uses the scenario's `dc` and `check_advantage` for that input and logs the model's proposed value. This touches task 2.3.
 2. **Encounters that run longer or shorter than the script.** Whether the rats fall after two attacks depends on the seed. Later inputs may then be rejected (`TARGET_UNCONSCIOUS`, `ENCOUNTER_OVER`), or the encounter may still be running when a non-combat input arrives. Proposal: accept this. Every condition receives the same inputs, rejections are logged, and the replay ground truth uses the same seed.

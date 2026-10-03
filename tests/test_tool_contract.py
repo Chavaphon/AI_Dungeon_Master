@@ -1,4 +1,4 @@
-"""Tool contract v0.9 (WBS 2.3): the schema accepts the example calls and results,
+"""Tool contract v1.0 (WBS 2.3): the schema accepts the example calls and results,
 rejects ones that break CLAUDE.md section 6, and stays in sync with the tables in
 CLAUDE.md sections 6.1 and 6.3 and the matrix in docs/tool_contract.md.
 
@@ -38,7 +38,6 @@ RESULT_EXAMPLES = sorted(EXAMPLES.glob("result_*.json"))
 
 TOOLS = SCHEMA["$defs"]["tool_name"]["enum"]
 CODES = SCHEMA["$defs"]["rejection_code"]["enum"]
-ADDED_CODES = {"NOT_A_CASTER"}  # decision 2026-10-02, not yet in CLAUDE.md section 6.3
 JSON_TYPES = {"str": "string", "int": "integer"}
 
 Doc = dict[str, Any]
@@ -155,7 +154,7 @@ def test_rejection_codes_match_claude_md() -> None:
     table = _section((ROOT / "CLAUDE.md").read_text(encoding="utf-8"), "### 6.3")
     documented = re.findall(r"^\| `([A-Z_]+)` \|", table, flags=re.MULTILINE)
     assert len(CODES) == len(set(CODES))
-    assert set(CODES) - ADDED_CODES == set(documented)
+    assert set(CODES) == set(documented)
 
 
 def test_signatures_match_claude_md() -> None:
@@ -315,10 +314,3 @@ def test_facts_rejects(example: str, mutate: Callable[[Doc], None]) -> None:
     result = _load(EXAMPLES / f"result_{example}.json")
     mutate(result)
     assert facts_errors(result), "facts_errors accepted inconsistent facts"
-
-
-def test_claude_md_attack_example_band_is_wrong() -> None:
-    """CLAUDE.md section 6.2 gives 4 of 11 HP as badly_hurt; section 10.2 makes it
-    wounded (0.36 > 0.35). The example here uses wounded; fix section 6.2 at the 2.6
-    freeze, then delete this test."""
-    assert hp_band(4, 11) == "wounded"

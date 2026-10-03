@@ -4,6 +4,8 @@ Working specification for the KMUTT IS&A project *AI Dungeon Master: A Hybrid Ru
 
 This file is the single source of truth for implementation. If something here contradicts the proposal PDF, **this file wins** and the contradiction should be raised with the team. If something is genuinely not specified here, stop and ask rather than inventing it — the evaluation depends on details being fixed, not reasonable.
 
+**Specifications v1.0** are frozen at the git tag `spec-v1.0` (WBS 2.7, gate G1): this file plus the state schema, identifier conventions, tool contract, audit-log turn record and scenario format, each a JSON Schema in `schemas/` with its spec in `docs/` (`state_schema.md`, `identifiers.md`, `tool_contract.md`, `audit_log.md`, `scenario_format.md`). The sections below summarise them; the spec docs hold the full detail. Any change to them after the tag needs a `docs/decisions.md` entry.
+
 ---
 
 ## 1. What this project is
@@ -166,6 +168,7 @@ This is a deliberately small ruleset. Implement exactly this, no more. It is *in
 | Attack bonus | Stored per weapon as `attack_bonus`, already including ability and proficiency. Do not recompute it. |
 | Spell attack bonus | Stored per combatant as `spell_attack_bonus`. |
 | Spellcasting modifier | Stored per combatant as `spellcasting_modifier`. Used only by Cure Wounds. |
+| Non-casters | `spell_attack_bonus`, `spellcasting_modifier` and `spell_slots_1` are all `null`. Such a combatant cannot cast; `cast_spell` is rejected with `NOT_A_CASTER`. |
 
 Storing bonuses rather than deriving them is intentional. It removes a whole class of arithmetic bugs from the engine and keeps scenario authoring explicit.
 
@@ -198,6 +201,10 @@ Sources in this game: the target is Dodging (disadvantage for the attacker), or 
 ### 4.5 Actions
 
 Exactly three. One action per turn. There is **no movement, no positioning, no range and no map** — every combatant is assumed to be within reach of every other. This is why Dash does not exist in this game.
+
+Only `attack`, `cast_spell` and `dodge` use the turn's action: a successful call ends the actor's turn and the engine advances initiative. `skill_check`, `modify_inventory`, `update_npc_relationship` and `update_quest` do not end the turn.
+
+`attack` and Fire Bolt may target any conscious combatant, including the attacker or an ally. There is no rejection code for it.
 
 **Attack**
 
@@ -245,6 +252,7 @@ Three skills only: `strength`, `perception`, `stealth`. Anything else is rejecte
 - Roll `d20 + ability_modifier + (proficiency_bonus if the combatant is proficient in that skill else 0)`.
 - Success if `total >= dc`. `dc` must be in 5..25 or the call is rejected with `DC_OUT_OF_RANGE`.
 - Skill checks do not consume the turn action and may be called outside combat.
+- For a scripted input, the DC and any advantage or disadvantage come from the scenario (`expected_call.arguments.dc` and `check_advantage`, section 12). In condition D the engine uses those values and logs the `dc` the model proposed.
 
 ### 4.8 Zero hit points, unconsciousness, encounter end
 
@@ -254,13 +262,20 @@ There are **no death saving throws** and no death.
 - An unconscious combatant **cannot be attacked**. `attack` and `cast_spell` with a damaging spell targeting them are rejected with `TARGET_UNCONSCIOUS`. This is a simplification, chosen to avoid needing death rules; it is a deliberate deviation from tabletop convention and should be stated in the report.
 - Cure Wounds on an unconscious combatant restores HP and sets `status = "active"`. They act on their next turn in the existing initiative order.
 - The encounter ends when either every hostile is unconscious (`outcome: "victory"`) or the player character is unconscious (`outcome: "defeat"`).
-- When an encounter ends, further combat tool calls are rejected with `ENCOUNTER_OVER`.
+- Combat tool calls (`attack`, `cast_spell`, `dodge`) with no active encounter, whether the first one has not started or the last one has resolved, are rejected with `ENCOUNTER_OVER`. Cure Wounds is exempt and may heal between fights.
+- No tool starts an encounter. The scenario says before which scripted input each one starts and who is in it (section 12).
+- NPC turns are taken by the engine with a fixed, rule-based policy over the current state, with no model call (WBS 4.19). Each NPC call goes through the validator and is logged as an `npc_action` engine step (section 11).
 
 ---
 
 ## 5. State schema
 
-One JSON file per run, versioned. Validate against `schemas/state.schema.json` on load and after every write.
+One JSON file per run, versioned. Validate against `schemas/state.schema.json` on load and after every write. Full spec, including the cross-field rules JSON Schema cannot express: `docs/state_schema.md`.
+
+- Outside an encounter: `encounter_active: false`, `initiative_order: []`, `active_combatant_id: null`. `turn_number` starts at 0, and `round_number` is 0 until the first encounter starts.
+- A non-caster has its three spell fields `null` (section 4.1).
+- A `not_started` quest is at stage 0. `start` moves it to stage 1, and every other quest state has `stage >= 1`.
+- `status` is `unconscious` exactly when `current_hp` is 0.
 
 ```json
 {
@@ -344,6 +359,8 @@ One JSON file per run, versioned. Validate against `schemas/state.schema.json` o
 
 The prefix is load-bearing: the divergence checker uses it to decide what kind of entity a narration mention should be matched against. Do not invent other prefixes.
 
+The full rules are in `docs/identifiers.md`. In short: `<name>` is lowercase `[a-z0-9]` words joined by single underscores; repeated entities get a two-digit suffix from `01`; ids are fixed when the scenario loads; spell ids belong to the engine. The scenario id (`s01_cellar`, `long01_...`) is the namespace: inside a run ids are bare, and any artefact that combines scenarios writes `<scenario_id>/<entity_id>`.
+
 ### 5.2 Enumerations
 
 | Field | Allowed values |
@@ -362,7 +379,7 @@ Legal quest transitions: `not_started → active`, `active → active` (stage in
 
 ## 6. Tool contract
 
-Seven tools. These definitions are the contract given to the model and enforced by the validator. Keep the two in sync by generating the model-facing JSON schema from the same source.
+Seven tools. These definitions are the contract given to the model and enforced by the validator. Keep the two in sync by generating the model-facing JSON schema from the same source: `schemas/tools.schema.json`. Full spec, including the fixed validation order, per-tool `narration_facts`, the tool × code matrix and `valid_options` per code: `docs/tool_contract.md`.
 
 *(SPECIFY artefact — this section, together with section 7.1 and the success criteria table in the proposal, constitutes the complete specification required under the SPECIFY principle.)*
 
@@ -380,6 +397,8 @@ Seven tools. These definitions are the contract given to the model and enforced 
 
 `direction` is `"up"` or `"down"`. `transition` is `"start"`, `"advance"`, `"complete"` or `"fail"`. `justification` must be a non-empty string of at least 10 characters.
 
+`modify_inventory` changes one inventory per call, and `actor_id` is the inventory's owner, so it may be unconscious. `delta` of 0 is a `SCHEMA_VIOLATION`. There is no transfer between inventories and no stealing; scenarios must not script taking an item from an NPC.
+
 ### 6.2 Result envelopes
 
 Every tool returns the same outer shape. The narration prompt receives `narration_facts` and nothing else from the result — this is what forces the model to describe rather than invent.
@@ -391,15 +410,17 @@ Every tool returns the same outer shape. The narration prompt receives `narratio
   "narration_facts": {
     "attacker": "Lyra",
     "target": "giant rat",
+    "weapon": "short sword",
     "hit": true,
     "critical": false,
     "attack_roll": 17,
+    "advantage_mode": "normal",
     "target_ac": 12,
     "damage": 7,
     "target_hp_before": 11,
     "target_hp_after": 4,
     "target_hp_max": 11,
-    "target_hp_band": "badly_hurt",
+    "target_hp_band": "wounded",
     "target_status": "active"
   },
   "state_diff": [
@@ -429,7 +450,9 @@ Rejection:
 }
 ```
 
-`valid_options` is populated wherever the engine can cheaply enumerate what *would* have been legal. It matters: it is the main thing that lets a weak local model recover on its second attempt.
+`valid_options` is populated wherever the engine can cheaply enumerate what *would* have been legal. It matters: it is the main thing that lets a weak local model recover on its second attempt. `retry_allowed` is always `true`; the retry budget belongs to the turn loop (section 7.1).
+
+The validator checks in a fixed order and returns the first failure: shape, existence, argument values, encounter, actor, target and effect (`docs/tool_contract.md` §1).
 
 ### 6.3 Rejection codes
 
@@ -445,6 +468,7 @@ Complete list. Do not add one without updating this table and `docs/decisions.md
 | `WEAPON_NOT_IN_INVENTORY` | `weapon_id` not held by the attacker |
 | `NOT_A_WEAPON` | `weapon_id` exists but `is_weapon` is false |
 | `SPELL_NOT_SUPPORTED` | `spell_id` is not one of the two supported spells |
+| `NOT_A_CASTER` | `cast_spell` by a combatant whose spell fields are `null` |
 | `NO_SPELL_SLOT` | Cure Wounds with `spell_slots_1 == 0` |
 | `SKILL_NOT_SUPPORTED` | Skill outside the three supported |
 | `DC_OUT_OF_RANGE` | `dc < 5` or `dc > 25` |
@@ -454,7 +478,7 @@ Complete list. Do not add one without updating this table and `docs/decisions.md
 | `MISSING_JUSTIFICATION` | Justification absent or under 10 characters |
 | `UNKNOWN_QUEST` | `quest_id` absent from state |
 | `ILLEGAL_QUEST_TRANSITION` | Transition not permitted from the current quest state |
-| `ENCOUNTER_OVER` | Combat action after the encounter has resolved |
+| `ENCOUNTER_OVER` | Combat action with no active encounter, before the first starts or after the last resolves (Cure Wounds exempt) |
 
 ---
 
@@ -498,6 +522,8 @@ Retry budget is **2** attempts after the first, so 3 model calls maximum for the
 | No tool call produced when the input clearly needs one | Re-prompt **once** with an explicit instruction to select a tool | Treat as a narration-only turn. Log `narration_only: true`. |
 
 A turn that fails does **not** increment `turn_number` and does **not** advance initiative. It is still written to the audit log. Turn failures are a reported metric, not an embarrassment to hide.
+
+A scripted run cannot ask the player to rephrase, so after a failed turn it moves on to the next scripted input. The failed record keeps its `input_index`; the next record has `input_index + 1` and the same `turn_number`. Scripted inputs are never changed when an encounter runs longer or shorter than the script: rejections such as `TARGET_UNCONSCIOUS` or `ENCOUNTER_OVER` are logged and count as data.
 
 ### 7.2 Silently misparsed intent
 
@@ -546,7 +572,7 @@ Four conditions. They must differ **only** as described. Any other difference is
 
 Conditions A–C produce narration only, in a single model call. There is no tool phase and no state mutation; the state file, where present, is read-only context. Condition D is the full two-call loop.
 
-For A–C, the "state" used for scoring is the state the *scenario script* says should hold at that turn, computed by replaying the scripted inputs through the engine offline. This is the ground truth the narration is compared against.
+For A–C, the "state" used for scoring is the state the *scenario script* says should hold at that turn, computed by replaying the scripted inputs (their `expected_call`s) through the engine offline with the same seed. This is the ground truth the narration is compared against, and both state hashes in an A–C turn record are this replayed state.
 
 ### 9.1 Prompt templates
 
@@ -607,6 +633,8 @@ listed, and do not contradict any value here.
 ```
 
 Note that D's narration call does **not** receive the full state, only the facts. This is the architecture, not an oversight.
+
+`{narration_facts_json}` is a JSON array: the `narration_facts` of the player's executed call first, then those of each `npc_action` engine step in the turn, in the order they happened. NPC actions are narrated; the template text is unchanged.
 
 ---
 
@@ -679,7 +707,15 @@ Inter-rater agreement: Krippendorff's alpha on a 20% double-scored overlap. Targ
 
 ## 11. Audit log
 
-JSON Lines, one record per turn, at `runs/{condition}/{scenario_id}/{seed}.jsonl`. This file *is* the dataset. If it is incomplete, the run is worthless.
+JSON Lines, one record per turn, at `runs/{condition}/{scenario_id}/{seed}.jsonl`. This file *is* the dataset. If it is incomplete, the run is worthless. Schema: `schemas/audit.schema.json`. Full spec: `docs/audit_log.md`.
+
+Beyond the example below:
+
+- `input_index` names the scripted input the turn answers (`null` in interactive play). It lines up the same stimulus across conditions after a failed turn.
+- `proposed_calls` and `validation` have one entry per toolcall attempt. A rejection holds the full rejection envelope; a success holds the full result, including `narration_facts`. A parse failure has a `null` proposed call.
+- `engine_steps` records the engine's work outside the player's call, in order: `encounter_start`, `dodge_expiry`, `npc_action`, `initiative_advance`, `encounter_end`, `turn_increment`. The top-level `state_diff` and `rolls` are the before-call steps, the executed result and the after-call steps, concatenated.
+- `summary` holds `{text, truncated}` when the rolling summary is regenerated.
+- `turn_number` is the turn being played, so it repeats after a failed turn.
 
 ```json
 {
@@ -688,6 +724,7 @@ JSON Lines, one record per turn, at `runs/{condition}/{scenario_id}/{seed}.jsonl
   "scenario_id": "s01_cellar",
   "seed": 12345,
   "turn_number": 7,
+  "input_index": 6,
   "timestamp": "2026-11-09T14:22:31Z",
   "player_input": "I swing my sword at the bigger rat",
   "model_calls": [
@@ -698,6 +735,7 @@ JSON Lines, one record per turn, at `runs/{condition}/{scenario_id}/{seed}.jsonl
   "proposed_calls": [{"tool": "attack", "arguments": {"attacker_id": "pc_lyra", "target_id": "npc_rat_01", "weapon_id": "item_short_sword"}}],
   "validation": [{"ok": true}],
   "executed_call": {"tool": "attack", "arguments": {}},
+  "engine_steps": [],
   "rolls": [],
   "state_before_hash": "sha256:...",
   "state_after_hash": "sha256:...",
@@ -707,35 +745,53 @@ JSON Lines, one record per turn, at `runs/{condition}/{scenario_id}/{seed}.jsonl
   "turn_failure": null,
   "narration_only": false,
   "k_used": 8,
-  "summary_regenerated": false
+  "summary_regenerated": false,
+  "summary": null
 }
 ```
 
-State hashes are how invariant 4 is tested: replay a seed, compare the hash sequence.
+State hashes are how invariant 4 is tested: replay a seed, compare the hash sequence. Hashes are `sha256:` of the serialisation in `docs/conventions.md` §2. A byte-identical replay compares every audit field except `timestamp` and `latency_ms`.
 
 ---
 
 ## 12. Scenario definition
 
-One JSON file per scenario in `scenarios/`. Twelve short scenarios of about 25 turns, four long ones of 50 turns.
+One JSON file per scenario, at `scenarios/<scenario_id>.json`. Twelve short scenarios of about 25 turns, four long ones of 50 turns. Schema: `schemas/scenario.schema.json`. Full spec and a worked example: `docs/scenario_format.md`, `schemas/examples/scenario_s00_example.json`.
 
 ```json
 {
+  "schema_version": "1.0",
   "scenario_id": "s01_cellar",
   "display_name": "The Cellar Rats",
   "opening_narration": "The cellar stairs end in ankle-deep water...",
-  "initial_state": { "...": "a complete GameState minus turn/round fields" },
-  "scripted_inputs": [
-    "I look around the cellar",
-    "I draw my sword and attack the nearest rat",
-    "I check if anything is hidden behind the barrels"
+  "locations": ["the cellar", "the cellar stairs", "the barrels"],
+  "initial_state": {
+    "combatants": {}, "inventory": {}, "item_definitions": {},
+    "npc_relationships": {}, "quests": {}
+  },
+  "encounters": [
+    {"before_input": 1, "combatant_ids": ["pc_lyra", "npc_rat_01", "npc_rat_02"]}
   ],
-  "expected_tools": [null, "attack", "skill_check"],
+  "scripted_inputs": [
+    {"text": "I look around the cellar", "expected_call": null},
+    {"text": "I draw my sword and attack the nearest rat",
+     "expected_call": {"tool": "attack", "arguments": {"attacker_id": "pc_lyra",
+       "target_id": "npc_rat_01", "weapon_id": "item_short_sword"}}},
+    {"text": "I hold my torch up and check if anything is hidden behind the barrels",
+     "expected_call": {"tool": "skill_check", "arguments": {"actor_id": "pc_lyra",
+       "skill": "perception", "dc": 12}},
+     "check_advantage": "advantage"}
+  ],
   "notes_for_annotators": "Turn 12 deliberately references a lantern that is not in inventory, to test PHANTOM detection."
 }
 ```
 
-`scripted_inputs` are fixed so that every condition receives identical stimuli. `expected_tools` is used only for checker validation and M3 sampling guidance; it is **not** used to grade the model, because a different but reasonable tool choice is not a failure.
+- `initial_state` holds only the five entity maps. The loader adds `seed` from the run, `turn_number` and `round_number` 0, and no active encounter.
+- `encounters` says before which scripted input each encounter starts and which combatants are in it, since no tool starts one.
+- `locations` lists the places narration may name without a `PHANTOM` divergence; the state has no locations.
+- Each scripted input is `{text, expected_call, check_advantage?}`. `expected_call` is the full tool call, or `null`, so that A–C ground truth can be replayed. A skill check's DC is its `dc` argument; `check_advantage` is allowed only on a skill check.
+
+`scripted_inputs` are fixed so that every condition receives identical stimuli. `expected_call` is used for the offline replay, checker validation and M3 sampling guidance; it is **not** used to grade the model, because a different but reasonable tool choice is not a failure.
 
 Every scenario must exercise at least two of: inventory change, quest transition, relationship change. Long scenarios must exercise all three and must run long enough for at least five summary regenerations.
 
@@ -804,6 +860,16 @@ The proposal left these open. They are settled here so that nothing has to be gu
 14. Retry budget is 2, and a failed turn does not advance the game.
 15. Skill checks do not consume the turn action.
 16. The rolling summary is forbidden from restating numeric state.
+
+Added at the specifications v1.0 freeze (WBS 2.1–2.6; reasons in `docs/decisions.md`):
+
+17. Non-casters have `null` spell fields; casting is rejected with `NOT_A_CASTER`.
+18. `ENCOUNTER_OVER` covers any combat action with no active encounter. Cure Wounds is exempt.
+19. Only `attack`, `cast_spell` and `dodge` use the turn's action.
+20. The scenario's DC and `check_advantage` are authoritative for a scripted skill check; the model's proposed `dc` is logged.
+21. NPC actions are engine-controlled and rule-based, and they are narrated in condition D.
+22. No item transfers between inventories. Attacking yourself or an ally is allowed.
+23. A scripted run moves to the next input after a failed turn, and scripted inputs never adapt to how an encounter goes.
 
 ## 16. Open questions for the team
 
