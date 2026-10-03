@@ -1,0 +1,365 @@
+{
+  "run_id": "D_s01_cellar_12345",
+  "condition": "D",
+  "scenario_id": "s01_cellar",
+  "seed": 12345,
+  "turn_number": 8,
+  "input_index": 7,
+  "timestamp": "2026-11-09T14:22:31Z",
+  "player_input": "I go for the rat that keeps ducking away",
+  "model_calls": [
+    {
+      "phase": "toolcall",
+      "attempt": 1,
+      "prompt_tokens": 3120,
+      "completion_tokens": 41,
+      "latency_ms": 2210,
+      "raw_output": "{\"tool\": \"attack\", \"arguments\": {\"attacker_id\": \"pc_lyra\", \"target_id\": \"npc_rat_02\", \"weapon_id\": \"item_short_sword\"}}"
+    },
+    {
+      "phase": "narration",
+      "attempt": 1,
+      "prompt_tokens": 512,
+      "completion_tokens": 58,
+      "latency_ms": 3105,
+      "raw_output": "The rat twists aside, but your short sword catches it on the backswing. It shrieks and drags itself back, badly hurt, leaving a dark smear on the wet stone."
+    }
+  ],
+  "proposed_calls": [
+    {
+      "tool": "attack",
+      "arguments": {
+        "attacker_id": "pc_lyra",
+        "target_id": "npc_rat_02",
+        "weapon_id": "item_short_sword"
+      }
+    }
+  ],
+  "validation": [
+    {
+      "ok": true,
+      "tool": "attack",
+      "narration_facts": {
+        "attacker": "Lyra",
+        "target": "giant rat",
+        "weapon": "short sword",
+        "hit": true,
+        "critical": false,
+        "attack_roll": 14,
+        "advantage_mode": "disadvantage",
+        "target_ac": 12,
+        "damage": 8,
+        "target_hp_before": 11,
+        "target_hp_after": 3,
+        "target_hp_max": 11,
+        "target_hp_band": "badly_hurt",
+        "target_status": "active"
+      },
+      "state_diff": [
+        {
+          "path": "combatants.npc_rat_02.current_hp",
+          "from": 11,
+          "to": 3
+        }
+      ],
+      "rolls": [
+        {
+          "notation": "1d20+5",
+          "individual_dice": [
+            15,
+            9
+          ],
+          "modifier": 5,
+          "total": 14,
+          "advantage_mode": "disadvantage"
+        },
+        {
+          "notation": "1d6+3",
+          "individual_dice": [
+            5
+          ],
+          "modifier": 3,
+          "total": 8,
+          "advantage_mode": "normal"
+        }
+      ]
+    }
+  ],
+  "executed_call": {
+    "tool": "attack",
+    "arguments": {
+      "attacker_id": "pc_lyra",
+      "target_id": "npc_rat_02",
+      "weapon_id": "item_short_sword"
+    }
+  },
+  "engine_steps": [
+    {
+      "step": "initiative_advance",
+      "when": "after_call",
+      "state_diff": [
+        {
+          "path": "active_combatant_id",
+          "from": "pc_lyra",
+          "to": "npc_rat_02"
+        }
+      ],
+      "rolls": []
+    },
+    {
+      "step": "dodge_expiry",
+      "when": "after_call",
+      "state_diff": [
+        {
+          "path": "combatants.npc_rat_02.dodging",
+          "from": true,
+          "to": false
+        }
+      ],
+      "rolls": []
+    },
+    {
+      "step": "npc_action",
+      "when": "after_call",
+      "call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "npc_rat_02",
+          "target_id": "pc_lyra",
+          "weapon_id": "item_rat_bite"
+        }
+      },
+      "result": {
+        "ok": true,
+        "tool": "attack",
+        "narration_facts": {
+          "attacker": "giant rat",
+          "target": "Lyra",
+          "weapon": "bite",
+          "hit": true,
+          "critical": false,
+          "attack_roll": 15,
+          "advantage_mode": "normal",
+          "target_ac": 14,
+          "damage": 5,
+          "target_hp_before": 14,
+          "target_hp_after": 9,
+          "target_hp_max": 20,
+          "target_hp_band": "wounded",
+          "target_status": "active"
+        },
+        "state_diff": [
+          {
+            "path": "combatants.pc_lyra.current_hp",
+            "from": 14,
+            "to": 9
+          }
+        ],
+        "rolls": [
+          {
+            "notation": "1d20+4",
+            "individual_dice": [
+              11
+            ],
+            "modifier": 4,
+            "total": 15,
+            "advantage_mode": "normal"
+          },
+          {
+            "notation": "1d4+2",
+            "individual_dice": [
+              3
+            ],
+            "modifier": 2,
+            "total": 5,
+            "advantage_mode": "normal"
+          }
+        ]
+      }
+    },
+    {
+      "step": "initiative_advance",
+      "when": "after_call",
+      "state_diff": [
+        {
+          "path": "active_combatant_id",
+          "from": "npc_rat_02",
+          "to": "npc_rat_01"
+        },
+        {
+          "path": "round_number",
+          "from": 3,
+          "to": 4
+        }
+      ],
+      "rolls": []
+    },
+    {
+      "step": "npc_action",
+      "when": "after_call",
+      "call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "npc_rat_01",
+          "target_id": "pc_lyra",
+          "weapon_id": "item_rat_bite"
+        }
+      },
+      "result": {
+        "ok": true,
+        "tool": "attack",
+        "narration_facts": {
+          "attacker": "giant rat",
+          "target": "Lyra",
+          "weapon": "bite",
+          "hit": false,
+          "critical": false,
+          "attack_roll": 10,
+          "advantage_mode": "normal",
+          "target_ac": 14,
+          "damage": 0,
+          "target_hp_before": 9,
+          "target_hp_after": 9,
+          "target_hp_max": 20,
+          "target_hp_band": "wounded",
+          "target_status": "active"
+        },
+        "state_diff": [],
+        "rolls": [
+          {
+            "notation": "1d20+4",
+            "individual_dice": [
+              6
+            ],
+            "modifier": 4,
+            "total": 10,
+            "advantage_mode": "normal"
+          }
+        ]
+      }
+    },
+    {
+      "step": "initiative_advance",
+      "when": "after_call",
+      "state_diff": [
+        {
+          "path": "active_combatant_id",
+          "from": "npc_rat_01",
+          "to": "pc_lyra"
+        }
+      ],
+      "rolls": []
+    },
+    {
+      "step": "turn_increment",
+      "when": "after_call",
+      "state_diff": [
+        {
+          "path": "turn_number",
+          "from": 7,
+          "to": 8
+        }
+      ],
+      "rolls": []
+    }
+  ],
+  "rolls": [
+    {
+      "notation": "1d20+5",
+      "individual_dice": [
+        15,
+        9
+      ],
+      "modifier": 5,
+      "total": 14,
+      "advantage_mode": "disadvantage"
+    },
+    {
+      "notation": "1d6+3",
+      "individual_dice": [
+        5
+      ],
+      "modifier": 3,
+      "total": 8,
+      "advantage_mode": "normal"
+    },
+    {
+      "notation": "1d20+4",
+      "individual_dice": [
+        11
+      ],
+      "modifier": 4,
+      "total": 15,
+      "advantage_mode": "normal"
+    },
+    {
+      "notation": "1d4+2",
+      "individual_dice": [
+        3
+      ],
+      "modifier": 2,
+      "total": 5,
+      "advantage_mode": "normal"
+    },
+    {
+      "notation": "1d20+4",
+      "individual_dice": [
+        6
+      ],
+      "modifier": 4,
+      "total": 10,
+      "advantage_mode": "normal"
+    }
+  ],
+  "state_before_hash": "sha256:5af3aa2d3c9d5745fc8cca8be06e178494685b23f75df6485aa027d4f5da129f",
+  "state_after_hash": "sha256:f17dbe83a0d35e1f05f417757503581cf5ea32108634826c065c2740d37a8af0",
+  "state_diff": [
+    {
+      "path": "combatants.npc_rat_02.current_hp",
+      "from": 11,
+      "to": 3
+    },
+    {
+      "path": "active_combatant_id",
+      "from": "pc_lyra",
+      "to": "npc_rat_02"
+    },
+    {
+      "path": "combatants.npc_rat_02.dodging",
+      "from": true,
+      "to": false
+    },
+    {
+      "path": "combatants.pc_lyra.current_hp",
+      "from": 14,
+      "to": 9
+    },
+    {
+      "path": "active_combatant_id",
+      "from": "npc_rat_02",
+      "to": "npc_rat_01"
+    },
+    {
+      "path": "round_number",
+      "from": 3,
+      "to": 4
+    },
+    {
+      "path": "active_combatant_id",
+      "from": "npc_rat_01",
+      "to": "pc_lyra"
+    },
+    {
+      "path": "turn_number",
+      "from": 7,
+      "to": 8
+    }
+  ],
+  "narration": "The rat twists aside, but your short sword catches it on the backswing. It shrieks and drags itself back, badly hurt, leaving a dark smear on the wet stone.",
+  "narration_filtered": false,
+  "turn_failure": null,
+  "narration_only": false,
+  "k_used": 8,
+  "summary_regenerated": false,
+  "summary": null
+}

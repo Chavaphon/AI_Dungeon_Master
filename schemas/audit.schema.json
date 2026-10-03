@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Chavaphon/AI_Dungeon_Master/schemas/audit.schema.json",
+  "title": "TurnRecord",
+  "description": "Audit-log turn record v0.9 (WBS 2.4). One JSON object per line in runs/{condition}/{scenario_id}/{seed}.jsonl, CLAUDE.md section 11. Calls, results, rolls and diffs reuse tools.schema.json. Rules JSON Schema cannot express are listed in docs/audit_log.md and are checked in Python.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "condition",
+    "scenario_id",
+    "seed",
+    "turn_number",
+    "input_index",
+    "timestamp",
+    "player_input",
+    "model_calls",
+    "proposed_calls",
+    "validation",
+    "executed_call",
+    "engine_steps",
+    "rolls",
+    "state_before_hash",
+    "state_after_hash",
+    "state_diff",
+    "narration",
+    "narration_filtered",
+    "turn_failure",
+    "narration_only",
+    "k_used",
+    "summary_regenerated",
+    "summary"
+  ],
+  "properties": {
+    "run_id": {
+      "$comment": "{condition}_{scenario_id}_{seed} (docs/identifiers.md section 3).",
+      "type": "string",
+      "pattern": "^[ABCD]_(s|long)[0-9]{2}_[a-z0-9]+(_[a-z0-9]+)*_-?[0-9]+$"
+    },
+    "condition": {"enum": ["A", "B", "C", "D"]},
+    "scenario_id": {"$ref": "state.schema.json#/$defs/scenario_id"},
+    "seed": {"type": "integer"},
+    "turn_number": {
+      "$comment": "The turn being played: the state's turn_number plus 1. A failed turn does not advance, so the next record repeats its number.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "input_index": {
+      "$comment": "Index into the scenario's scripted_inputs; null in interactive play.",
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "timestamp": {
+      "$comment": "UTC wall-clock time, taken in orchestration. Excluded from the replay comparison (invariant 4).",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "player_input": {"type": "string"},
+    "model_calls": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/model_call"}
+    },
+    "proposed_calls": {
+      "$comment": "One entry per toolcall attempt, in order. null means the raw output could not be parsed as a call.",
+      "type": "array",
+      "maxItems": 3,
+      "items": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/parsed_call"}]}
+    },
+    "validation": {
+      "$comment": "One entry per toolcall attempt, aligned with proposed_calls.",
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "oneOf": [
+          {"$ref": "tools.schema.json#/$defs/tool_result"},
+          {"$ref": "#/$defs/no_tool"},
+          {"$ref": "#/$defs/parse_failure"}
+        ]
+      }
+    },
+    "executed_call": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/executed_call"}]
+    },
+    "engine_steps": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/engine_step"}
+    },
+    "rolls": {
+      "$comment": "Every roll of the turn, in the order rolled (section 4.2).",
+      "type": "array",
+      "items": {"$ref": "tools.schema.json#/$defs/roll_result"}
+    },
+    "state_before_hash": {"$ref": "#/$defs/state_hash"},
+    "state_after_hash": {"$ref": "#/$defs/state_hash"},
+    "state_diff": {
+      "$comment": "Every mutation of the turn, in the order applied (invariant 2).",
+      "type": "array",
+      "items": {"$ref": "tools.schema.json#/$defs/state_diff_entry"}
+    },
+    "narration": {"type": "string"},
+    "narration_filtered": {"type": "boolean"},
+    "turn_failure": {"enum": [null, "unparseable", "schema", "unknown_entity", "precondition"]},
+    "narration_only": {"type": "boolean"},
+    "k_used": {"type": "integer", "minimum": 0},
+    "summary_regenerated": {"type": "boolean"},
+    "summary": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/summary"}]
+    }
+  },
+  "$defs": {
+    "state_hash": {
+      "$comment": "sha256 of the state serialised as in docs/conventions.md section 2 (sort_keys, compact separators, ensure_ascii false).",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+
+    "model_call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "attempt",
+        "prompt_tokens",
+        "completion_tokens",
+        "latency_ms",
+        "raw_output"
+      ],
+      "properties": {
+        "phase": {"enum": ["toolcall", "narration", "summary"]},
+        "attempt": {"type": "integer", "minimum": 1},
+        "prompt_tokens": {"type": "integer", "minimum": 0},
+        "completion_tokens": {"type": "integer", "minimum": 0},
+        "latency_ms": {"type": "integer", "minimum": 0},
+        "raw_output": {"type": "string"}
+      }
+    },
+
+    "parsed_call": {
+      "$comment": "What the parser extracted, before validation. It may break the tool contract; that is what the validation entry records.",
+      "type": "object",
+      "required": ["tool"]
+    },
+
+    "executed_call": {
+      "$comment": "A call that passed validation and ran.",
+      "allOf": [{"$ref": "tools.schema.json#/$defs/proposed_call"}],
+      "properties": {"tool": {"$ref": "tools.schema.json#/$defs/tool_name"}}
+    },
+
+    "no_tool": {
+      "$comment": "The model replied {\"tool\": null}: no mechanical effect.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "tool"],
+      "properties": {"ok": {"const": true}, "tool": {"type": "null"}}
+    },
+
+    "parse_failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "failure", "message"],
+      "properties": {
+        "ok": {"const": false},
+        "failure": {"const": "unparseable"},
+        "message": {"type": "string", "minLength": 1}
+      }
+    },
+
+    "engine_step": {
+      "$comment": "Engine work outside the player's tool call (docs/tool_contract.md section 2). 'before_call' steps run before the tool, 'after_call' steps after it.",
+      "oneOf": [{"$ref": "#/$defs/npc_action"}, {"$ref": "#/$defs/bookkeeping_step"}]
+    },
+    "npc_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "when", "call", "result"],
+      "properties": {
+        "step": {"const": "npc_action"},
+        "when": {"const": "after_call"},
+        "call": {"$ref": "#/$defs/executed_call"},
+        "result": {"$ref": "tools.schema.json#/$defs/result_ok"}
+      }
+    },
+    "bookkeeping_step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "when", "state_diff", "rolls"],
+      "properties": {
+        "step": {
+          "enum": [
+            "encounter_start",
+            "dodge_expiry",
+            "initiative_advance",
+            "encounter_end",
+            "turn_increment"
+          ]
+        },
+        "when": {"enum": ["before_call", "after_call"]},
+        "state_diff": {
+          "type": "array",
+          "items": {"$ref": "tools.schema.json#/$defs/state_diff_entry"}
+        },
+        "rolls": {
+          "type": "array",
+          "items": {"$ref": "tools.schema.json#/$defs/roll_result"}
+        }
+      }
+    },
+
+    "summary": {
+      "$comment": "Section 8.1: written whenever the rolling summary is regenerated.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "truncated"],
+      "properties": {
+        "text": {"type": "string"},
+        "truncated": {"type": "boolean"}
+      }
+    }
+  }
+}
