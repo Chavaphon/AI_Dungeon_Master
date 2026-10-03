@@ -1,0 +1,8 @@
+{
+  "tool": "cast_spell",
+  "arguments": {
+    "caster_id": "pc_lyra",
+    "spell_id": "spell_cure_wounds",
+    "target_id": "pc_lyra"
+  }
+}

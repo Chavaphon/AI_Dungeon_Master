@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "tool": "dodge",
+  "narration_facts": {
+    "actor": "Lyra"
+  },
+  "state_diff": [
+    {
+      "path": "combatants.pc_lyra.dodging",
+      "from": false,
+      "to": true
+    }
+  ],
+  "rolls": []
+}

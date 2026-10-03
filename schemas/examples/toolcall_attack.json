@@ -1,0 +1,8 @@
+{
+  "tool": "attack",
+  "arguments": {
+    "attacker_id": "pc_lyra",
+    "target_id": "npc_rat_01",
+    "weapon_id": "item_short_sword"
+  }
+}

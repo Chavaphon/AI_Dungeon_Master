@@ -1,0 +1,48 @@
+{
+  "ok": true,
+  "tool": "cast_spell",
+  "narration_facts": {
+    "caster": "Lyra",
+    "target": "giant rat",
+    "spell": "fire bolt",
+    "hit": true,
+    "critical": false,
+    "attack_roll": 13,
+    "advantage_mode": "disadvantage",
+    "target_ac": 12,
+    "damage": 7,
+    "target_hp_before": 11,
+    "target_hp_after": 4,
+    "target_hp_max": 11,
+    "target_hp_band": "wounded",
+    "target_status": "active"
+  },
+  "state_diff": [
+    {
+      "path": "combatants.npc_rat_02.current_hp",
+      "from": 11,
+      "to": 4
+    }
+  ],
+  "rolls": [
+    {
+      "notation": "1d20+5",
+      "individual_dice": [
+        15,
+        8
+      ],
+      "modifier": 5,
+      "total": 13,
+      "advantage_mode": "disadvantage"
+    },
+    {
+      "notation": "1d10",
+      "individual_dice": [
+        7
+      ],
+      "modifier": 0,
+      "total": 7,
+      "advantage_mode": "normal"
+    }
+  ]
+}

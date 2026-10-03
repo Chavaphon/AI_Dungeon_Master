@@ -1,0 +1,374 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Chavaphon/AI_Dungeon_Master/schemas/tools.schema.json",
+  "title": "ToolContract",
+  "description": "Tool contract v0.9 (WBS 2.3), CLAUDE.md section 6. Validate a model's proposed call against #/$defs/proposed_call and an engine result against #/$defs/tool_result. The args_* definitions are the single source for both the validator's SCHEMA_VIOLATION step and the model-facing tool definitions. Rules JSON Schema cannot express are in docs/tool_contract.md.",
+  "$defs": {
+    "tool_name": {
+      "enum": [
+        "attack",
+        "cast_spell",
+        "dodge",
+        "skill_check",
+        "modify_inventory",
+        "update_npc_relationship",
+        "update_quest"
+      ]
+    },
+
+    "rejection_code": {
+      "$comment": "CLAUDE.md section 6.3 plus NOT_A_CASTER (decision 2026-10-02). Order is the validation order in docs/tool_contract.md section 1.",
+      "enum": [
+        "SCHEMA_VIOLATION",
+        "UNKNOWN_ENTITY",
+        "ITEM_NOT_DEFINED",
+        "UNKNOWN_QUEST",
+        "SPELL_NOT_SUPPORTED",
+        "SKILL_NOT_SUPPORTED",
+        "DC_OUT_OF_RANGE",
+        "MISSING_JUSTIFICATION",
+        "ENCOUNTER_OVER",
+        "NOT_YOUR_TURN",
+        "ACTOR_UNCONSCIOUS",
+        "NOT_A_CASTER",
+        "NO_SPELL_SLOT",
+        "NOT_A_WEAPON",
+        "WEAPON_NOT_IN_INVENTORY",
+        "TARGET_UNCONSCIOUS",
+        "NEGATIVE_QUANTITY",
+        "RELATIONSHIP_STEP_TOO_LARGE",
+        "ILLEGAL_QUEST_TRANSITION"
+      ]
+    },
+
+    "args_attack": {
+      "description": "Make a weapon attack against another combatant. Uses your action for the turn.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attacker_id", "target_id", "weapon_id"],
+      "properties": {
+        "attacker_id": {"type": "string", "description": "Combatant id of the attacker, e.g. pc_lyra."},
+        "target_id": {"type": "string", "description": "Combatant id of the target, e.g. npc_rat_01."},
+        "weapon_id": {"type": "string", "description": "Item id of a weapon the attacker holds, e.g. item_short_sword."}
+      }
+    },
+
+    "args_cast_spell": {
+      "description": "Cast a spell. Only spell_fire_bolt (damage) and spell_cure_wounds (healing, uses a level-1 slot) exist. Uses your action for the turn.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["caster_id", "spell_id", "target_id"],
+      "properties": {
+        "caster_id": {"type": "string", "description": "Combatant id of the caster."},
+        "spell_id": {"type": "string", "description": "spell_fire_bolt or spell_cure_wounds."},
+        "target_id": {"type": "string", "description": "Combatant id of the target."}
+      }
+    },
+
+    "args_dodge": {
+      "description": "Take the Dodge action: attacks against you have disadvantage until the start of your next turn. Uses your action for the turn.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor_id"],
+      "properties": {
+        "actor_id": {"type": "string", "description": "Combatant id of the one dodging."}
+      }
+    },
+
+    "args_skill_check": {
+      "description": "Roll a skill check against a difficulty class. Only strength, perception and stealth exist. Does not use your action.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor_id", "skill", "dc"],
+      "properties": {
+        "actor_id": {"type": "string", "description": "Combatant id of the one making the check."},
+        "skill": {"type": "string", "description": "strength, perception or stealth."},
+        "dc": {"type": "integer", "description": "Difficulty class, 5 to 25."}
+      }
+    },
+
+    "args_modify_inventory": {
+      "description": "Add items to or remove items from a combatant's inventory. Does not use your action.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor_id", "item_id", "delta"],
+      "properties": {
+        "actor_id": {"type": "string", "description": "Combatant id whose inventory changes."},
+        "item_id": {"type": "string", "description": "Item id, e.g. item_torch."},
+        "delta": {
+          "type": "integer",
+          "not": {"const": 0},
+          "description": "Change in quantity: positive to gain, negative to lose. Never 0."
+        }
+      }
+    },
+
+    "args_update_npc_relationship": {
+      "description": "Move an NPC's stance one step along hostile, unfriendly, neutral, friendly, allied. Does not use your action.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["npc_id", "direction", "justification"],
+      "properties": {
+        "npc_id": {"type": "string", "description": "NPC id, e.g. npc_keeper."},
+        "direction": {"enum": ["up", "down"], "description": "up is friendlier, down is more hostile."},
+        "justification": {"type": "string", "description": "Why the stance changes, at least 10 characters."}
+      }
+    },
+
+    "args_update_quest": {
+      "description": "Change a quest: start it, advance it one stage, complete it or fail it. Does not use your action.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quest_id", "transition"],
+      "properties": {
+        "quest_id": {"type": "string", "description": "Quest id, e.g. quest_missing_ledger."},
+        "transition": {"enum": ["start", "advance", "complete", "fail"], "description": "start, advance, complete or fail."}
+      }
+    },
+
+    "proposed_call": {
+      "$comment": "What model call 1 must emit (d_toolcall.txt). tool null means no mechanical effect and carries no arguments.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool"],
+      "properties": {
+        "tool": {"anyOf": [{"$ref": "#/$defs/tool_name"}, {"type": "null"}]},
+        "arguments": {"type": "object"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"tool": {"type": "null"}}},
+          "then": {"not": {"required": ["arguments"]}},
+          "else": {"required": ["arguments"]}
+        },
+        {"if": {"properties": {"tool": {"const": "attack"}}}, "then": {"properties": {"arguments": {"$ref": "#/$defs/args_attack"}}}},
+        {"if": {"properties": {"tool": {"const": "cast_spell"}}}, "then": {"properties": {"arguments": {"$ref": "#/$defs/args_cast_spell"}}}},
+        {"if": {"properties": {"tool": {"const": "dodge"}}}, "then": {"properties": {"arguments": {"$ref": "#/$defs/args_dodge"}}}},
+        {"if": {"properties": {"tool": {"const": "skill_check"}}}, "then": {"properties": {"arguments": {"$ref": "#/$defs/args_skill_check"}}}},
+        {"if": {"properties": {"tool": {"const": "modify_inventory"}}}, "then": {"properties": {"arguments": {"$ref": "#/$defs/args_modify_inventory"}}}},
+        {"if": {"properties": {"tool": {"const": "update_npc_relationship"}}}, "then": {"properties": {"arguments": {"$ref": "#/$defs/args_update_npc_relationship"}}}},
+        {"if": {"properties": {"tool": {"const": "update_quest"}}}, "then": {"properties": {"arguments": {"$ref": "#/$defs/args_update_quest"}}}}
+      ]
+    },
+
+    "hp_band": {"enum": ["healthy", "wounded", "badly_hurt", "unconscious"]},
+    "advantage_mode": {"enum": ["normal", "advantage", "disadvantage"]},
+    "name": {"$ref": "state.schema.json#/$defs/display_name"},
+    "hp": {"type": "integer", "minimum": 0},
+
+    "roll_result": {
+      "$comment": "Section 4.2. X may exceed 20 here because a critical doubles the dice (section 4.5).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["notation", "individual_dice", "modifier", "total", "advantage_mode"],
+      "properties": {
+        "notation": {"type": "string", "pattern": "^[1-9][0-9]?d(4|6|8|10|12|20|100)([+-][0-9]+)?$"},
+        "individual_dice": {"type": "array", "items": {"type": "integer", "minimum": 1}, "minItems": 1},
+        "modifier": {"type": "integer"},
+        "total": {"type": "integer"},
+        "advantage_mode": {"$ref": "#/$defs/advantage_mode"}
+      }
+    },
+
+    "state_diff_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "from", "to"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^[a-z_]+(\\.[a-z0-9_]+)*$"},
+        "from": true,
+        "to": true
+      }
+    },
+
+    "attack_roll_facts": {
+      "$comment": "Shared by attack and fire bolt. On a miss damage is 0 and hp_after equals hp_before.",
+      "type": "object",
+      "required": [
+        "hit",
+        "critical",
+        "attack_roll",
+        "advantage_mode",
+        "target_ac",
+        "damage",
+        "target_hp_before",
+        "target_hp_after",
+        "target_hp_max",
+        "target_hp_band",
+        "target_status"
+      ],
+      "properties": {
+        "hit": {"type": "boolean"},
+        "critical": {"type": "boolean"},
+        "attack_roll": {"type": "integer"},
+        "advantage_mode": {"$ref": "#/$defs/advantage_mode"},
+        "target_ac": {"type": "integer"},
+        "damage": {"$ref": "#/$defs/hp"},
+        "target_hp_before": {"$ref": "#/$defs/hp"},
+        "target_hp_after": {"$ref": "#/$defs/hp"},
+        "target_hp_max": {"type": "integer", "minimum": 1},
+        "target_hp_band": {"$ref": "#/$defs/hp_band"},
+        "target_status": {"$ref": "state.schema.json#/$defs/combatant/properties/status"}
+      }
+    },
+
+    "facts_attack": {
+      "allOf": [{"$ref": "#/$defs/attack_roll_facts"}],
+      "required": ["attacker", "target", "weapon"],
+      "properties": {
+        "attacker": {"$ref": "#/$defs/name"},
+        "target": {"$ref": "#/$defs/name"},
+        "weapon": {"$ref": "#/$defs/name"}
+      },
+      "unevaluatedProperties": false
+    },
+
+    "facts_cast_spell": {
+      "type": "object",
+      "required": ["caster", "target", "spell"],
+      "properties": {
+        "caster": {"$ref": "#/$defs/name"},
+        "target": {"$ref": "#/$defs/name"},
+        "spell": {"enum": ["fire bolt", "cure wounds"]}
+      },
+      "oneOf": [
+        {
+          "properties": {"spell": {"const": "fire bolt"}},
+          "allOf": [{"$ref": "#/$defs/attack_roll_facts"}]
+        },
+        {
+          "$comment": "Section 4.6: healed_rolled is 1d8 + modifier (minimum 1); healed_applied is what fit under max_hp.",
+          "properties": {
+            "spell": {"const": "cure wounds"},
+            "healed_rolled": {"type": "integer", "minimum": 1},
+            "healed_applied": {"type": "integer", "minimum": 0},
+            "target_hp_before": {"$ref": "#/$defs/hp"},
+            "target_hp_after": {"$ref": "#/$defs/hp"},
+            "target_hp_max": {"type": "integer", "minimum": 1},
+            "target_hp_band": {"$ref": "#/$defs/hp_band"},
+            "target_status": {"$ref": "state.schema.json#/$defs/combatant/properties/status"},
+            "revived": {"type": "boolean"},
+            "slots_remaining": {"type": "integer", "minimum": 0}
+          },
+          "required": [
+            "healed_rolled",
+            "healed_applied",
+            "target_hp_before",
+            "target_hp_after",
+            "target_hp_max",
+            "target_hp_band",
+            "target_status",
+            "revived",
+            "slots_remaining"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+
+    "facts_dodge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor"],
+      "properties": {"actor": {"$ref": "#/$defs/name"}}
+    },
+
+    "facts_skill_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor", "skill", "dc", "check_total", "advantage_mode", "success"],
+      "properties": {
+        "actor": {"$ref": "#/$defs/name"},
+        "skill": {"enum": ["strength", "perception", "stealth"]},
+        "dc": {"type": "integer", "minimum": 5, "maximum": 25},
+        "check_total": {"type": "integer"},
+        "advantage_mode": {"$ref": "#/$defs/advantage_mode"},
+        "success": {"type": "boolean"}
+      }
+    },
+
+    "facts_modify_inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor", "item", "delta", "quantity_before", "quantity_after"],
+      "properties": {
+        "actor": {"$ref": "#/$defs/name"},
+        "item": {"$ref": "#/$defs/name"},
+        "delta": {"type": "integer", "not": {"const": 0}},
+        "quantity_before": {"type": "integer", "minimum": 0},
+        "quantity_after": {"type": "integer", "minimum": 0}
+      }
+    },
+
+    "facts_update_npc_relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["npc", "stance_before", "stance_after", "justification"],
+      "properties": {
+        "npc": {"$ref": "#/$defs/name"},
+        "stance_before": {"$ref": "state.schema.json#/$defs/stance"},
+        "stance_after": {"$ref": "state.schema.json#/$defs/stance"},
+        "justification": {"type": "string", "minLength": 10}
+      }
+    },
+
+    "facts_update_quest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quest", "transition", "state_before", "state_after", "stage_before", "stage_after", "max_stage"],
+      "properties": {
+        "quest": {"$ref": "#/$defs/name"},
+        "transition": {"enum": ["start", "advance", "complete", "fail"]},
+        "state_before": {"$ref": "state.schema.json#/$defs/quest/properties/state"},
+        "state_after": {"$ref": "state.schema.json#/$defs/quest/properties/state"},
+        "stage_before": {"type": "integer", "minimum": 0},
+        "stage_after": {"type": "integer", "minimum": 0},
+        "max_stage": {"type": "integer", "minimum": 1}
+      }
+    },
+
+    "result_ok": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "tool", "narration_facts", "state_diff", "rolls"],
+      "properties": {
+        "ok": {"const": true},
+        "tool": {"$ref": "#/$defs/tool_name"},
+        "narration_facts": {"type": "object"},
+        "state_diff": {"type": "array", "items": {"$ref": "#/$defs/state_diff_entry"}},
+        "rolls": {"type": "array", "items": {"$ref": "#/$defs/roll_result"}}
+      },
+      "allOf": [
+        {"if": {"properties": {"tool": {"const": "attack"}}}, "then": {"properties": {"narration_facts": {"$ref": "#/$defs/facts_attack"}}}},
+        {"if": {"properties": {"tool": {"const": "cast_spell"}}}, "then": {"properties": {"narration_facts": {"$ref": "#/$defs/facts_cast_spell"}}}},
+        {"if": {"properties": {"tool": {"const": "dodge"}}}, "then": {"properties": {"narration_facts": {"$ref": "#/$defs/facts_dodge"}}}},
+        {"if": {"properties": {"tool": {"const": "skill_check"}}}, "then": {"properties": {"narration_facts": {"$ref": "#/$defs/facts_skill_check"}}}},
+        {"if": {"properties": {"tool": {"const": "modify_inventory"}}}, "then": {"properties": {"narration_facts": {"$ref": "#/$defs/facts_modify_inventory"}}}},
+        {"if": {"properties": {"tool": {"const": "update_npc_relationship"}}}, "then": {"properties": {"narration_facts": {"$ref": "#/$defs/facts_update_npc_relationship"}}}},
+        {"if": {"properties": {"tool": {"const": "update_quest"}}}, "then": {"properties": {"narration_facts": {"$ref": "#/$defs/facts_update_quest"}}}}
+      ]
+    },
+
+    "result_rejected": {
+      "$comment": "tool echoes the proposed tool name, which may be unknown (SCHEMA_VIOLATION). retry_allowed is always true; the retry budget lives in the turn loop (section 7.1).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "tool", "rejection_code", "message", "valid_options", "retry_allowed"],
+      "properties": {
+        "ok": {"const": false},
+        "tool": {"type": ["string", "null"]},
+        "rejection_code": {"$ref": "#/$defs/rejection_code"},
+        "message": {"type": "string", "minLength": 1},
+        "valid_options": {
+          "type": "object",
+          "additionalProperties": {"type": "array"}
+        },
+        "retry_allowed": {"const": true}
+      }
+    },
+
+    "tool_result": {
+      "oneOf": [{"$ref": "#/$defs/result_ok"}, {"$ref": "#/$defs/result_rejected"}]
+    }
+  }
+}

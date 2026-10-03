@@ -1,0 +1,7 @@
+{
+  "tool": "update_quest",
+  "arguments": {
+    "quest_id": "quest_missing_ledger",
+    "transition": "advance"
+  }
+}
