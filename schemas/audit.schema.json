@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Chavaphon/AI_Dungeon_Master/schemas/audit.schema.json",
   "title": "TurnRecord",
-  "description": "Audit-log turn record v0.9 (WBS 2.4). One JSON object per line in runs/{condition}/{scenario_id}/{seed}.jsonl, CLAUDE.md section 11. Calls, results, rolls and diffs reuse tools.schema.json. Rules JSON Schema cannot express are listed in docs/audit_log.md and are checked in Python.",
+  "description": "Audit-log turn record v1.0 (WBS 2.4). One JSON object per line in runs/{condition}/{scenario_id}/{seed}.jsonl, CLAUDE.md section 11. Calls, results, rolls and diffs reuse tools.schema.json. Rules JSON Schema cannot express are listed in docs/audit_log.md and are checked in Python.",
   "type": "object",
   "additionalProperties": false,
   "required": [

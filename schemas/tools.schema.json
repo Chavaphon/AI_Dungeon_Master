@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Chavaphon/AI_Dungeon_Master/schemas/tools.schema.json",
   "title": "ToolContract",
-  "description": "Tool contract v0.9 (WBS 2.3), CLAUDE.md section 6. Validate a model's proposed call against #/$defs/proposed_call and an engine result against #/$defs/tool_result. The args_* definitions are the single source for both the validator's SCHEMA_VIOLATION step and the model-facing tool definitions. Rules JSON Schema cannot express are in docs/tool_contract.md.",
+  "description": "Tool contract v1.0 (WBS 2.3), CLAUDE.md section 6. Validate a model's proposed call against #/$defs/proposed_call and an engine result against #/$defs/tool_result. The args_* definitions are the single source for both the validator's SCHEMA_VIOLATION step and the model-facing tool definitions. Rules JSON Schema cannot express are in docs/tool_contract.md.",
   "$defs": {
     "tool_name": {
       "enum": [

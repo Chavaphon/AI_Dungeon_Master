@@ -1,6 +1,6 @@
 # Identifier conventions and scenario-scoped namespace
 
-WBS 2.2 · Owner: SS · Status: **draft, for the 2.6 joint review** · CLAUDE.md wins on any conflict.
+WBS 2.2 · Owner: SS · Status: **v1.0, frozen at tag `spec-v1.0`** (changes need a `docs/decisions.md` entry) · CLAUDE.md wins on any conflict.
 
 This formalises CLAUDE.md §5.1. The patterns are enforced by `schemas/state.schema.json`, and `tests/test_identifiers.py` tests them along with the scenario-level rules.
 
@@ -45,6 +45,8 @@ An entity id is only unique **inside its scenario**. Two scenarios can both cont
 These rules make a collision across scenarios impossible. Inside a run only one scenario is in scope (§3). Outside a run every id carries its scenario (§3). Scenario ids are unique across the suite (§2).
 
 ## 4. Open points for the 2.6 review
+
+All of these were settled by the 2026-10-03 WBS 2.6 entries in `docs/decisions.md` and are folded into CLAUDE.md at v1.0. They are kept here as the record of what was asked.
 
 1. **Scenario file format (WBS 2.5).** The rules in §2 assume a top-level `scenario_id` and a `scenarios/<scenario_id>.json` file name, as in CLAUDE.md §12. `tests/test_identifiers.py` checks every file in `scenarios/` against them. It passes trivially until the first scenario is committed.
 2. **Ids outside the state.** A scenario can name locations or entities that are not state entities, for example in `opening_narration`. These have no id and no prefix, and the PHANTOM check treats them as in scope only through the scenario definition. Task 2.5 should say whether such names are listed explicitly.

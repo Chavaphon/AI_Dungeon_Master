@@ -1,4 +1,4 @@
-"""Audit-log turn record v0.9 (WBS 2.4): the schema validates the example records
+"""Audit-log turn record v1.0 (WBS 2.4): the schema validates the example records
 and rejects records that break CLAUDE.md sections 7 and 11.
 
 `record_errors` covers the rules JSON Schema cannot express (see

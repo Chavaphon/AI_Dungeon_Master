@@ -1,6 +1,6 @@
-# Tool contract v0.9
+# Tool contract v1.0
 
-WBS 2.3 · Owner: CI · Status: **draft, for the 2.6 joint review** · CLAUDE.md wins on any conflict.
+WBS 2.3 · Owner: CI · Status: **v1.0, frozen at tag `spec-v1.0`** (changes need a `docs/decisions.md` entry) · CLAUDE.md wins on any conflict.
 
 The contract is `schemas/tools.schema.json` (JSON Schema draft 2020-12). It formalises CLAUDE.md §6. Two entry points:
 
@@ -159,6 +159,8 @@ Decided by CI on 2026-10-02; see `docs/decisions.md`.
 7. **Small cases:** `delta` of 0 is a `SCHEMA_VIOLATION`. `advance` at `max_stage` is illegal. For `modify_inventory`, `actor_id` is the owner and `ACTOR_UNCONSCIOUS` does not apply. `retry_allowed` is always `true`.
 
 ## 7. Open points for the 2.6 review
+
+All of these were settled by the 2026-10-03 WBS 2.6 entries in `docs/decisions.md` and are folded into CLAUDE.md at v1.0. They are kept here as the record of what was asked.
 
 1. **CLAUDE.md §6.2 example band is wrong.** It gives 4 of 11 HP as `badly_hurt`, but 4/11 = 0.36 > 0.35 is `wounded` under §10.2. `result_attack.json` uses `wounded`. Fix §6.2 at the freeze; a test marks the spot.
 2. **Self-targeting.** Nothing stops an attack or Fire Bolt on yourself or an ally. There is no code for it, so it is legal for now.

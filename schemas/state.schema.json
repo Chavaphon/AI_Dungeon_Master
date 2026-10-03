@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Chavaphon/AI_Dungeon_Master/schemas/state.schema.json",
   "title": "GameState",
-  "description": "State schema v0.9 (WBS 2.1). One file per run, CLAUDE.md section 5. Rules JSON Schema cannot express are listed in docs/state_schema.md and are checked in Python.",
+  "description": "State schema v1.0 (WBS 2.1). One file per run, CLAUDE.md section 5. Rules JSON Schema cannot express are listed in docs/state_schema.md and are checked in Python.",
   "type": "object",
   "additionalProperties": false,
   "required": [
