@@ -1,0 +1,99 @@
+{
+  "run_id": "D_s01_cellar_12345",
+  "condition": "D",
+  "scenario_id": "s01_cellar",
+  "seed": 12345,
+  "turn_number": 8,
+  "input_index": 7,
+  "timestamp": "2026-11-09T14:22:31Z",
+  "player_input": "I bash the wounded rat with my torch",
+  "model_calls": [
+    {
+      "phase": "toolcall",
+      "attempt": 1,
+      "prompt_tokens": 3120,
+      "completion_tokens": 40,
+      "latency_ms": 2190,
+      "raw_output": "{\"tool\": \"attack\", \"arguments\": {\"attacker_id\": \"pc_lyra\", \"target_id\": \"npc_rat_01\", \"weapon_id\": \"item_torch\"}}"
+    },
+    {
+      "phase": "toolcall",
+      "attempt": 2,
+      "prompt_tokens": 3215,
+      "completion_tokens": 12,
+      "latency_ms": 1350,
+      "raw_output": "I attack the rat with the torch!"
+    },
+    {
+      "phase": "toolcall",
+      "attempt": 3,
+      "prompt_tokens": 3290,
+      "completion_tokens": 40,
+      "latency_ms": 2205,
+      "raw_output": "{\"tool\": \"attack\", \"arguments\": {\"attacker_id\": \"pc_lyra\", \"target_id\": \"npc_rat_01\", \"weapon_id\": \"item_torch\"}}"
+    }
+  ],
+  "proposed_calls": [
+    {
+      "tool": "attack",
+      "arguments": {
+        "attacker_id": "pc_lyra",
+        "target_id": "npc_rat_01",
+        "weapon_id": "item_torch"
+      }
+    },
+    null,
+    {
+      "tool": "attack",
+      "arguments": {
+        "attacker_id": "pc_lyra",
+        "target_id": "npc_rat_01",
+        "weapon_id": "item_torch"
+      }
+    }
+  ],
+  "validation": [
+    {
+      "ok": false,
+      "tool": "attack",
+      "rejection_code": "NOT_A_WEAPON",
+      "message": "item_torch is not a weapon.",
+      "valid_options": {
+        "weapon_id": [
+          "item_short_sword"
+        ]
+      },
+      "retry_allowed": true
+    },
+    {
+      "ok": false,
+      "failure": "unparseable",
+      "message": "Expected one JSON object of the form {\"tool\": ..., \"arguments\": {...}}."
+    },
+    {
+      "ok": false,
+      "tool": "attack",
+      "rejection_code": "NOT_A_WEAPON",
+      "message": "item_torch is not a weapon.",
+      "valid_options": {
+        "weapon_id": [
+          "item_short_sword"
+        ]
+      },
+      "retry_allowed": true
+    }
+  ],
+  "executed_call": null,
+  "engine_steps": [],
+  "rolls": [],
+  "state_before_hash": "sha256:5af3aa2d3c9d5745fc8cca8be06e178494685b23f75df6485aa027d4f5da129f",
+  "state_after_hash": "sha256:5af3aa2d3c9d5745fc8cca8be06e178494685b23f75df6485aa027d4f5da129f",
+  "state_diff": [],
+  "narration": "I couldn't turn that into an action. Could you rephrase it?",
+  "narration_filtered": false,
+  "turn_failure": "precondition",
+  "narration_only": false,
+  "k_used": 8,
+  "summary_regenerated": false,
+  "summary": null
+}

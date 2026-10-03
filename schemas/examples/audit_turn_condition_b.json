@@ -1,0 +1,35 @@
+{
+  "run_id": "B_s01_cellar_12345",
+  "condition": "B",
+  "scenario_id": "s01_cellar",
+  "seed": 12345,
+  "turn_number": 8,
+  "input_index": 7,
+  "timestamp": "2026-11-09T15:03:12Z",
+  "player_input": "I go for the rat that keeps ducking away",
+  "model_calls": [
+    {
+      "phase": "narration",
+      "attempt": 1,
+      "prompt_tokens": 2980,
+      "completion_tokens": 61,
+      "latency_ms": 3320,
+      "raw_output": "You lunge at the darting rat and your blade bites deep. It squeals and collapses into the water, and the second rat bares its teeth at you."
+    }
+  ],
+  "proposed_calls": [],
+  "validation": [],
+  "executed_call": null,
+  "engine_steps": [],
+  "rolls": [],
+  "state_before_hash": "sha256:5af3aa2d3c9d5745fc8cca8be06e178494685b23f75df6485aa027d4f5da129f",
+  "state_after_hash": "sha256:5af3aa2d3c9d5745fc8cca8be06e178494685b23f75df6485aa027d4f5da129f",
+  "state_diff": [],
+  "narration": "You lunge at the darting rat and your blade bites deep. It squeals and collapses into the water, and the second rat bares its teeth at you.",
+  "narration_filtered": false,
+  "turn_failure": null,
+  "narration_only": false,
+  "k_used": 8,
+  "summary_regenerated": false,
+  "summary": null
+}
