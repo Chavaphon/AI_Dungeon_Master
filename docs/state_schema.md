@@ -13,7 +13,7 @@ The schema is `schemas/state.schema.json` (JSON Schema draft 2020-12). It formal
 ## 1. What the schema enforces
 
 - Every required key from §5, and no others (`additionalProperties: false` throughout; §4 says "implement exactly this, no more").
-- The §5.2 enumerations and the §5.1 id prefixes, on both map keys and id fields. A player character must have a `pc_` id, everyone else `npc_`.
+- The §5.2 enumerations and the §5.1 id prefixes, on both map keys and id fields. A player character must have a `pc_` id, everyone else `npc_`. The exact id and `scenario_id` patterns are in `docs/identifiers.md`.
 - Ability scores 1–20, `max_hp >= 1`, `current_hp >= 0`, spell slots and inventory quantities `>= 0`, justification of at least 10 characters (§4.1, §6.1).
 - `status` is `unconscious` exactly when `current_hp` is 0 (§4.8).
 - Weapons carry `attack_bonus`, `damage_dice` and `damage_bonus`; non-weapons carry none of them. `damage_dice` is `XdY` from §4.2 *without* `+Z`, because the modifier is `damage_bonus` and a critical doubles only the dice (§4.5).
@@ -34,6 +34,7 @@ These rules involve comparing two values, so JSON Schema can't express them. `cr
 
 - `current_hp <= max_hp` (invariant 5).
 - Each map key equals the entity's own id field.
+- An NPC in both `combatants` and `npc_relationships` has the same `display_name` in both (`docs/identifiers.md` §1, rule 5).
 - Exactly one player character (§14).
 - `initiative_order` names existing combatants; `active_combatant_id` is in it.
 - Inventory owners are combatants; inventory items are in `item_definitions`.

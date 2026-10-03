@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Chavaphon/AI_Dungeon_Master/schemas/scenario.schema.json",
+  "title": "Scenario",
+  "description": "Scenario definition format v0.9 (WBS 2.5). One file per scenario in scenarios/, CLAUDE.md section 12. Entity definitions reuse state.schema.json. Rules JSON Schema cannot express are listed in docs/scenario_format.md and are checked in Python.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "display_name",
+    "opening_narration",
+    "locations",
+    "initial_state",
+    "encounters",
+    "scripted_inputs",
+    "notes_for_annotators"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "scenario_id": {
+      "$comment": "The namespace rule from docs/identifiers.md section 2, shared with the state schema.",
+      "$ref": "state.schema.json#/$defs/scenario_id"
+    },
+    "display_name": {"$ref": "state.schema.json#/$defs/display_name"},
+    "opening_narration": {"type": "string", "minLength": 1},
+    "locations": {
+      "$comment": "Places the narration may name without a PHANTOM divergence (section 10.1). Display names only: there is no location id prefix (section 5.1).",
+      "type": "array",
+      "items": {"$ref": "state.schema.json#/$defs/display_name"},
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "initial_state": {
+      "$comment": "The entity maps of a GameState. The loader adds the run-level fields (seed, turn, round, encounter) when a run starts.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["combatants", "inventory", "item_definitions", "npc_relationships", "quests"],
+      "properties": {
+        "combatants": {"$ref": "state.schema.json#/properties/combatants"},
+        "inventory": {"$ref": "state.schema.json#/properties/inventory"},
+        "item_definitions": {"$ref": "state.schema.json#/properties/item_definitions"},
+        "npc_relationships": {"$ref": "state.schema.json#/properties/npc_relationships"},
+        "quests": {"$ref": "state.schema.json#/properties/quests"}
+      }
+    },
+    "encounters": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/encounter"}
+    },
+    "scripted_inputs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/scripted_input"},
+      "minItems": 1
+    },
+    "notes_for_annotators": {"type": "string"}
+  },
+  "$defs": {
+    "combatant_id": {"$ref": "state.schema.json#/$defs/combatant_id"},
+    "item_id": {"$ref": "state.schema.json#/$defs/item_id"},
+
+    "encounter": {
+      "$comment": "Initiative is rolled for these combatants just before scripted_inputs[before_input] is processed (section 4.4).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["before_input", "combatant_ids"],
+      "properties": {
+        "before_input": {"type": "integer", "minimum": 0},
+        "combatant_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/combatant_id"},
+          "minItems": 2,
+          "uniqueItems": true
+        }
+      }
+    },
+
+    "scripted_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "expected_call"],
+      "properties": {
+        "text": {"type": "string", "minLength": 1},
+        "expected_call": {
+          "$comment": "The call the engine executes for this input when the scenario is replayed offline (section 9, ground truth for A-C). null means narration only. Not used to grade the model (section 12).",
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/tool_call"}]
+        },
+        "check_advantage": {
+          "$comment": "Section 4.3: the scenario grants advantage or disadvantage on a skill check. Omitted means a normal roll.",
+          "enum": ["advantage", "disadvantage"]
+        }
+      },
+      "if": {"required": ["check_advantage"]},
+      "then": {
+        "properties": {
+          "expected_call": {"type": "object", "properties": {"tool": {"const": "skill_check"}}}
+        }
+      }
+    },
+
+    "tool_call": {
+      "$comment": "The seven tools of section 6.1.",
+      "oneOf": [
+        {"$ref": "#/$defs/call_attack"},
+        {"$ref": "#/$defs/call_cast_spell"},
+        {"$ref": "#/$defs/call_dodge"},
+        {"$ref": "#/$defs/call_skill_check"},
+        {"$ref": "#/$defs/call_modify_inventory"},
+        {"$ref": "#/$defs/call_update_npc_relationship"},
+        {"$ref": "#/$defs/call_update_quest"}
+      ]
+    },
+
+    "call_attack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "arguments"],
+      "properties": {
+        "tool": {"const": "attack"},
+        "arguments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["attacker_id", "target_id", "weapon_id"],
+          "properties": {
+            "attacker_id": {"$ref": "#/$defs/combatant_id"},
+            "target_id": {"$ref": "#/$defs/combatant_id"},
+            "weapon_id": {"$ref": "#/$defs/item_id"}
+          }
+        }
+      }
+    },
+    "call_cast_spell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "arguments"],
+      "properties": {
+        "tool": {"const": "cast_spell"},
+        "arguments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["caster_id", "spell_id", "target_id"],
+          "properties": {
+            "caster_id": {"$ref": "#/$defs/combatant_id"},
+            "spell_id": {"enum": ["spell_fire_bolt", "spell_cure_wounds"]},
+            "target_id": {"$ref": "#/$defs/combatant_id"}
+          }
+        }
+      }
+    },
+    "call_dodge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "arguments"],
+      "properties": {
+        "tool": {"const": "dodge"},
+        "arguments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["actor_id"],
+          "properties": {"actor_id": {"$ref": "#/$defs/combatant_id"}}
+        }
+      }
+    },
+    "call_skill_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "arguments"],
+      "properties": {
+        "tool": {"const": "skill_check"},
+        "arguments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["actor_id", "skill", "dc"],
+          "properties": {
+            "actor_id": {"$ref": "#/$defs/combatant_id"},
+            "skill": {"enum": ["strength", "perception", "stealth"]},
+            "dc": {"type": "integer", "minimum": 5, "maximum": 25}
+          }
+        }
+      }
+    },
+    "call_modify_inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "arguments"],
+      "properties": {
+        "tool": {"const": "modify_inventory"},
+        "arguments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["actor_id", "item_id", "delta"],
+          "properties": {
+            "actor_id": {"$ref": "#/$defs/combatant_id"},
+            "item_id": {"$ref": "#/$defs/item_id"},
+            "delta": {"type": "integer", "not": {"const": 0}}
+          }
+        }
+      }
+    },
+    "call_update_npc_relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "arguments"],
+      "properties": {
+        "tool": {"const": "update_npc_relationship"},
+        "arguments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["npc_id", "direction", "justification"],
+          "properties": {
+            "npc_id": {"$ref": "state.schema.json#/$defs/npc_id"},
+            "direction": {"enum": ["up", "down"]},
+            "justification": {"type": "string", "minLength": 10}
+          }
+        }
+      }
+    },
+    "call_update_quest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "arguments"],
+      "properties": {
+        "tool": {"const": "update_quest"},
+        "arguments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["quest_id", "transition"],
+          "properties": {
+            "quest_id": {"$ref": "state.schema.json#/$defs/quest_id"},
+            "transition": {"enum": ["start", "advance", "complete", "fail"]}
+          }
+        }
+      }
+    }
+  }
+}
