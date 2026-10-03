@@ -6,32 +6,32 @@ WBS 1.6 · Owner: SD · Covers the recurring tasks 12.1–12.7 · CLAUDE.md wins
 
 | | |
 |---|---|
-| When | Every **Monday**, **20:00–21:00** (1 hour) |
+| When | Every **Saturday**, **19:00–20:00** (1 hour) |
 | Where | Arranged by the team |
 | Who | Shayanis (SS), Chavaphon (CI), Sudakarn (SD) |
-| Calendar | Recurring slot booked by the team, 28 Sep – 16 Nov |
+| Calendar | Recurring slot booked by the team, 3 Oct – 21 Nov |
 
-Exceptions to the Monday slot:
+The slot moved from Monday 20:00 to Saturday 19:00 at the Week 1 checkpoint (`docs/decisions.md`, 2026-10-03). Each checkpoint now falls at the end of its week: it reviews the week just finished and plans the next one.
 
 | Checkpoint | Date | Note |
 |---|---|---|
-| 12.1 Week 1 | Mon 28 Sep | Slot was booked after this date; the team agrees a catch-up time before G1 (4 Oct) |
-| 12.2 Week 2 | Mon 5 Oct | Checks the 12.8 handover note is on track |
-| — | Mon 12 Oct, Mon 19 Oct | Examination blackout, no checkpoint |
-| 12.3 Week 3 | **Wed 21 Oct**, 20:00 | First day back after the blackout |
-| 12.4 Week 4 | Mon 26 Oct | — |
-| 12.5 Week 5 | Mon 2 Nov | — |
-| 12.6 Week 6 | Mon 9 Nov | — |
-| 12.7 Week 7 | Mon 16 Nov | Last checkpoint before the 22 Nov submission |
+| 12.1 Week 1 | Sat 3 Oct | Held together with the 2.6 review, the day before G1 |
+| 12.2 Week 2 | Sat 10 Oct | Day before G1b; checks the 12.8 handover note is ready before 12 Oct |
+| — | Sat 17 Oct | Examination blackout, no checkpoint |
+| 12.3 Week 3 | Sat 24 Oct | — |
+| 12.4 Week 4 | Sat 31 Oct | Day before M1 / G2; decide the Condition C trigger if needed |
+| 12.5 Week 5 | Sat 7 Nov | Day before G3 |
+| 12.6 Week 6 | Sat 14 Nov | Day before M2 |
+| 12.7 Week 7 | Sat 21 Nov | Day before M3; last checkpoint before submission |
 
 If a checkpoint has to move, move it within the same week. A skipped checkpoint is still recorded in the decision log as skipped.
 
 ## 2. Agenda (fixed, 60 minutes)
 
-1. **Last week** (15 min). Each person: tasks closed, tasks slipped, real hours against the estimate.
+1. **This week** (15 min). Each person: tasks closed, tasks slipped, real hours against the estimate.
 2. **Gates and triggers** (10 min). Check the next gate or milestone in `TASK_CHECKLIST.md` and every trigger in the risk register. A fired trigger gets its fallback decided in the meeting, not later.
 3. **Decisions** (20 min). Open questions from CLAUDE.md §16, open points in any `docs/` note, and any proposed spec change.
-4. **This week** (10 min). Confirm owners and dates for the week's tasks. Rebalance anyone over capacity.
+4. **Next week** (10 min). Confirm owners and dates for the coming week's tasks. Rebalance anyone over capacity.
 5. **Write-up** (5 min). The note-taker writes the entry below into `docs/decisions.md` before the meeting ends.
 
 Note-taker rotates in the order SD, SS, CI.

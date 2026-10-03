@@ -109,3 +109,46 @@ Decided by: SD · Supersedes: none
 **Decision:** The v0.9 turn record keeps every §11 field and fills five gaps. (1) `validation` has one entry per toolcall attempt, aligned with `proposed_calls`. A rejected attempt holds the full rejection envelope, and a successful one the full `result_ok`, including its `narration_facts`. There are two extra entry shapes: `{"ok": true, "tool": null}` for a `{"tool": null}` reply, and a parse-failure entry, with a `null` proposed call, for unparseable output. (2) A new `engine_steps` list records the engine's work outside the player's call: `encounter_start`, `dodge_expiry`, `npc_action`, `initiative_advance`, `encounter_end` and `turn_increment`. The top-level `state_diff` and `rolls` are the before-call steps, the executed result and the after-call steps, concatenated in order. (3) A new `input_index` names the scripted input the turn answers. (4) A new `summary` field holds `{text, truncated}` when the rolling summary is regenerated. (5) `turn_number` is the turn being played, so it repeats after a failed turn. State hashes are `sha256:` of the `docs/conventions.md` §2 serialisation.
 **Reason:** (1) M2 needs every rejection with its code, and the rubric scores narration against `narration_facts`, which §11 does not store. (2) `docs/tool_contract.md` §2 puts turn advance, Dodge expiry and NPC turns in the turn record, and §11 has no field for them; invariant 2 needs every mutation diffed. (3) After a failed turn, `turn_number` no longer lines up the same input across conditions. (4) §8.1 requires every regeneration to be logged, and a boolean alone loses the text.
 **Changed:** `schemas/audit.schema.json`, `schemas/examples/audit_turn_*.json`, `tests/test_audit_log.py` and `docs/audit_log.md` added. CLAUDE.md §11 is unchanged until the 2.6 freeze. Open points for 2.6, listed in `docs/audit_log.md` §4: NPC actions are not narrated, the NPC action policy, scripted runs after a failed turn, and what conditions A–C hash.
+
+## 2026-10-03 — Specifications v0.9 reviewed and signed off (WBS 2.6)
+
+Decided by: SS, CI, SD · Supersedes: none
+
+**Decision:** All three members sign off the v0.9 specifications for the G1 freeze: the state schema (2.1), identifier conventions (2.2), tool contract (2.3), audit-log turn record (2.4) and scenario format (2.5), as merged on `main`. The open points in those specs are settled as follows.
+
+Proposals accepted as written:
+1. The DC and `check_advantage` for a skill check come from the scenario's scripted input. In condition D the engine uses them and logs the model's proposed `dc` (`docs/scenario_format.md` §5.1).
+2. When an encounter runs longer or shorter than the script, the inputs are not changed. Rejections such as `TARGET_UNCONSCIOUS` or `ENCOUNTER_OVER` are logged and count as data (`docs/scenario_format.md` §5.2).
+3. After a failed turn, a scripted run moves on to the next input. The failed record keeps its `input_index`, and the next record has `input_index + 1` and the same `turn_number` (`docs/audit_log.md` §4.3).
+4. In conditions A–C, both state hashes are the replayed ground-truth state for that input (`docs/audit_log.md` §4.4).
+5. A byte-identical replay compares every audit field except `timestamp` and `latency_ms` (`docs/conventions.md` §3.1, `docs/audit_log.md` §4.5).
+6. The CLAUDE.md §6.2 example is corrected: 4 of 11 HP is `wounded`, as §10.2 says (`docs/tool_contract.md` §7.1).
+7. The failure pipeline has five modes, as in CLAUDE.md §7.1. The WBS and proposal §8.3 say four; CLAUDE.md wins (`TASK_CHECKLIST.md`, task 6.4 note).
+8. Every other proposal in the open-point lists of `docs/state_schema.md`, `docs/identifiers.md`, `docs/tool_contract.md`, `docs/scenario_format.md` and `docs/audit_log.md` is accepted as written.
+
+Points with no proposal, decided here:
+
+9. **NPC actions are chosen by a separate AI agent** rather than a fixed engine rule. The agent only proposes calls; they go through the same validator and are recorded as `npc_action` steps (2.4). Its design is open and must satisfy three constraints: CLAUDE.md §14 says NPCs are engine-controlled and must be updated; a run must still replay identically from its seed (invariant 4); and conditions A–C are scored by an offline replay that cannot call the model (§9, §13). It must also be identical across the four conditions (invariant 7).
+10. **NPC actions must be narrated.** The condition D narration call receives the `narration_facts` of the NPC actions in the turn as well as the player's, in the order they happened. This changes the input of the frozen `d_narration.txt` template (§9.1).
+11. **No taking items from other characters.** There is no transfer between inventories and no stealing. `modify_inventory` changes one inventory per call. Scenarios must not script an input that takes an item from an NPC.
+12. **Attacking yourself or an ally is allowed.** `attack` and Fire Bolt may target any conscious combatant, and no rejection code is added.
+
+**Reason:** Gate G1 (4 Oct) requires the specifications to be frozen before the engine is started. Every open point is now either decided or has a stated constraint.
+**Changed:** Nothing in the schemas. CLAUDE.md is updated at the v1.0 tag (2.7) with the edits listed in each spec doc, plus: §14 and §9.1 for decisions 9 and 10, the §6.2 band, and §12 for the scenario format.
+
+## 2026-10-03 — Weekly checkpoint, Week 1 (WBS 12.1)
+
+Attendees: SS, CI, SD · Note-taker: SD
+
+**Closed:** 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 8.1
+**Slipped:** none. The checkpoint itself was held on 3 Oct instead of 28 Sep, because the slot was booked after that date.
+**Hours vs. estimate:** not tracked this week. Task work was drafted with Claude Code.
+
+**Gates and risks:** G1 (4 Oct) is on track. 2.6 is signed off above, and 2.7 (SS) tags v1.0. No risk-register trigger has fired. R1 is checked at 3.4.
+
+**Decisions:**
+1. The 2.6 sign-off above, including NPC actions chosen by an AI agent and narrated, no item transfers, and self- or ally-targeting allowed.
+2. The failure pipeline has five modes (2.6 decision 7).
+3. The weekly checkpoint moves from Monday 20:00–21:00 to **Saturday 19:00–20:00**, from Week 2 (Sat 10 Oct) to Week 7 (Sat 21 Nov). `docs/checkpoint.md` updated with the new dates.
+
+**Open, carried to next week:** design of the NPC action agent (2.6 decision 9), which needs an owner and must fit the engine work in Week 2 — all · CLAUDE.md edits at the v1.0 tag — SS (2.7)
