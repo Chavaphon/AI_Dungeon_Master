@@ -86,6 +86,14 @@ Decided by: SD · Supersedes: none
 **Reason:** (1) The seed is a run parameter: one scenario is run under several seeds. (2) Conditions A–C are scored by replaying the scripted inputs offline (§9), which needs the whole call, not only the tool name. One object per input also keeps the text and its call from drifting apart. (3) WBS 2.5 requires the format to hold DCs. (4) No tool starts an encounter. (5) §10.1 counts a location as a phantom only if it is in neither the state nor the scenario, and the state has no locations. This also answers open point 2 in `docs/identifiers.md` §4: names outside the state are listed explicitly.
 **Changed:** `schemas/scenario.schema.json`, `schemas/examples/scenario_s00_example.json`, `tests/test_scenario_schema.py` and `docs/scenario_format.md` added. CLAUDE.md §12 is unchanged until the 2.6 freeze. Open points for 2.6, listed in `docs/scenario_format.md` §5: who sets the DC in condition D, scripted inputs when an encounter runs longer or shorter than the script, and how engine-controlled NPCs choose actions.
 
+## 2026-10-02 — Divergence rubric v0.5: counting rules (WBS 8.1)
+
+Decided by: SD · Supersedes: none
+
+**Decision:** Two counting rules are added to CLAUDE.md §10.1 for the v0.5 rubric. (1) A phrase that fits more than one category is recorded once, in the first that applies in the order `PHANTOM`, `CONTRADICT`, `RESOURCE`, `RELATION`. (2) The same divergence repeated within one narration counts once; in a later turn it counts again.
+**Reason:** §10.1 says to count every divergence but not how to handle one phrase that fits two categories, or a phantom mentioned twice in one reply. Without a rule, two annotators can score the same turn differently, which lowers the agreement the 8.11 pilot measures.
+**Changed:** `docs/rubric.md` added. CLAUDE.md is unchanged until the rubric freeze at G3 (WBS 8.12). The rubric's worked examples use the bands in §10.2, as `docs/tool_contract.md` §7 does.
+
 ## 2026-10-03 — Model shortlist for the benchmark (WBS 3.2)
 
 Decided by: CI · Supersedes: none
