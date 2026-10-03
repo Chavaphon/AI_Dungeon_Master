@@ -149,5 +149,6 @@ Attendees: SS, CI, SD · Note-taker: SD
 **Decisions:**
 1. The 2.6 sign-off above, including NPC actions chosen by an AI agent and narrated, no item transfers, and self- or ally-targeting allowed.
 2. The failure pipeline has five modes (2.6 decision 7).
+3. The weekly checkpoint moves from Monday 20:00–21:00 to **Saturday 19:00–20:00**, from Week 2 (Sat 10 Oct) to Week 7 (Sat 21 Nov). `docs/checkpoint.md` updated with the new dates.
 
 **Open, carried to next week:** design of the NPC action agent (2.6 decision 9), which needs an owner and must fit the engine work in Week 2 — all · CLAUDE.md edits at the v1.0 tag — SS (2.7)
