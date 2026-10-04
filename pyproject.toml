@@ -34,6 +34,9 @@ analysis = [
 [tool.setuptools.packages.find]
 include = ["adm*"]
 
+[tool.setuptools.package-data]
+adm = ["bench/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--strict-markers"

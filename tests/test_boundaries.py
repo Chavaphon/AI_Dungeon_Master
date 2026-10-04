@@ -21,6 +21,7 @@ FORBIDDEN = {
     "engine": {"adm.orchestration", "adm.eval", "adm.cli", "httpx"},
     "orchestration": {"adm.eval", "adm.cli"},
     "eval": {"adm.orchestration", "adm.cli", "httpx"},
+    "bench": {"adm.orchestration", "adm.eval", "adm.cli"},
 }
 
 
