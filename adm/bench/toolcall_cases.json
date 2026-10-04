@@ -1,0 +1,145 @@
+{
+  "$comment": "WBS 3.3 tool-calling micro-benchmark. Each case pairs a state fixture from schemas/examples/ with one player input and the call it should produce. ignore_args lists argument keys left to the model's judgement and not scored by args_match.",
+  "cases": [
+    {
+      "id": "tc01_null_hum",
+      "state": "state_01_exploration",
+      "input": "I hum a quiet tune to myself while I wait.",
+      "expected": {"tool": null},
+      "ignore_args": []
+    },
+    {
+      "id": "tc02_skill_perception",
+      "state": "state_01_exploration",
+      "input": "I hold my torch up and check if anything is hidden behind the barrels.",
+      "expected": {"tool": "skill_check", "arguments": {"actor_id": "pc_lyra", "skill": "perception", "dc": 12}},
+      "ignore_args": ["dc"]
+    },
+    {
+      "id": "tc03_skill_strength",
+      "state": "state_01_exploration",
+      "input": "I put my shoulder to the stuck cellar door and try to force it open.",
+      "expected": {"tool": "skill_check", "arguments": {"actor_id": "pc_lyra", "skill": "strength", "dc": 12}},
+      "ignore_args": ["dc"]
+    },
+    {
+      "id": "tc04_skill_stealth",
+      "state": "state_01_exploration",
+      "input": "I creep down the stairs as quietly as I can so the rats don't notice me.",
+      "expected": {"tool": "skill_check", "arguments": {"actor_id": "pc_lyra", "skill": "stealth", "dc": 12}},
+      "ignore_args": ["dc"]
+    },
+    {
+      "id": "tc05_inventory_drop_torch",
+      "state": "state_01_exploration",
+      "input": "I drop one of my torches on the floor and leave it behind.",
+      "expected": {"tool": "modify_inventory", "arguments": {"actor_id": "pc_lyra", "item_id": "item_torch", "delta": -1}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc06_relationship_apologise",
+      "state": "state_01_exploration",
+      "input": "I apologise to the Keeper for barging in uninvited and bow respectfully.",
+      "expected": {"tool": "update_npc_relationship", "arguments": {"npc_id": "npc_keeper", "direction": "up", "justification": "Lyra apologised for barging in and bowed respectfully."}},
+      "ignore_args": ["justification"]
+    },
+    {
+      "id": "tc07_quest_start",
+      "state": "state_01_exploration",
+      "input": "I agree to take on the job of finding the Keeper's missing ledger.",
+      "expected": {"tool": "update_quest", "arguments": {"quest_id": "quest_missing_ledger", "transition": "start"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc08_attack_direct",
+      "state": "state_02_mid_combat",
+      "input": "I attack the second rat with my short sword.",
+      "expected": {"tool": "attack", "arguments": {"attacker_id": "pc_lyra", "target_id": "npc_rat_02", "weapon_id": "item_short_sword"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc09_attack_finish_wounded",
+      "state": "state_02_mid_combat",
+      "input": "I finish off the wounded rat.",
+      "expected": {"tool": "attack", "arguments": {"attacker_id": "pc_lyra", "target_id": "npc_rat_01", "weapon_id": "item_short_sword"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc10_attack_indirect",
+      "state": "state_02_mid_combat",
+      "input": "Blade first, I lunge at the rat that hasn't been hurt yet.",
+      "expected": {"tool": "attack", "arguments": {"attacker_id": "pc_lyra", "target_id": "npc_rat_02", "weapon_id": "item_short_sword"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc11_fire_bolt_wounded",
+      "state": "state_02_mid_combat",
+      "input": "I hurl a bolt of fire at the wounded rat.",
+      "expected": {"tool": "cast_spell", "arguments": {"caster_id": "pc_lyra", "spell_id": "spell_fire_bolt", "target_id": "npc_rat_01"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc12_fire_bolt_named",
+      "state": "state_02_mid_combat",
+      "input": "I cast fire bolt at the other rat, the one at full strength.",
+      "expected": {"tool": "cast_spell", "arguments": {"caster_id": "pc_lyra", "spell_id": "spell_fire_bolt", "target_id": "npc_rat_02"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc13_cure_wounds_self_combat",
+      "state": "state_02_mid_combat",
+      "input": "I cast cure wounds on myself.",
+      "expected": {"tool": "cast_spell", "arguments": {"caster_id": "pc_lyra", "spell_id": "spell_cure_wounds", "target_id": "pc_lyra"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc14_dodge_direct",
+      "state": "state_02_mid_combat",
+      "input": "I take the dodge action.",
+      "expected": {"tool": "dodge", "arguments": {"actor_id": "pc_lyra"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc15_dodge_indirect",
+      "state": "state_02_mid_combat",
+      "input": "I focus entirely on defending myself, weaving away from their bites.",
+      "expected": {"tool": "dodge", "arguments": {"actor_id": "pc_lyra"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc16_quest_advance",
+      "state": "state_02_mid_combat",
+      "input": "Between swings I spot the next clue to the missing ledger scratched into the wall.",
+      "expected": {"tool": "update_quest", "arguments": {"quest_id": "quest_missing_ledger", "transition": "advance"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc17_cure_wounds_after_fight",
+      "state": "state_03_after_victory",
+      "input": "Now that the fight is over, I cast cure wounds on myself to close my scratches.",
+      "expected": {"tool": "cast_spell", "arguments": {"caster_id": "pc_lyra", "spell_id": "spell_cure_wounds", "target_id": "pc_lyra"}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc18_inventory_pick_up_ledger",
+      "state": "state_03_after_victory",
+      "input": "I pick up the ledger from under the barrel and keep it.",
+      "expected": {"tool": "modify_inventory", "arguments": {"actor_id": "pc_lyra", "item_id": "item_ledger", "delta": 1}},
+      "ignore_args": []
+    },
+    {
+      "id": "tc19_relationship_oath",
+      "state": "state_03_after_victory",
+      "input": "I swear an oath to the Keeper to stand beside them against whatever comes next.",
+      "expected": {"tool": "update_npc_relationship", "arguments": {"npc_id": "npc_keeper", "direction": "up", "justification": "Lyra swore an oath to stand beside the Keeper."}},
+      "ignore_args": ["justification"]
+    },
+    {
+      "id": "tc20_null_conversation",
+      "state": "state_03_after_victory",
+      "input": "I ask the Keeper how long they have looked after this cellar.",
+      "expected": {"tool": null},
+      "ignore_args": []
+    }
+  ]
+}
