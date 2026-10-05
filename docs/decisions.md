@@ -189,3 +189,29 @@ Decided by: CI · Supersedes: none
 
 **Reason:** The rule was fixed before the runs (`docs/context_budget.md` §2): the largest K that fits 8192 tokens for every candidate's tokeniser, with the ceiling state, the summary at its 200-token cap and every narration at its 300-token cap, and that keeps schema-valid and tool-match rates within 1 case in 20 of K = 0. K_fit is 8 for Qwen and Granite and 10 for Llama (§3). Every model is stable at its K_fit when history is a transcript (§5.2). When history is sent as chat turns, all three stop calling tools and write narration from K = 8 (Llama falls from 100% to 0% schema-valid, Granite from 90% to 5%). The models continue the pattern of the earlier `assistant` messages (§5.1). Real narrations average 65 tokens and never reached the cap (§4), so K = 8 leaves a large margin in practice.
 **Changed:** `adm/bench/context.py`, `context_ceiling_state.json` and `context_history.json` added, with `tests/bench/test_context.py` (no model calls; `httpx.MockTransport`). In `adm/bench/toolcall.py`, `chat_body`, `preflight`, `summarise`, `mean` and `safe_name` lose their leading underscore so that `context.py` can import them, and `chat_body` takes an optional `options`; the 3.3 behaviour is unchanged. `docs/context_budget.md` added. No new dependencies. `config/model.json` is still not created (3.6).
+
+## 2026-10-05 — Model frozen: llama3.1:8b, K = 8 (WBS 3.6)
+
+Decided by: CI, answering CLAUDE.md §16 for the team; to be confirmed at the Week 2 checkpoint (#28) · Supersedes: none
+
+**Decision:**
+1. The model is **`llama3.1:8b`**: digest `sha256:46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e`, Q4_K_M, served by Ollama 0.35.1. K is 8. All values are in `config/model.json`.
+2. `config/model.json` gains two keys, `model_digest` and `ollama_version`, so that the "version" is pinned. A re-pull that changes the digest, or an Ollama upgrade, means re-running `docs/model_selection.md` §3 before any run that counts.
+3. `seed: null` means that the run's seed is sent to Ollama as the `seed` option on every call.
+4. Every run starts from a freshly loaded model, and nothing else uses the Ollama server during a run. 6.1 (#45) and 7.6 (#82) implement this.
+
+**Reason:** `docs/model_selection.md` §2.
+- Llama is the only candidate that is 100% schema-valid without JSON mode, identical across repeats, and fully on the GPU, and it is the fastest.
+- Qwen replies differently to identical requests (3.4 §5), which a byte-identical replay (invariant 4) cannot rest on.
+- Granite produces schema errors.
+- The cost is Llama's 80% tool match: wrong-action calls that only M3 can catch.
+
+Llama's replies are byte-identical across fresh processes and days: 0 of 60 tool calls, 0 of 40 temperature-0.7 narrations, and 0 of 80 replies when 3.5 run 1 is replayed. The 3.5 tc16 difference is deterministic. It appears only after the model has served the narration phase and then the token phase, while the request bytes stay identical (§3.2). So a reply depends on the requests served since the model was loaded, which is why point 4 is needed.
+**Changed:**
+- `config/model.json` added.
+- `tests/test_model_config.py` added: key set, no placeholder, frozen values, and the model name absent from `adm/`.
+- `docs/model_selection.md` added (deliverable D2).
+- CLAUDE.md §2.2: placeholder replaced, and seed and fresh-load rule added.
+- CLAUDE.md §15: items 24 and 25 added.
+- CLAUDE.md §16: the model question removed.
+- No new dependencies.
