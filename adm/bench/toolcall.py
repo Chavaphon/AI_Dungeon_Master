@@ -147,12 +147,19 @@ def build_system_prompt(state: Doc) -> str:
     )
 
 
-def _chat_body(model: str, messages: list[Doc], *, thinking: bool, fmt: str | None) -> Doc:
+def chat_body(
+    model: str,
+    messages: list[Doc],
+    *,
+    thinking: bool,
+    fmt: str | None,
+    options: Doc | None = None,
+) -> Doc:
     body: Doc = {
         "model": model,
         "messages": messages,
         "stream": False,
-        "options": dict(OPTIONS),
+        "options": dict(OPTIONS if options is None else options),
     }
     if thinking:
         body["think"] = False
@@ -168,7 +175,7 @@ def build_chat_request(
         {"role": "system", "content": build_system_prompt(state)},
         {"role": "user", "content": case["input"]},
     ]
-    return _chat_body(model, messages, thinking=thinking, fmt=fmt)
+    return chat_body(model, messages, thinking=thinking, fmt=fmt)
 
 
 # --- scoring ---
@@ -237,15 +244,15 @@ def p95(values: list[float]) -> float | None:
     return ordered[math.ceil(0.95 * len(ordered)) - 1]
 
 
-def _mean(values: list[float]) -> float | None:
+def mean(values: list[float]) -> float | None:
     return sum(values) / len(values) if values else None
 
 
-def _safe_name(model: str) -> str:
+def safe_name(model: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", model)
 
 
-def _preflight(client: httpx.Client, model: str, fmt: str | None) -> Doc:
+def preflight(client: httpx.Client, model: str, fmt: str | None) -> Doc:
     """Digest, capabilities and GPU share. Raises LookupError if the model is absent."""
     tags = client.get("/api/tags")
     tags.raise_for_status()
@@ -258,7 +265,7 @@ def _preflight(client: httpx.Client, model: str, fmt: str | None) -> Doc:
     thinking = "thinking" in show.json().get("capabilities", [])
 
     # Untimed warm-up, so that loading the model is not counted against case 1.
-    warm = _chat_body(
+    warm = chat_body(
         model, [{"role": "user", "content": WARM_UP_PROMPT}], thinking=thinking, fmt=fmt
     )
     client.post("/api/chat", json=warm).raise_for_status()
@@ -300,9 +307,9 @@ def _run_case(
     return record
 
 
-def _summarise(model: str, meta: Doc, records: list[Doc]) -> Doc:
+def summarise(model: str, meta: Doc, records: list[Doc]) -> Doc:
     def rate(key: str) -> float | None:
-        return _mean([1.0 if r[key] else 0.0 for r in records])
+        return mean([1.0 if r[key] else 0.0 for r in records])
 
     answered = [r for r in records if r["error"] is None]
     latencies = [r["wall_s"] for r in answered]
@@ -322,10 +329,10 @@ def _summarise(model: str, meta: Doc, records: list[Doc]) -> Doc:
         "schema_valid_lenient_rate": rate("schema_valid_lenient"),
         "tool_match_rate": rate("tool_match"),
         "args_match_rate": rate("args_match"),
-        "latency_mean_s": _mean(latencies),
+        "latency_mean_s": mean(latencies),
         "latency_p95_s": p95(latencies),
-        "tokens_per_s_mean": _mean(speeds),
-        "prompt_tokens_mean": _mean(prompt_tokens),
+        "tokens_per_s_mean": mean(speeds),
+        "prompt_tokens_mean": mean(prompt_tokens),
     }
 
 
@@ -353,7 +360,7 @@ def run(
 
     for model in models:
         try:
-            meta = _preflight(client, model, fmt)
+            meta = preflight(client, model, fmt)
         except (LookupError, httpx.HTTPError, ValueError, KeyError) as exc:
             summary["models"].append({"model": model, "error": f"{type(exc).__name__}: {exc}"})
             if log:
@@ -363,7 +370,7 @@ def run(
             log(f"[yellow]{model} is only {meta['gpu_share']:.0%} on the GPU[/yellow]")
 
         records = []
-        with (out_dir / f"{_safe_name(model)}.jsonl").open("w", encoding="utf-8") as sink:
+        with (out_dir / f"{safe_name(model)}.jsonl").open("w", encoding="utf-8") as sink:
             for repeat in range(repeats):
                 for case in cases:
                     record = {
@@ -379,7 +386,7 @@ def run(
                     if log:
                         mark = "ok" if record["schema_valid"] else "x"
                         log(f"{model} {case['id']} r{repeat}: {mark}")
-        summary["models"].append(_summarise(model, meta, records))
+        summary["models"].append(summarise(model, meta, records))
 
     (out_dir / "summary.json").write_text(
         json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
