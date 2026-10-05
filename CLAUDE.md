@@ -81,12 +81,14 @@ Do not add dependencies without a note in `docs/decisions.md`.
 
 ### 2.2 Model configuration
 
-Model choice is frozen in `config/model.json` after the Week 2 benchmark. Until then use the placeholder below and **never hardcode a model name anywhere else**.
+Model choice is frozen in `config/model.json` (WBS 3.6, `docs/model_selection.md`). **Never hardcode a model name anywhere else.**
 
 ```json
 {
-  "model": "TBD_AFTER_BENCHMARK",
-  "quantisation": "TBD",
+  "model": "llama3.1:8b",
+  "model_digest": "sha256:46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e",
+  "quantisation": "Q4_K_M",
+  "ollama_version": "0.35.1",
   "context_tokens": 8192,
   "K_verbatim_turns": 8,
   "temperature": 0.7,
@@ -97,6 +99,8 @@ Model choice is frozen in `config/model.json` after the Week 2 benchmark. Until 
 ```
 
 `temperature` is 0.7 for narration and **0.0 for tool-call generation**. Two different sampling settings, one model. This is deliberate: narration wants variety, tool selection does not.
+
+`seed: null` means the run's seed is sent to Ollama on every call, so `(seed, scenario_id, condition)` fixes the sampling as well as the dice. Every run starts from a freshly loaded model, and nothing else uses the Ollama server during it: earlier requests to a loaded model can change a reply (`docs/model_selection.md` §3).
 
 ### 2.3 Task tracking
 
@@ -871,10 +875,14 @@ Added at the specifications v1.0 freeze (WBS 2.1–2.6; reasons in `docs/decisio
 22. No item transfers between inventories. Attacking yourself or an ally is allowed.
 23. A scripted run moves to the next input after a failed turn, and scripted inputs never adapt to how an encounter goes.
 
+Added at the model freeze (WBS 3.6; reasons in `docs/decisions.md`):
+
+24. The model is `llama3.1:8b` at Q4_K_M, pinned by digest and Ollama version; K is 8.
+25. Ollama's seed is the run's seed, and every run starts from a freshly loaded model.
+
 ## 16. Open questions for the team
 
 Do not resolve these alone.
 
-- The model name, version and quantisation. Placeholder until the Week 2 benchmark completes.
 - Whether grammar-constrained decoding is needed, which depends on the benchmarked schema-valid rate.
 - Whether the minimal FastAPI interface is built at all. It is optional and has no reserved time.
