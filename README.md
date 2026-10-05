@@ -61,3 +61,4 @@ No test calls the model or needs Ollama running; orchestration tests use a recor
 | `tests/test_tool_contract.py` | `schemas/tools.schema.json` accepts the example calls and results, rejects ones that break CLAUDE.md §6, and matches the §6.1 and §6.3 tables and the matrix in `docs/tool_contract.md` |
 | `tests/test_scenario_schema.py` | `schemas/scenario.schema.json` accepts the example scenario and every file in `scenarios/`, and rejects scenarios that break CLAUDE.md §12 |
 | `tests/test_audit_log.py` | `schemas/audit.schema.json` accepts the example turn records and rejects records that break CLAUDE.md §7 and §11; the valid example replays to its after-hash |
+| `tests/engine/test_state.py` | `adm/engine/state.py` loads and saves every example state without loss, validates against the schema on both, and hashes as `docs/conventions.md` §2 |
