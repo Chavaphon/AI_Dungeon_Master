@@ -110,9 +110,8 @@ Llama 3.1 is under the Llama 3.1 Community License Agreement (`docs/model_shortl
 
 ## 6. Raw data
 
-`results/` is gitignored. These new folders go in the team Drive folder under `bench/repeat/`:
-- `results/bench/toolcall/20261005T090326Z`, `20261005T090416Z`;
-- `results/bench/context/20261005T090501Z`, `20261005T090548Z`, `20261005T090731Z`;
-- the bisection runs `20261005T091056Z` to `20261005T091252Z`.
+`results/` is gitignored. These new folders are in the team Drive folder under `bench/repeat/`, keeping the `toolcall/` and `context/` split:
+- `bench/repeat/toolcall/`: `20261005T090326Z`, `20261005T090416Z`;
+- `bench/repeat/context/`: `20261005T090501Z`, `20261005T090548Z`, `20261005T090731Z`, and the bisection runs `20261005T091056Z` to `20261005T091252Z`.
 
 The §3.2 probe replies were printed, not saved. Re-run them by running the listed `adm.bench.context` phases and then sending the tc16 request built by `adm.bench.toolcall.build_chat_request`.
