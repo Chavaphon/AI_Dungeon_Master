@@ -30,7 +30,7 @@ All figures come from earlier documents except the repeatability rows, which are
 1. **Reproducibility (invariant 4).** Qwen gave different replies to identical requests within one run (3.4 §5), and a byte-identical replay cannot rest on that. Llama is identical within a run and across fresh processes (§3).
 2. **Schema-valid rate (R1).** Llama reaches 100% without JSON mode or a grammar. Granite has schema errors that would need one: the string `"null"` instead of JSON `null`, and missing `arguments`. Qwen is at 23% without JSON mode.
 3. **GPU fit and speed (R4).** Llama is the only candidate fully on the 8 GB GPU, and it is about twice as fast per tool call. The Week 6 batches (9.1, 9.2) run 16 scenarios × 4 conditions × several seeds unattended, so throughput matters.
-4. **No change of plan.** K = 8 already holds for Llama with room to spare (K_fit 10). Prompt mode and JSON mode give the same Llama replies, so 3.7 (#39) is not forced to adopt JSON mode.
+4. **No change of plan.** K = 8 already holds for Llama with room to spare (K_fit 10). Prompt mode and JSON mode give the same Llama replies, so 3.7 (#39) chose plain prompt mode, with no JSON mode and no grammar (`docs/decisions.md`, 2026-10-06).
 
 **The known cost is tool match: 80%.** Llama's 4 misses in 20 are valid calls for the wrong action (3.4 §4):
 - tc06 and tc19: relationship changes dropped as `{"tool": null}`;
@@ -100,7 +100,8 @@ Invariant 4 holds if, and only if, a run sends the same request sequence to a fr
 
 For the 6.1 client, as the benchmarks did:
 - send `num_ctx` and every sampling option explicitly on every request (`docs/model_benchmark.md` §1), so that model defaults never leak in;
-- send no `think` field, because Llama 3.1 has no thinking capability (`docs/model_shortlist.md` §5).
+- send no `think` field, because Llama 3.1 has no thinking capability (`docs/model_shortlist.md` §5);
+- send no `format` field, on tool calls or narration, because tool calls use plain prompt mode (WBS 3.7, `docs/decisions.md` 2026-10-06).
 
 The two added keys pin the version. `model_digest` identifies the weights exactly. `ollama_version` matters because §3.2 shows that the server's behaviour affects replies. Upgrading either one means re-running §3 before any run that counts.
 

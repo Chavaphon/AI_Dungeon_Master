@@ -880,9 +880,12 @@ Added at the model freeze (WBS 3.6; reasons in `docs/decisions.md`):
 24. The model is `llama3.1:8b` at Q4_K_M, pinned by digest and Ollama version; K is 8.
 25. Ollama's seed is the run's seed, and every run starts from a freshly loaded model.
 
+Added at WBS 3.7 (reasons in `docs/decisions.md`):
+
+26. Tool calls are generated in plain prompt mode: no grammar-constrained decoding and no Ollama JSON mode.
+
 ## 16. Open questions for the team
 
 Do not resolve these alone.
 
-- Whether grammar-constrained decoding is needed, which depends on the benchmarked schema-valid rate.
 - Whether the minimal FastAPI interface is built at all. It is optional and has no reserved time.

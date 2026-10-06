@@ -215,3 +215,32 @@ Llama's replies are byte-identical across fresh processes and days: 0 of 60 tool
 - CLAUDE.md §15: items 24 and 25 added.
 - CLAUDE.md §16: the model question removed.
 - No new dependencies.
+
+## 2026-10-06 — No grammar-constrained decoding and no JSON mode (WBS 3.7)
+
+Decided by: CI, answering CLAUDE.md §16 for the team; to be confirmed at the Week 2 checkpoint (#28) · Supersedes: none
+
+**Decision:**
+1. Condition D's tool calls are generated in plain prompt mode, with no grammar-constrained decoding and no Ollama JSON mode. The 6.1 client (#45) sends no `format` field on any request, tool call or narration.
+2. Nothing is added to the parser for format reasons. 6.3 (#49) still handles malformed output as CLAUDE.md §7.1 says.
+3. Revisit trigger: if the 6.11 smoke runs (#73) show a tool-call schema-valid rate below 80% (risk R1's trigger), a new entry here decides again before the Week 6 batches.
+
+**Reason:** `docs/model_benchmark.md` §2–4 and `docs/model_selection.md` §1–2, for the frozen `llama3.1:8b`.
+
+| | Prompt mode | JSON mode |
+|---|---|---|
+| Schema-valid | **100%** (n = 60) | 100% (n = 20) |
+| Tool match | 80% | 80% |
+| Mean / p95 s per tool call | 0.57 / 0.89 | 0.64 / 1.70 |
+
+- JSON mode changes none of Llama's replies, and lenient equals strict: no reply has code fences or extra prose. So JSON mode gains nothing measured.
+- 3.5 §5.2: Llama stays schema-valid up to K = 16 when history is a transcript, which is the format 6.2 uses.
+- Llama's misses are valid calls for the wrong action (3.4 §4). A grammar cannot prevent them; M3 measures them.
+- A constraint would hide parse failures that M2 is meant to count. It would also make the model's raw output depend on a decoding setting outside the frozen prompt templates.
+
+**Changed:**
+- CLAUDE.md §15: item 26 added.
+- CLAUDE.md §16: the grammar-constrained decoding question removed.
+- `docs/model_selection.md` §2 point 4 and §4: the decision and the "no `format` field" rule for the 6.1 client.
+- `docs/model_benchmark.md` §8: points to this entry.
+- `config/model.json` unchanged. No new dependencies.
