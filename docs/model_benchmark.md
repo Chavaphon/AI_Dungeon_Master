@@ -104,7 +104,7 @@ That meets the count but not the variety. The set has no fenced JSON, no truncat
 
 - **3.5 (K):** mean prompt tokens per case, using the example states with no history, are 2420–2898. That leaves about 5300 of the 8192-token context for summary and turn history, before the 200-token reply.
 - **3.6 (freeze):** weigh correct calls (tool match), repeatability (§5), GPU fit (§2) and the M6 figures together.
-- **3.7 (grammar-constrained decoding):** JSON mode is decisive for Qwen and makes no difference for Granite or Llama. Granite's `"null"` string and missing `arguments` are what a schema-constrained grammar (as opposed to plain JSON mode) would prevent.
+- **3.7 (grammar-constrained decoding):** JSON mode is decisive for Qwen and makes no difference for Granite or Llama. Granite's `"null"` string and missing `arguments` are what a schema-constrained grammar (as opposed to plain JSON mode) would prevent. Decided in `docs/decisions.md` 2026-10-06: with `llama3.1:8b` frozen, neither JSON mode nor a grammar is used.
 
 ## 9. Raw data
 
