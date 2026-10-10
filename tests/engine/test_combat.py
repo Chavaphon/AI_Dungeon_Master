@@ -1,4 +1,5 @@
-"""Initiative, turn order, tie-break and round advance (WBS 4.4, CLAUDE.md section 4.4).
+"""Initiative, turn order, tie-break and round advance (WBS 4.4, CLAUDE.md section 4.4),
+and attack resolution (WBS 4.5, CLAUDE.md section 4.5).
 
 The tie-break tests build `InitiativeEntry` values with chosen totals, so each
 rule is tested on its own. The end-to-end tests roll with a real seeded
@@ -15,8 +16,11 @@ from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
 from adm.engine.combat import (
+    AttackOutcome,
     InitiativeEntry,
     advance_initiative,
+    attack,
+    hp_band,
     initiative_order,
     roll_initiative,
     start_encounter,
@@ -35,6 +39,9 @@ _SCHEMAS = [
 _REGISTRY = Registry().with_resources((s["$id"], Resource.from_contents(s)) for s in _SCHEMAS)
 STEP_VALIDATOR = Draft202012Validator(
     {"$ref": _SCHEMAS[2]["$id"] + "#/$defs/bookkeeping_step"}, registry=_REGISTRY
+)
+RESULT_VALIDATOR = Draft202012Validator(
+    {"$ref": _SCHEMAS[1]["$id"] + "#/$defs/tool_result"}, registry=_REGISTRY
 )
 
 
@@ -243,3 +250,174 @@ def test_a_full_cycle_returns_to_the_first_actor_one_round_later(mid_combat: Gam
 def test_advance_outside_an_encounter_raises(exploring: GameState) -> None:
     with pytest.raises(ValueError, match="no active encounter"):
         advance_initiative(exploring)
+
+
+# --- attack resolution (WBS 4.5, rule suite) ---------------------------------
+# In state_02_mid_combat Lyra (short sword: +5, 1d6+3) is active and the rats
+# have AC 12. npc_rat_01 is at 4 of 11 HP; npc_rat_02 is at 11 of 11 and Dodging.
+
+
+def _seed_for(*dice: tuple[int, int]) -> int:
+    """A seed whose first draws are the given `(sides, value)` dice, in order."""
+    for seed in range(200_000):
+        roller = DiceRoller(seed)
+        if all(roller.roll(f"1d{sides}").total == value for sides, value in dice):
+            return seed
+    raise AssertionError(f"no seed found for {dice}")
+
+
+def _sword(state: GameState, target_id: str, seed: int) -> AttackOutcome:
+    return attack(state, DiceRoller(seed), "pc_lyra", target_id, "item_short_sword")
+
+
+def _result(outcome: AttackOutcome) -> dict:
+    return {"ok": True, "tool": "attack", **outcome.to_dict()}
+
+
+def test_attack_reproduces_the_contract_example(mid_combat: GameState) -> None:
+    mid_combat.combatants["npc_rat_01"].current_hp = 11
+    outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 12), (6, 4)))
+    example = json.loads((EXAMPLES / "result_attack.json").read_text(encoding="utf-8"))
+    assert _result(outcome) == example
+    RESULT_VALIDATOR.validate(_result(outcome))
+    assert mid_combat.combatants["npc_rat_01"].current_hp == 4
+    _assert_valid(mid_combat)
+
+
+def test_attack_total_equal_to_ac_hits(mid_combat: GameState) -> None:
+    # 7 + 5 = 12, exactly the rat's AC.
+    outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 7)))
+    assert outcome.facts.attack_roll == 12
+    assert outcome.facts.hit is True
+    assert outcome.facts.critical is False
+    assert len(outcome.rolls) == 2
+
+
+def test_attack_below_ac_misses_and_changes_nothing(mid_combat: GameState) -> None:
+    before = mid_combat.to_dict()
+    outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 6)))
+    assert outcome.facts.attack_roll == 11
+    assert outcome.facts.hit is False
+    assert outcome.facts.damage == 0
+    assert outcome.facts.target_hp_after == outcome.facts.target_hp_before == 4
+    assert outcome.state_diff == []
+    assert len(outcome.rolls) == 1  # no damage roll on a miss
+    assert mid_combat.to_dict() == before
+    RESULT_VALIDATOR.validate(_result(outcome))
+
+
+def test_natural_20_hits_any_ac_and_is_critical(mid_combat: GameState) -> None:
+    mid_combat.combatants["npc_rat_01"].armour_class = 30
+    outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 20)))
+    assert outcome.facts.attack_roll == 25
+    assert outcome.facts.hit is True
+    assert outcome.facts.critical is True
+
+
+def test_natural_1_misses_whatever_the_bonus(mid_combat: GameState) -> None:
+    mid_combat.item_definitions["item_short_sword"].attack_bonus = 30
+    outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 1)))
+    assert outcome.facts.attack_roll == 31
+    assert outcome.facts.hit is False
+    assert outcome.facts.damage == 0
+
+
+def test_critical_doubles_the_dice_and_not_the_modifier(mid_combat: GameState) -> None:
+    mid_combat.combatants["npc_rat_01"].current_hp = 11
+    outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 20), (6, 2), (6, 3)))
+    damage_roll = outcome.rolls[1]
+    assert damage_roll.notation == "2d6+3"
+    assert damage_roll.individual_dice == [2, 3]
+    assert damage_roll.modifier == 3
+    assert outcome.facts.damage == 2 + 3 + 3  # the +3 once, not twice
+    assert mid_combat.combatants["npc_rat_01"].current_hp == 3
+    RESULT_VALIDATOR.validate(_result(outcome))
+
+
+def test_damage_past_zero_clamps_and_knocks_out(mid_combat: GameState) -> None:
+    outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 15), (6, 6)))
+    rat = mid_combat.combatants["npc_rat_01"]
+    assert outcome.facts.damage == 9
+    assert rat.current_hp == 0
+    assert rat.status == "unconscious"
+    assert outcome.facts.target_hp_after == 0
+    assert outcome.facts.target_hp_band == "unconscious"
+    assert outcome.facts.target_status == "unconscious"
+    assert [(c.path, c.from_, c.to) for c in outcome.state_diff] == [
+        ("combatants.npc_rat_01.current_hp", 4, 0),
+        ("combatants.npc_rat_01.status", "active", "unconscious"),
+    ]
+    RESULT_VALIDATOR.validate(_result(outcome))
+    _assert_valid(mid_combat)
+
+
+def test_damage_is_never_negative(mid_combat: GameState) -> None:
+    mid_combat.item_definitions["item_short_sword"].damage_bonus = -5
+    outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 15), (6, 1)))
+    assert outcome.facts.hit is True
+    assert outcome.rolls[1].total == -4
+    assert outcome.facts.damage == 0
+    assert outcome.state_diff == []
+    assert mid_combat.combatants["npc_rat_01"].current_hp == 4
+
+
+def test_attack_on_a_dodging_target_has_disadvantage(mid_combat: GameState) -> None:
+    outcome = _sword(mid_combat, "npc_rat_02", _seed_for((20, 18), (20, 3)))
+    roll = outcome.rolls[0]
+    assert roll.advantage_mode == "disadvantage"
+    assert roll.individual_dice == [18, 3]
+    assert outcome.facts.attack_roll == 8
+    assert outcome.facts.advantage_mode == "disadvantage"
+    assert outcome.facts.hit is False
+
+
+def test_natural_20_is_judged_after_disadvantage_selection(mid_combat: GameState) -> None:
+    mid_combat.combatants["npc_rat_02"].armour_class = 30
+    outcome = _sword(mid_combat, "npc_rat_02", _seed_for((20, 20), (20, 5)))
+    assert outcome.facts.critical is False
+    assert outcome.facts.hit is False
+
+
+def test_attacker_may_target_itself(mid_combat: GameState) -> None:
+    outcome = _sword(mid_combat, "pc_lyra", 1)
+    assert outcome.facts.target == "Lyra"
+    assert outcome.facts.target_ac == 14
+    _assert_valid(mid_combat)
+
+
+def test_same_seed_gives_the_same_attack(mid_combat: GameState) -> None:
+    results = [
+        _sword(mid_combat.model_copy(deep=True), "npc_rat_01", 99).to_dict() for _ in range(2)
+    ]
+    assert results[0] == results[1]
+
+
+def test_attacking_an_unconscious_target_raises(mid_combat: GameState) -> None:
+    _knock_out(mid_combat, "npc_rat_01")
+    with pytest.raises(ValueError, match="unconscious"):
+        _sword(mid_combat, "npc_rat_01", 1)
+
+
+def test_attacking_with_a_non_weapon_raises(mid_combat: GameState) -> None:
+    with pytest.raises(ValueError, match="not a weapon"):
+        attack(mid_combat, DiceRoller(1), "pc_lyra", "npc_rat_01", "item_torch")
+
+
+# --- hit-point bands (CLAUDE.md section 10.2) --------------------------------
+
+
+@pytest.mark.parametrize(
+    ("current", "maximum", "band"),
+    [
+        (20, 20, "healthy"),
+        (16, 20, "healthy"),
+        (15, 20, "wounded"),  # 0.75 exactly
+        (14, 20, "wounded"),  # the CLAUDE.md section 10.2 example
+        (4, 11, "wounded"),  # 0.36
+        (7, 20, "badly_hurt"),  # 0.35 exactly
+        (1, 20, "badly_hurt"),
+        (0, 20, "unconscious"),
+    ],
+)
+def test_hp_band_thresholds(current: int, maximum: int, band: str) -> None:
+    assert hp_band(current, maximum) == band

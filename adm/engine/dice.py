@@ -107,3 +107,17 @@ class DiceRoller:
             total=kept + expr.modifier,
             advantage_mode=advantage_mode,
         )
+
+    def roll_critical(self, notation: str) -> RollResult:
+        """Roll critical damage (section 4.5): the dice twice, the modifier once.
+        `1d8+3` is rolled and recorded as `2d8+3`. The doubled count may exceed 20."""
+        expr = parse_notation(notation)
+        doubled = DiceExpression(count=2 * expr.count, sides=expr.sides, modifier=expr.modifier)
+        dice = [self._die(doubled.sides) for _ in range(doubled.count)]
+        return RollResult(
+            notation=doubled.notation,
+            individual_dice=dice,
+            modifier=doubled.modifier,
+            total=sum(dice) + doubled.modifier,
+            advantage_mode="normal",
+        )
