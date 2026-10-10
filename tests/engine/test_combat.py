@@ -1,5 +1,6 @@
 """Initiative, turn order, tie-break and round advance (WBS 4.4, CLAUDE.md section 4.4),
-and attack resolution (WBS 4.5, CLAUDE.md section 4.5).
+attack resolution (WBS 4.5, CLAUDE.md section 4.5), and zero hit points and
+encounter end (WBS 4.8, CLAUDE.md section 4.8).
 
 The tie-break tests build `InitiativeEntry` values with chosen totals, so each
 rule is tested on its own. The end-to-end tests roll with a real seeded
@@ -12,6 +13,8 @@ import json
 from pathlib import Path
 
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
@@ -19,7 +22,9 @@ from adm.engine.combat import (
     AttackOutcome,
     InitiativeEntry,
     advance_initiative,
+    apply_damage,
     attack,
+    end_encounter_if_over,
     hp_band,
     initiative_order,
     roll_initiative,
@@ -421,3 +426,138 @@ def test_attacking_with_a_non_weapon_raises(mid_combat: GameState) -> None:
 )
 def test_hp_band_thresholds(current: int, maximum: int, band: str) -> None:
     assert hp_band(current, maximum) == band
+
+
+# --- zero hit points and encounter end (WBS 4.8, rule suite) -----------------
+
+
+def _assert_hp_legal(state: GameState) -> None:
+    for c in state.combatants.values():
+        assert 0 <= c.current_hp <= c.max_hp
+        assert (c.status == "unconscious") == (c.current_hp == 0)
+    _assert_valid(state)
+
+
+def test_damage_beyond_current_hp_stops_at_zero_and_knocks_out(mid_combat: GameState) -> None:
+    hp_before, hp_after, diff = apply_damage(mid_combat, "npc_rat_01", 50)
+    rat = mid_combat.combatants["npc_rat_01"]
+    assert (hp_before, hp_after) == (4, 0)
+    assert (rat.current_hp, rat.status) == (0, "unconscious")
+    assert [(c.path, c.from_, c.to) for c in diff] == [
+        ("combatants.npc_rat_01.current_hp", 4, 0),
+        ("combatants.npc_rat_01.status", "active", "unconscious"),
+    ]
+    _assert_hp_legal(mid_combat)
+
+
+def test_damage_short_of_zero_leaves_the_combatant_active(mid_combat: GameState) -> None:
+    _, hp_after, diff = apply_damage(mid_combat, "npc_rat_01", 3)
+    assert hp_after == 1
+    assert mid_combat.combatants["npc_rat_01"].status == "active"
+    assert [c.path for c in diff] == ["combatants.npc_rat_01.current_hp"]
+
+
+def test_zero_damage_to_an_unconscious_combatant_changes_nothing(mid_combat: GameState) -> None:
+    _knock_out(mid_combat, "npc_rat_01")
+    before = mid_combat.to_dict()
+    assert apply_damage(mid_combat, "npc_rat_01", 0) == (0, 0, [])
+    assert mid_combat.to_dict() == before
+
+
+def test_negative_damage_raises(mid_combat: GameState) -> None:
+    with pytest.raises(ValueError, match="negative"):
+        apply_damage(mid_combat, "npc_rat_01", -1)
+
+
+def test_unconscious_combatant_stays_down_with_no_death_saves(mid_combat: GameState) -> None:
+    # No stabilisation roll and no death: two full rounds pass, the rat stays at 0
+    # and never gets a turn, and nothing is rolled for it.
+    _knock_out(mid_combat, "npc_rat_01")
+    for _ in range(4):
+        step = advance_initiative(mid_combat)
+        assert step.rolls == []
+        assert mid_combat.active_combatant_id != "npc_rat_01"
+    rat = mid_combat.combatants["npc_rat_01"]
+    assert (rat.current_hp, rat.status) == (0, "unconscious")
+    assert "npc_rat_01" in mid_combat.initiative_order
+
+
+def test_last_hostile_down_ends_in_victory(mid_combat: GameState) -> None:
+    _knock_out(mid_combat, "npc_rat_01")
+    apply_damage(mid_combat, "npc_rat_02", 11)
+    step = end_encounter_if_over(mid_combat)
+    assert step is not None
+    assert (step.step, step.when, step.rolls) == ("encounter_end", "after_call", [])
+    assert [(c.path, c.from_, c.to) for c in step.state_diff] == [
+        ("encounter_active", True, False),
+        ("encounter_outcome", None, "victory"),
+        ("initiative_order", ["npc_rat_01", "pc_lyra", "npc_rat_02"], []),
+        ("active_combatant_id", "pc_lyra", None),
+    ]
+    STEP_VALIDATOR.validate(step.to_dict())
+    assert mid_combat.round_number == 3  # kept, as in state_03_after_victory
+    _assert_hp_legal(mid_combat)
+
+
+def test_player_character_down_ends_in_defeat(mid_combat: GameState) -> None:
+    apply_damage(mid_combat, "pc_lyra", 14)
+    step = end_encounter_if_over(mid_combat)
+    assert step is not None
+    assert mid_combat.encounter_outcome == "defeat"
+    assert mid_combat.encounter_active is False
+    assert mid_combat.active_combatant_id is None
+    STEP_VALIDATOR.validate(step.to_dict())
+    _assert_hp_legal(mid_combat)
+
+
+def test_encounter_goes_on_while_a_hostile_stands(mid_combat: GameState) -> None:
+    _knock_out(mid_combat, "npc_rat_01")
+    before = mid_combat.to_dict()
+    assert end_encounter_if_over(mid_combat) is None
+    assert mid_combat.to_dict() == before
+
+
+def test_a_hostile_outside_the_encounter_does_not_block_victory(exploring: GameState) -> None:
+    # npc_rat_02 is kept for a later encounter and stays active.
+    start_encounter(exploring, DiceRoller(1), ["pc_lyra", "npc_rat_01"])
+    apply_damage(exploring, "npc_rat_01", 11)
+    end_encounter_if_over(exploring)
+    assert exploring.encounter_outcome == "victory"
+    assert exploring.combatants["npc_rat_02"].status == "active"
+
+
+def test_end_check_outside_an_encounter_raises(exploring: GameState) -> None:
+    with pytest.raises(ValueError, match="no active encounter"):
+        end_encounter_if_over(exploring)
+
+
+@settings(max_examples=50, deadline=None)
+@given(seed=st.integers(min_value=0, max_value=2**32 - 1), data=st.data())
+def test_hp_is_never_negative_and_state_legal_at_every_step(seed: int, data: st.DataObject) -> None:
+    # A whole fight: each active combatant attacks a conscious enemy until one
+    # side is down. The sword's damage bonus is raised so knockouts happen often.
+    state = load_state(EXAMPLES / "state_01_exploration.json")
+    state.item_definitions["item_short_sword"].damage_bonus = data.draw(st.integers(0, 12))
+    roller = DiceRoller(seed)
+    start_encounter(state, roller, ENCOUNTER)
+    _assert_hp_legal(state)
+    for _ in range(200):
+        actor = state.combatants[state.active_combatant_id]
+        enemies = sorted(
+            cid
+            for cid in state.initiative_order
+            if state.combatants[cid].faction != actor.faction
+            and state.combatants[cid].status == "active"
+        )
+        target = data.draw(st.sampled_from(enemies))
+        attack(state, roller, actor.combatant_id, target, "item_short_sword")
+        _assert_hp_legal(state)
+        if end_encounter_if_over(state) is not None:
+            break
+        advance_initiative(state)
+        _assert_hp_legal(state)
+    else:
+        raise AssertionError("the fight did not end")
+    _assert_hp_legal(state)
+    pc_down = state.combatants["pc_lyra"].status == "unconscious"
+    assert state.encounter_outcome == ("defeat" if pc_down else "victory")

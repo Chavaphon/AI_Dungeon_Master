@@ -24,8 +24,17 @@ disadvantage if the target is Dodging (combined with any other source by
 `combine_advantage`, WBS 4.7). The kept d20 decides naturals: 20 always
 hits and is a critical, 1 always misses. A hit rolls the weapon's damage dice
 plus its damage bonus, minimum 0; a critical rolls the dice twice and adds the
-bonus once. HP is clamped at 0, and a combatant at 0 becomes unconscious.
-`resolve_attack` is the shared path that Fire Bolt (WBS 4.11) reuses.
+bonus once. `resolve_attack` is the shared path that Fire Bolt (WBS 4.11) reuses.
+
+Zero hit points (WBS 4.8, CLAUDE.md section 4.8). `apply_damage` is the one
+place HP goes down: it clamps at 0, and a combatant at 0 becomes unconscious.
+There are no death saves and no death. An unconscious combatant stays at 0, keeps
+its initiative slot and is skipped, and cannot be attacked, until Cure Wounds
+(WBS 4.12) revives it. `end_encounter_if_over` is the `encounter_end` step: the
+encounter ends in defeat when the player character is unconscious, and in
+victory when every hostile in the initiative order is. Hostiles outside the
+encounter, kept for a later one, do not count. Ending clears `initiative_order`
+and `active_combatant_id` and keeps the last `round_number`.
 
 `attack` changes the state in place and returns the parts of the result envelope
 (docs/tool_contract.md section 2). It assumes the validator (WBS 5.2) has
@@ -43,7 +52,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from adm.engine.abilities import combatant_modifier
 from adm.engine.dice import AdvantageMode, DiceRoller, RollResult, combine_advantage
-from adm.engine.state import Combatant, GameState, Status
+from adm.engine.state import Combatant, EncounterOutcome, GameState, Status
 
 
 class StateChange(BaseModel):
@@ -61,7 +70,7 @@ class EngineStep(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    step: Literal["encounter_start", "initiative_advance"]
+    step: Literal["encounter_start", "initiative_advance", "encounter_end"]
     when: Literal["before_call", "after_call"]
     state_diff: list[StateChange]
     rolls: list[RollResult]
@@ -170,6 +179,57 @@ def advance_initiative(state: GameState) -> EngineStep:
     return EngineStep(step="initiative_advance", when="after_call", state_diff=diff, rolls=[])
 
 
+# --- zero hit points and encounter end (WBS 4.8) -----------------------------
+
+
+def apply_damage(
+    state: GameState, combatant_id: str, damage: int
+) -> tuple[int, int, list[StateChange]]:
+    """Take `damage` from a combatant's HP, clamped at 0, and knock it out at 0.
+    Returns the HP before and after, and the diff."""
+    if damage < 0:
+        raise ValueError(f"damage {damage} is negative")
+    combatant = state.combatants[combatant_id]
+    hp_before = combatant.current_hp
+    hp_after = max(0, hp_before - damage)
+    diff: list[StateChange] = []
+    path = f"combatants.{combatant_id}"
+    if hp_after != hp_before:
+        diff.append(StateChange(path=f"{path}.current_hp", from_=hp_before, to=hp_after))
+        combatant.current_hp = hp_after
+    if hp_after == 0 and combatant.status != "unconscious":
+        diff.append(StateChange(path=f"{path}.status", from_=combatant.status, to="unconscious"))
+        combatant.status = "unconscious"
+    return hp_before, hp_after, diff
+
+
+def encounter_outcome(state: GameState) -> EncounterOutcome | None:
+    """`defeat` if the player character is unconscious, `victory` if every hostile
+    in the initiative order is, otherwise `None` while the fight goes on."""
+    if not state.encounter_active:
+        raise ValueError("no active encounter")
+    in_encounter = [state.combatants[cid] for cid in state.initiative_order]
+    if any(c.is_player_character and c.status == "unconscious" for c in in_encounter):
+        return "defeat"
+    if all(c.status == "unconscious" for c in in_encounter if c.faction == "hostile"):
+        return "victory"
+    return None
+
+
+def end_encounter_if_over(state: GameState) -> EngineStep | None:
+    """Close the encounter if it has an outcome, and return the `encounter_end`
+    step; return `None` and change nothing if it goes on."""
+    outcome = encounter_outcome(state)
+    if outcome is None:
+        return None
+    diff: list[StateChange] = []
+    _set(state, "encounter_active", False, diff)
+    _set(state, "encounter_outcome", outcome, diff)
+    _set(state, "initiative_order", [], diff)
+    _set(state, "active_combatant_id", None, diff)
+    return EngineStep(step="encounter_end", when="after_call", state_diff=diff, rolls=[])
+
+
 # --- attack resolution -------------------------------------------------------
 
 HpBand = Literal["healthy", "wounded", "badly_hurt", "unconscious"]
@@ -260,16 +320,7 @@ def resolve_attack(
         rolls.append(damage_roll)
         damage = max(0, damage_roll.total)
 
-    hp_before = target.current_hp
-    hp_after = max(0, hp_before - damage)
-    diff: list[StateChange] = []
-    path = f"combatants.{target_id}"
-    if hp_after != hp_before:
-        diff.append(StateChange(path=f"{path}.current_hp", from_=hp_before, to=hp_after))
-        target.current_hp = hp_after
-    if hp_after == 0:
-        diff.append(StateChange(path=f"{path}.status", from_=target.status, to="unconscious"))
-        target.status = "unconscious"
+    hp_before, hp_after, diff = apply_damage(state, target_id, damage)
 
     facts = AttackRollFacts(
         hit=hit,
