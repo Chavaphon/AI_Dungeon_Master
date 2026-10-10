@@ -194,3 +194,27 @@ def test_result_matches_the_tool_contract_schema(notation: str, mode: str) -> No
     result = DiceRoller(5).roll(notation, advantage_mode=mode)  # type: ignore[arg-type]
     errors = [e.message for e in ROLL_VALIDATOR.iter_errors(result.to_dict())]
     assert errors == []
+
+
+# --- critical damage (WBS 4.5) ---------------------------------------------
+
+
+def test_critical_roll_doubles_the_dice_and_not_the_modifier() -> None:
+    result = DiceRoller(5).roll_critical("1d8+3")
+    assert result.notation == "2d8+3"
+    assert len(result.individual_dice) == 2
+    assert result.modifier == 3
+    assert result.total == sum(result.individual_dice) + 3
+    ROLL_VALIDATOR.validate(result.to_dict())
+
+
+def test_critical_roll_may_exceed_twenty_dice() -> None:
+    result = DiceRoller(5).roll_critical("20d6")
+    assert result.notation == "40d6"
+    assert len(result.individual_dice) == 40
+    ROLL_VALIDATOR.validate(result.to_dict())
+
+
+def test_critical_roll_rejects_bad_notation() -> None:
+    with pytest.raises(InvalidDiceNotation):
+        DiceRoller(5).roll_critical("21d6")
