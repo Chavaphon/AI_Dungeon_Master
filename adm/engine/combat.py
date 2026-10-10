@@ -20,7 +20,8 @@ active, or with an unknown or repeated combatant, is a programmer error: the
 scenario loader and the turn loop must not allow it, so it raises.
 
 An attack rolls `1d20 + attack bonus` against the target's armour class, with
-disadvantage if the target is Dodging. The kept d20 decides naturals: 20 always
+disadvantage if the target is Dodging (combined with any other source by
+`combine_advantage`, WBS 4.7). The kept d20 decides naturals: 20 always
 hits and is a critical, 1 always misses. A hit rolls the weapon's damage dice
 plus its damage bonus, minimum 0; a critical rolls the dice twice and adds the
 bonus once. HP is clamped at 0, and a combatant at 0 becomes unconscious.
@@ -41,7 +42,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from adm.engine.abilities import combatant_modifier
-from adm.engine.dice import AdvantageMode, DiceRoller, RollResult
+from adm.engine.dice import AdvantageMode, DiceRoller, RollResult, combine_advantage
 from adm.engine.state import Combatant, GameState, Status
 
 
@@ -245,7 +246,7 @@ def resolve_attack(
     if target.status != "active":
         raise ValueError(f"{target_id} is unconscious and cannot be attacked")
 
-    mode: AdvantageMode = "disadvantage" if target.dodging else "normal"
+    mode = combine_advantage("disadvantage" if target.dodging else "normal")
     attack_roll = roller.roll(f"1d20{attack_bonus:+d}", mode)
     natural = attack_roll.total - attack_roll.modifier
     critical = natural == 20
