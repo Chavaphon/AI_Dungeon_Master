@@ -8,6 +8,10 @@ Each die is drawn from `random.random()` alone. Python guarantees that output
 for a given seed across versions, but not that of `randint` or `randrange`.
 CI runs Python 3.11 and members run newer versions, and a recorded run must
 replay identically on all of them (invariant 4).
+
+`combine_advantage` (WBS 4.7, CLAUDE.md section 4.3) turns the sources that
+affect one d20 into a single mode: advantage and disadvantage cancel to a single
+d20, and sources of one kind do not stack.
 """
 
 from __future__ import annotations
@@ -58,6 +62,20 @@ def parse_notation(notation: str) -> DiceExpression:
     if match[3] == "-":
         modifier = -modifier
     return DiceExpression(count=count, sides=sides, modifier=modifier)
+
+
+def combine_advantage(*sources: AdvantageMode) -> AdvantageMode:
+    """The mode for a d20 that several sources affect (section 4.3). `"normal"` is
+    no source. If both kinds apply they cancel and a single d20 is rolled; two
+    sources of advantage are still just advantage."""
+    unknown = [s for s in sources if s not in ("normal", "advantage", "disadvantage")]
+    if unknown:
+        raise ValueError(f"unknown advantage source {unknown[0]!r}")
+    advantage = "advantage" in sources
+    disadvantage = "disadvantage" in sources
+    if advantage == disadvantage:
+        return "normal"
+    return "advantage" if advantage else "disadvantage"
 
 
 class RollResult(BaseModel):

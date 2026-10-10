@@ -13,7 +13,13 @@ from hypothesis import strategies as st
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
-from adm.engine.dice import DiceExpression, DiceRoller, InvalidDiceNotation, parse_notation
+from adm.engine.dice import (
+    DiceExpression,
+    DiceRoller,
+    InvalidDiceNotation,
+    combine_advantage,
+    parse_notation,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 SIDES = (4, 6, 8, 10, 12, 20, 100)
@@ -218,3 +224,50 @@ def test_critical_roll_may_exceed_twenty_dice() -> None:
 def test_critical_roll_rejects_bad_notation() -> None:
     with pytest.raises(InvalidDiceNotation):
         DiceRoller(5).roll_critical("21d6")
+
+
+# --- advantage and disadvantage (WBS 4.7, rule suite) ------------------------
+
+
+@pytest.mark.parametrize(
+    "sources",
+    [
+        ("advantage", "disadvantage"),
+        ("disadvantage", "advantage"),
+        ("advantage", "advantage", "disadvantage"),
+        ("advantage", "disadvantage", "disadvantage"),
+    ],
+)
+def test_advantage_and_disadvantage_cancel(sources: tuple[str, ...]) -> None:
+    assert combine_advantage(*sources) == "normal"  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("mode", ["advantage", "disadvantage"])
+def test_sources_of_one_kind_do_not_stack(mode: str) -> None:
+    assert combine_advantage(mode, mode) == mode  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("sources", "expected"),
+    [
+        ((), "normal"),
+        (("normal",), "normal"),
+        (("advantage", "normal"), "advantage"),
+        (("disadvantage",), "disadvantage"),
+    ],
+)
+def test_single_source_or_none(sources: tuple[str, ...], expected: str) -> None:
+    assert combine_advantage(*sources) == expected  # type: ignore[arg-type]
+
+
+def test_cancelled_roll_is_a_single_d20() -> None:
+    plain = DiceRoller(7).roll("1d20+5")
+    cancelled = DiceRoller(7).roll("1d20+5", combine_advantage("advantage", "disadvantage"))
+    assert len(cancelled.individual_dice) == 1
+    assert cancelled.advantage_mode == "normal"
+    assert cancelled == plain
+
+
+def test_unknown_advantage_source_is_an_error() -> None:
+    with pytest.raises(ValueError, match="both"):
+        combine_advantage("advantage", "both")  # type: ignore[arg-type]
