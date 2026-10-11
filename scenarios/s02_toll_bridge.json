@@ -1,0 +1,429 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s02_toll_bridge",
+  "display_name": "The Bandit Toll",
+  "opening_narration": "A rope bridge sways over a deep gorge, the river loud far below. Two bandits lounge by the far end, demanding a toll from anyone who crosses. Beside the toll hut, an old woman named Hessa watches you with tired eyes.",
+  "locations": [
+    "the gorge",
+    "the rope bridge",
+    "the toll hut",
+    "the toll gate",
+    "the river"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_bram": {
+        "combatant_id": "pc_bram",
+        "display_name": "Bram",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 16,
+          "dex": 12,
+          "con": 15,
+          "int": 9,
+          "wis": 11,
+          "cha": 13
+        },
+        "proficient_skills": [
+          "strength",
+          "perception"
+        ],
+        "armour_class": 16,
+        "max_hp": 28,
+        "current_hp": 28,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_bandit_01": {
+        "combatant_id": "npc_bandit_01",
+        "display_name": "bandit",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 11,
+          "dex": 13,
+          "con": 12,
+          "int": 10,
+          "wis": 10,
+          "cha": 10
+        },
+        "proficient_skills": [],
+        "armour_class": 12,
+        "max_hp": 9,
+        "current_hp": 9,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_bandit_02": {
+        "combatant_id": "npc_bandit_02",
+        "display_name": "bandit",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 11,
+          "dex": 13,
+          "con": 12,
+          "int": 10,
+          "wis": 10,
+          "cha": 10
+        },
+        "proficient_skills": [],
+        "armour_class": 12,
+        "max_hp": 9,
+        "current_hp": 9,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_bram": {
+        "item_longsword": 1,
+        "item_rope": 1
+      },
+      "npc_bandit_01": {
+        "item_scimitar": 1
+      },
+      "npc_bandit_02": {
+        "item_scimitar": 1
+      }
+    },
+    "item_definitions": {
+      "item_longsword": {
+        "item_id": "item_longsword",
+        "display_name": "longsword",
+        "is_weapon": true,
+        "attack_bonus": 5,
+        "damage_dice": "1d8",
+        "damage_bonus": 3
+      },
+      "item_rope": {
+        "item_id": "item_rope",
+        "display_name": "rope",
+        "is_weapon": false
+      },
+      "item_scimitar": {
+        "item_id": "item_scimitar",
+        "display_name": "scimitar",
+        "is_weapon": true,
+        "attack_bonus": 3,
+        "damage_dice": "1d6",
+        "damage_bonus": 0
+      },
+      "item_iron_key": {
+        "item_id": "item_iron_key",
+        "display_name": "iron key",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_hessa": {
+        "npc_id": "npc_hessa",
+        "display_name": "Hessa",
+        "stance": "neutral",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_bandit_toll": {
+        "quest_id": "quest_bandit_toll",
+        "display_name": "The Bandit Toll",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      },
+      "quest_lost_cart": {
+        "quest_id": "quest_lost_cart",
+        "display_name": "The Lost Cart",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 1
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 6,
+      "combatant_ids": [
+        "pc_bram",
+        "npc_bandit_01",
+        "npc_bandit_02"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I ask the old woman by the toll hut how long the bandits have been here",
+      "expected_call": null
+    },
+    {
+      "text": "I promise Hessa I will drive the bandits off the bridge",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_bandit_toll",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I ask Hessa about the merchant cart that went missing on the road",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_lost_cart",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I creep along the edge of the gorge in my heavy armour to get a closer look",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_bram",
+          "skill": "stealth",
+          "dc": 13
+        }
+      },
+      "check_advantage": "disadvantage"
+    },
+    {
+      "text": "I tell Hessa she should have paid the toll and kept out of trouble",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_hessa",
+          "direction": "down",
+          "justification": "Bram blamed Hessa for not paying the bandits."
+        }
+      }
+    },
+    {
+      "text": "I dash across the bridge before they can see me coming",
+      "expected_call": null
+    },
+    {
+      "text": "I draw my longsword and attack the nearest bandit",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_bram",
+          "target_id": "npc_bandit_01",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I swing at the same bandit again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_bram",
+          "target_id": "npc_bandit_01",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I cut at the first bandit once more",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_bram",
+          "target_id": "npc_bandit_01",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I set my feet and focus on blocking their blades",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_bram"
+        }
+      }
+    },
+    {
+      "text": "I turn on the other bandit and attack",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_bram",
+          "target_id": "npc_bandit_02",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I strike at the second bandit again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_bram",
+          "target_id": "npc_bandit_02",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I keep pressing the second bandit",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_bram",
+          "target_id": "npc_bandit_02",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I drive the second bandit back with another blow",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_bram",
+          "target_id": "npc_bandit_02",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I turn back to the first bandit if he is still on his feet",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_bram",
+          "target_id": "npc_bandit_01",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I check how badly the bandits cut me",
+      "expected_call": null
+    },
+    {
+      "text": "I search the bandits' packs for anything useful",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_bram",
+          "skill": "perception",
+          "dc": 10
+        }
+      }
+    },
+    {
+      "text": "I pocket the iron key I found in one of the packs",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_bram",
+          "item_id": "item_iron_key",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I unlock the toll gate and leave the iron key in the lock for Hessa",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_bram",
+          "item_id": "item_iron_key",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I tell Hessa the bandits will not be taking any more tolls",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_bandit_toll",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I apologise to Hessa for what I said earlier",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_hessa",
+          "direction": "up",
+          "justification": "Bram apologised to Hessa for blaming her."
+        }
+      }
+    },
+    {
+      "text": "I tie my rope to the railing and climb down toward the river",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_bram",
+          "skill": "strength",
+          "dc": 14
+        }
+      }
+    },
+    {
+      "text": "I look along the riverbank for any sign of the cart",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_bram",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I climb back up and tell Hessa the cart was swept away and nothing is left",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_lost_cart",
+          "transition": "fail"
+        }
+      }
+    },
+    {
+      "text": "I leave my rope tied to the bridge as a handhold for travellers",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_bram",
+          "item_id": "item_rope",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I ask Hessa if the road is safe to use again",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_bandit_toll",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I cross the bridge and head on down the road",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. Input 5 asks for a dash, which does not exist in this game (there is no movement or positioning): the expected call is null, and narration that gives it a mechanical effect is worth checking. Input 3 has disadvantage from the scenario because of Bram's armour. Input 4 moves Hessa down to unfriendly and input 20 back up to neutral, so her tone between them should be cool. Bram is not a spellcaster, so narration of him casting a spell is a divergence. The iron key is found in a pack, not taken from a bandit's inventory (CLAUDE.md section 6.1). The lost cart quest is meant to fail (input 23). Input 15 is a narration-only turn that invites a hit-point band phrase about Bram. Inputs 6 to 14 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}
