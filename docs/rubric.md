@@ -1,8 +1,8 @@
-# Divergence rubric v0.5
+# Divergence rubric v0.6
 
-WBS 8.1 · Owner: SD · Status: **draft, for the 8.11 pilot** · CLAUDE.md wins on any conflict.
+WBS 8.1, 8.2 · Owner: SD · Status: **draft, for the 8.11 pilot** · CLAUDE.md wins on any conflict.
 
-This is the human annotation rubric for M1, the divergence rate (CLAUDE.md §10). It gives the four categories from §10.1, how to count them, and two positive and two negative worked examples per category. Borderline cases and the hit-point band rules in detail are WBS 8.2. The rubric is frozen as v1.0 at G3 (WBS 8.12).
+This is the human annotation rubric for M1, the divergence rate (CLAUDE.md §10). It gives the four categories from §10.1, how to count them, and two positive and two negative worked examples per category. Sections 5 and 6, the hit-point band rules in detail and the borderline conventions, are WBS 8.2. The rubric is frozen as v1.0 at G3 (WBS 8.12).
 
 ## 1. What a divergence is
 
@@ -29,8 +29,8 @@ Only disagreement with the state counts. Weak prose, a wrong tone, or narration 
 2. **One phrase, one divergence.** If a single phrase fits more than one category, record it once, in the first that applies in this order: `PHANTOM`, `CONTRADICT`, `RESOURCE`, `RELATION`. A phantom has no recorded value to contradict, so it is checked first.
 3. **Repeats within one narration count once.** "The stranger smiles. The stranger draws a knife." is one phantom stranger (and one phantom knife).
 4. **Each turn is scored on its own.** A phantom that appears again in a later turn is counted again in that turn.
-5. **When in doubt, do not record.** As in §10.2, ambiguity is resolved in favour of no divergence. Write the case in the notes column so it can feed the 8.2 conventions.
-6. **HP bands** are computed as `current_hp / max_hp`: `healthy` above 0.75, `wounded` above 0.35 up to 0.75, `badly_hurt` above 0 up to 0.35, `unconscious` at 0. A narration with no band phrase is not scored for band accuracy. Adjacent bands are not forgiven (§10.2).
+5. **When in doubt, do not record.** As in §10.2, ambiguity is resolved in favour of no divergence. Write the case in the notes column so it can feed the pilot (WBS 8.11).
+6. **HP bands** are computed as `current_hp / max_hp`: `healthy` above 0.75, `wounded` above 0.35 up to 0.75, `badly_hurt` above 0 up to 0.35, `unconscious` at 0. A narration with no band phrase is not scored for band accuracy. Adjacent bands are not forgiven (§10.2). The full rule is §5.
 
 ## 4. Worked examples
 
@@ -124,14 +124,123 @@ All examples use the cellar setting from `schemas/examples/scenario_s00_example.
 
 **No divergence.** Businesslike and neither warm nor hostile, which fits `neutral`.
 
-## 5. Open points
+## 5. Hit-point bands in detail
 
-For 8.2 (borderline conventions):
+This section is the rule for band accuracy. The automated checker (WBS 8.7) implements it exactly, and human annotators apply it in the same way.
 
-1. **Scenery.** Is "the damp stone walls" a phantom location if the scenario lists only "the cellar"? Proposal: no. Parts and features of a listed location are in scope, like the rat's teeth in P3.
-2. **Negated and figurative band phrases.** "You are far from dying" and "the dying torchlight" both contain a `badly_hurt` word. The checker lexicon will match both. Proposal: annotators score neither.
-3. **Hostile creatures with no relationship entry.** The rats are `faction: hostile` but are not in `npc_relationships`. Proposal: `RELATION` applies only to NPCs with a `stance`.
+### 5.1 The thresholds
 
-For the team:
+The band is computed by `hp_band(current_hp, max_hp)` in `adm/engine/combat.py`, the one definition that the engine and the checker share (`docs/conventions.md` §1):
 
-4. **CLAUDE.md §6.2 example has the wrong band.** It shows a rat at 4 of 11 HP as `badly_hurt`, but 4/11 = 0.36 is `wounded` under §10.2. This rubric follows §10.2. The fix is already listed for the 2.6 freeze in `docs/tool_contract.md` §7, point 1.
+| Band | Ratio `current_hp / max_hp` | In integers |
+|---|---|---|
+| `healthy` | `> 0.75` | `100 × current_hp > 75 × max_hp` |
+| `wounded` | `> 0.35` and `<= 0.75` | `100 × current_hp > 35 × max_hp`, and not `healthy` |
+| `badly_hurt` | `> 0` and `<= 0.35` | `current_hp >= 1`, and neither of the above |
+| `unconscious` | `== 0` | `current_hp == 0` |
+
+A ratio of exactly 0.75 or exactly 0.35 is in the **lower** band: 15 of 20 is `wounded`, and 7 of 20 is `badly_hurt`. The comparison is done in integers, so there is no rounding. Annotators never compute the ratio by hand. In condition D they read `target_hp_band` from `narration_facts`. In conditions A–C, which have no `narration_facts`, they look up the replayed `current_hp` in the table in §5.6.
+
+### 5.2 The settled rule: 14 of 20
+
+> **A combatant at 14 of 20 HP is `wounded`.** 14 / 20 = 0.70, which is above 0.35 and at most 0.75. Any narration that describes that combatant with a `badly_hurt` phrase ("barely standing", "near death", "on the brink", "gravely wounded") is **one `CONTRADICT`**. So is a `healthy` phrase ("unhurt", "barely a scratch"). Only a `wounded` phrase, or no band phrase at all, is free of divergence.
+
+Adjacent bands are not forgiven (CLAUDE.md §10.2). "It was only one band off" is never a reason to drop a divergence. The model was handed the band in condition D, and in conditions A–C the band is the measurement.
+
+### 5.3 What a band phrase is
+
+A **band phrase** is a word or phrase that describes **how hurt a combatant is now**. The checker uses only the lexicon in CLAUDE.md §10.2. Annotators judge by meaning, so "fully restored" is a `healthy` phrase although it is not in the lexicon. The following are **not** band phrases and are not scored for band accuracy:
+
+1. **Events, not conditions.** Words that describe a blow landing this turn, not the state it leaves behind: "the bite hurts", "the blade wounds your arm", "you are struck". On its own a hit claims no band, because it can leave a combatant in any of them. "The bite leaves you badly wounded" describes the result and **is** a band phrase (`badly_hurt`).
+2. **Negated phrases.** "You are far from dying", "not yet beaten", "no longer bleeding". Not scored either way. (Settles rubric v0.5 open point 2.)
+3. **Figurative phrases about something else.** "The dying torchlight", "the barrels collapse", "a wounded silence". The phrase must be about a combatant. (Settles open point 2.)
+4. **The past and the future.** "Earlier, you were nearly killed" and "one more hit and you'll fall" make no claim about the band now.
+5. **Effort and emotion.** "You grit your teeth", "panting", "furious". As in example C4, these describe effort, not a health level.
+
+Intensity words decide the band of a phrase: "badly / gravely / seriously / terribly wounded" is `badly_hurt`; "wounded", "hurt" and "bleeding" alone are `wounded`; "a scratch", "barely hurt" and "a graze" are `healthy`. If a phrase could honestly be read as either of two bands, and the actual band is one of them, record no divergence (rubric §3 rule 5). This is not an adjacency allowance. It applies only when the **phrase** is ambiguous, never when the phrase is clear and the band is one step away.
+
+### 5.4 Which hit points are compared
+
+1. **The state after the turn.** A band phrase is scored against the combatant's HP after every effect of the turn, including engine-controlled NPC steps (`target_hp_after` in condition D). "You are bleeding" after Cure Wounds brought Lyra from 6 to 16 of 20 is scored against 16 (`healthy`): one `CONTRADICT`.
+2. **The combatant the phrase is about.** Each combatant is scored separately. A narration that gets two combatants' bands wrong has two `CONTRADICT`s (rule 1). If the phrase does not make clear which combatant it describes ("someone is badly hurt"), it is not scored.
+3. **One combatant, one band divergence per narration.** If a narration describes the same combatant with several band phrases, and any of them disagrees with the actual band, record one `CONTRADICT` for that combatant (rule 3). Phrases that agree do not cancel one that does not.
+4. **Every combatant, inside an encounter or not.** Hostile creatures are scored the same way as the player character. A combatant that is not in any encounter yet still has `current_hp` and is scored.
+
+### 5.5 Unconscious: band and status
+
+The `unconscious` band and the `unconscious` status always go together (CLAUDE.md §4.8): `current_hp` is 0 exactly when `status` is `unconscious`.
+
+1. "Falls", "collapses" and "crumples" are `unconscious` phrases only when they mean losing consciousness. "The rat falls back, hissing" is not a band phrase.
+2. Narrating a combatant at 0 HP as acting (attacking, speaking, fleeing), or a combatant above 0 HP as down, is **one `CONTRADICT`**, even if it also uses a band phrase. One phrase, one divergence (rule 2).
+3. "Dying" or "near death" for a combatant at 0 HP is a `badly_hurt` phrase scored against the `unconscious` band: one `CONTRADICT`. There is no death in this game, so the phrase is not scored a second time as a claim of death.
+
+### 5.6 Lookup table
+
+HP values in each band for the `max_hp` values a scenario is likely to use. This table is generated from `hp_band`, and `tests/test_rubric.py` fails if the two disagree.
+
+<!-- band-table:start -->
+| `max_hp` | `healthy` | `wounded` | `badly_hurt` | `unconscious` |
+|---|---|---|---|---|
+| 4 | 4 | 2–3 | 1 | 0 |
+| 5 | 4–5 | 2–3 | 1 | 0 |
+| 6 | 5–6 | 3–4 | 1–2 | 0 |
+| 7 | 6–7 | 3–5 | 1–2 | 0 |
+| 8 | 7–8 | 3–6 | 1–2 | 0 |
+| 9 | 7–9 | 4–6 | 1–3 | 0 |
+| 10 | 8–10 | 4–7 | 1–3 | 0 |
+| 11 | 9–11 | 4–8 | 1–3 | 0 |
+| 12 | 10–12 | 5–9 | 1–4 | 0 |
+| 13 | 10–13 | 5–9 | 1–4 | 0 |
+| 14 | 11–14 | 5–10 | 1–4 | 0 |
+| 15 | 12–15 | 6–11 | 1–5 | 0 |
+| 16 | 13–16 | 6–12 | 1–5 | 0 |
+| 17 | 13–17 | 6–12 | 1–5 | 0 |
+| 18 | 14–18 | 7–13 | 1–6 | 0 |
+| 19 | 15–19 | 7–14 | 1–6 | 0 |
+| 20 | 16–20 | 8–15 | 1–7 | 0 |
+| 21 | 16–21 | 8–15 | 1–7 | 0 |
+| 22 | 17–22 | 8–16 | 1–7 | 0 |
+| 23 | 18–23 | 9–17 | 1–8 | 0 |
+| 24 | 19–24 | 9–18 | 1–8 | 0 |
+| 25 | 19–25 | 9–18 | 1–8 | 0 |
+| 26 | 20–26 | 10–19 | 1–9 | 0 |
+| 27 | 21–27 | 10–20 | 1–9 | 0 |
+| 28 | 22–28 | 10–21 | 1–9 | 0 |
+| 29 | 22–29 | 11–21 | 1–10 | 0 |
+| 30 | 23–30 | 11–22 | 1–10 | 0 |
+<!-- band-table:end -->
+
+For a `max_hp` above 30, use the integer rule in §5.1.
+
+## 6. Other borderline conventions
+
+These settle the open points of rubric v0.5 and the cases that come up most often in the worked examples. Each one leans towards **no divergence** when in doubt (rule 5).
+
+### 6.1 `PHANTOM`
+
+1. **Parts and features of a listed location are in scope.** "The damp stone walls", "the floor" and "a crack in the ceiling" belong to "the cellar". A separate place that is not listed ("the crypt below", "the next room") is a `PHANTOM`. (Settles open point 1.)
+2. **Scenery is not an item.** Dust, cobwebs, puddles, shadows and smells are not phantom items. Something is an item when the narration lets it be picked up, used, given or spent. "A rusty key glints in the dust" is a `PHANTOM` item; "dust drifts in the torchlight" is not.
+3. **Unnamed and unseen presences are not entities.** "A noise from somewhere above" or "you feel watched" asserts no character. "A guard shouts from the stairs" does.
+4. **Too many of a kind is a phantom.** "Three rats" when the state has two is one `PHANTOM` (the third rat), not a `CONTRADICT`.
+5. **Parts of an in-scope entity are in scope.** As in P3, the rat's teeth and tail and Lyra's armour or cloak are not phantoms. A distinct object that a character carries ("the rat's golden collar") is.
+
+### 6.2 `CONTRADICT`
+
+1. **Dialogue counts.** What an NPC says is part of the narration, as in C2. An NPC who lies is not an exception: this game has no deception mechanic, so a false statement is still a divergence.
+2. **Quest state is scored by meaning.** Narration that treats a `completed` or `failed` quest as open, or a `not_started` quest as already under way, is a `CONTRADICT`. Hints and rumours about a `not_started` quest are not.
+
+### 6.3 `RESOURCE`
+
+1. **Quantity words are claims.** "Your last torch", "your only potion" and "your final spell" assert a quantity and are scored against the state. "A torch" or "your torches" asserts none.
+2. **Fire Bolt costs nothing.** Any narration of Fire Bolt draining or using up magic is a `RESOURCE` divergence (example R1). Tiredness after casting ("you lower your hand, breathing hard") is not.
+
+### 6.4 `RELATION`
+
+1. **Only NPCs with a stance.** `RELATION` applies only to entries in `npc_relationships`. A `hostile` faction creature with no stance, such as the giant rats, cannot have a `RELATION` divergence. (Settles open point 3.)
+2. **The stance after the turn.** If `update_npc_relationship` ran this turn, the narration is scored against the new stance. A change described in the narration without the tool call is a divergence (example L2).
+3. **Two steps away, or a different direction.** Behaviour that fits the recorded stance or one step either side of it is not a divergence: the stance markers are coarse and the stance ladder has five steps. Behaviour two or more steps away (warmth towards `unfriendly`, hostility towards `friendly`) is. The adjacency allowance is for `RELATION` only. HP bands have none.
+
+## 7. Open points for the 8.11 pilot
+
+1. **RELATION adjacency (§6.4 rule 3).** This is a proposal. If the pilot shows that annotators disagree mostly on one-step stance cases, keep it. If they agree on them, drop it, and treat any stance mismatch as a divergence, as HP bands are treated.
+2. **Checker coverage of §5.3.** The lexicon cannot tell an event ("the bite hurts") from a condition ("you are hurt"), or a negated phrase from a plain one. WBS 8.7 must either skip those cases or flag them as low confidence, so that the checker under-reports as CLAUDE.md §10.2 requires. WBS 8.10 should report how many of the 30 hand-labelled turns these cases account for.
