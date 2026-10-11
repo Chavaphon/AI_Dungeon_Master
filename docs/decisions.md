@@ -244,3 +244,18 @@ Decided by: CI, answering CLAUDE.md §16 for the team; to be confirmed at the We
 - `docs/model_selection.md` §2 point 4 and §4: the decision and the "no `format` field" rule for the 6.1 client.
 - `docs/model_benchmark.md` §8: points to this entry.
 - `config/model.json` unchanged. No new dependencies.
+
+## 2026-10-11 — Rubric v0.6: hit-point band rule and borderline conventions (WBS 8.2)
+
+Decided by: SD; the conventions are proposals until the rubric freeze (WBS 8.12) · Supersedes: none
+
+**Decision:**
+1. A combatant at 14 of 20 HP is `wounded` (ratio 0.70). Any `badly_hurt` or `healthy` phrase about it is one `CONTRADICT`. Exactly 0.75 and exactly 0.35 fall in the lower band, as `hp_band` in `adm/engine/combat.py` already computes in integers.
+2. A band phrase describes how hurt a combatant is now, after every effect of the turn. A damage event ("the bite hurts"), a negated phrase, a figurative phrase about something else, the past and the future, and effort or emotion are not scored for band accuracy. Each combatant is scored separately, with at most one band divergence per combatant per narration.
+3. An ambiguous phrase that fits two bands, one of them the actual band, is not a divergence. This is not an adjacency allowance: a clear phrase one band away is still a divergence.
+4. The three open points of rubric v0.5 are settled as proposed: features of a listed location are in scope; negated and figurative band phrases are not scored; `RELATION` applies only to NPCs in `npc_relationships`.
+5. Proposed for the 8.11 pilot only: `RELATION` behaviour one stance step from the recorded stance is not a divergence.
+
+**Reason:** WBS 8.2 must settle "badly hurt at 14 of 20" with a written rule, and WBS 8.7 must implement it exactly. The other conventions remove the disagreements most likely to lower the agreement measured in the 8.11 pilot. They lean towards no divergence when in doubt, as CLAUDE.md §10.2 requires.
+
+**Changed:** `docs/rubric.md` v0.6: new §5 (hit-point bands, with a lookup table for `max_hp` 4–30), §6 (borderline conventions) and §7 (open points for the pilot). `tests/test_rubric.py` checks the table against `hp_band`. CLAUDE.md is unchanged until the rubric freeze at G3 (WBS 8.12).
