@@ -1,0 +1,441 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s03_forest_shrine",
+  "display_name": "The Forest Shrine",
+  "opening_narration": "The forest path narrows between old pines until it reaches a moss-covered hut. Beyond it, the stone shrine sits silent, its door half buried in leaves. Something moves between the trees. An old hermit stands in the doorway of the hut, leaning on a staff.",
+  "locations": [
+    "the forest path",
+    "the hermit's hut",
+    "the shrine",
+    "the shrine door",
+    "the altar"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_sefa": {
+        "combatant_id": "pc_sefa",
+        "display_name": "Sefa",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 10,
+          "dex": 12,
+          "con": 13,
+          "int": 11,
+          "wis": 16,
+          "cha": 12
+        },
+        "proficient_skills": [
+          "perception"
+        ],
+        "armour_class": 16,
+        "max_hp": 20,
+        "current_hp": 20,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": 5,
+        "spellcasting_modifier": 3,
+        "spell_slots_1": 3
+      },
+      "npc_wolf_01": {
+        "combatant_id": "npc_wolf_01",
+        "display_name": "grey wolf",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 12,
+          "dex": 15,
+          "con": 12,
+          "int": 3,
+          "wis": 12,
+          "cha": 6
+        },
+        "proficient_skills": [
+          "perception",
+          "stealth"
+        ],
+        "armour_class": 12,
+        "max_hp": 7,
+        "current_hp": 7,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_skeleton_01": {
+        "combatant_id": "npc_skeleton_01",
+        "display_name": "skeleton",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 10,
+          "dex": 14,
+          "con": 15,
+          "int": 6,
+          "wis": 8,
+          "cha": 5
+        },
+        "proficient_skills": [],
+        "armour_class": 12,
+        "max_hp": 9,
+        "current_hp": 9,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_sefa": {
+        "item_mace": 1,
+        "item_candle": 3
+      },
+      "npc_wolf_01": {
+        "item_wolf_bite": 1
+      },
+      "npc_skeleton_01": {
+        "item_rusty_sword": 1
+      }
+    },
+    "item_definitions": {
+      "item_mace": {
+        "item_id": "item_mace",
+        "display_name": "mace",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d6",
+        "damage_bonus": 0
+      },
+      "item_candle": {
+        "item_id": "item_candle",
+        "display_name": "candle",
+        "is_weapon": false
+      },
+      "item_wolf_bite": {
+        "item_id": "item_wolf_bite",
+        "display_name": "bite",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d4",
+        "damage_bonus": 0
+      },
+      "item_rusty_sword": {
+        "item_id": "item_rusty_sword",
+        "display_name": "rusty sword",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d4",
+        "damage_bonus": 1
+      },
+      "item_silver_relic": {
+        "item_id": "item_silver_relic",
+        "display_name": "silver relic",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_hermit": {
+        "npc_id": "npc_hermit",
+        "display_name": "the hermit",
+        "stance": "neutral",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_shrine_relic": {
+        "quest_id": "quest_shrine_relic",
+        "display_name": "The Shrine Relic",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 7,
+      "combatant_ids": [
+        "pc_sefa",
+        "npc_wolf_01",
+        "npc_skeleton_01"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I greet the hermit and ask what troubles the shrine",
+      "expected_call": null
+    },
+    {
+      "text": "I agree to bring the relic back from the shrine",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_shrine_relic",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I whistle for my horse to wait by the hut",
+      "expected_call": null
+    },
+    {
+      "text": "I listen for anything moving in the trees",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_sefa",
+          "skill": "perception",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I light a candle and leave it on the shrine steps as an offering",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_sefa",
+          "item_id": "item_candle",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I put my shoulder to the stone door and push",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_sefa",
+          "skill": "strength",
+          "dc": 15
+        }
+      }
+    },
+    {
+      "text": "I hold up a lit candle and search the shrine for the relic",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_sefa",
+          "skill": "perception",
+          "dc": 11
+        }
+      },
+      "check_advantage": "advantage"
+    },
+    {
+      "text": "I hurl a bolt of fire at the wolf",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_sefa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_wolf_01"
+        }
+      }
+    },
+    {
+      "text": "I cast another bolt of fire at the wolf",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_sefa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_wolf_01"
+        }
+      }
+    },
+    {
+      "text": "I swing my mace at the wolf",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_sefa",
+          "target_id": "npc_wolf_01",
+          "weapon_id": "item_mace"
+        }
+      }
+    },
+    {
+      "text": "I throw fire at the wolf again",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_sefa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_wolf_01"
+        }
+      }
+    },
+    {
+      "text": "I raise my mace to ward off the skeleton's blade",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_sefa"
+        }
+      }
+    },
+    {
+      "text": "I whisper a prayer and heal my wounds in the middle of the fight",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_sefa",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "pc_sefa"
+        }
+      }
+    },
+    {
+      "text": "I hurl a bolt of fire at the skeleton",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_sefa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_skeleton_01"
+        }
+      }
+    },
+    {
+      "text": "I cast fire at the skeleton again",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_sefa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_skeleton_01"
+        }
+      }
+    },
+    {
+      "text": "I bring my mace down on the skeleton",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_sefa",
+          "target_id": "npc_skeleton_01",
+          "weapon_id": "item_mace"
+        }
+      }
+    },
+    {
+      "text": "I throw one more bolt of fire at the skeleton",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_sefa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_skeleton_01"
+        }
+      }
+    },
+    {
+      "text": "I keep casting fire at the skeleton until it falls apart",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_sefa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_skeleton_01"
+        }
+      }
+    },
+    {
+      "text": "I send a last bolt of fire at the wolf if it is still standing",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_sefa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_wolf_01"
+        }
+      }
+    },
+    {
+      "text": "I look at the bite on my arm",
+      "expected_call": null
+    },
+    {
+      "text": "I lay my hand on the bite and cast a healing spell on myself",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_sefa",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "pc_sefa"
+        }
+      }
+    },
+    {
+      "text": "I lift the silver relic from the altar",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_sefa",
+          "item_id": "item_silver_relic",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I carry the relic back along the forest path to the hut",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_shrine_relic",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I hand the silver relic to the hermit",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_sefa",
+          "item_id": "item_silver_relic",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I tell the hermit the shrine is quiet again",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_hermit",
+          "direction": "up",
+          "justification": "Sefa destroyed the shrine's guardians and returned the silver relic."
+        }
+      }
+    },
+    {
+      "text": "I ask the hermit whether the shrine's blessing is restored",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_shrine_relic",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I promise to come back whenever the shrine needs a guardian",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_hermit",
+          "direction": "up",
+          "justification": "Sefa promised to guard the shrine in future."
+        }
+      }
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. One encounter, from input 7, against both shrine guardians at once. Input 2 mentions a horse that does not exist, to test PHANTOM detection. Input 6 grants advantage because the candle lights the shrine. Sefa's mace is weak, so most of her damage comes from Fire Bolt, a cantrip: narration of Fire Bolt using up magic is a RESOURCE divergence. Cure Wounds at inputs 12 and 20 spends two of her three slots, so one is left at the end. Input 19 is a narration-only turn that invites a hit-point band phrase about Sefa. Inputs 7 to 18 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}
