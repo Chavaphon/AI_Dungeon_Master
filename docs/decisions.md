@@ -259,3 +259,19 @@ Decided by: SD; the conventions are proposals until the rubric freeze (WBS 8.12)
 **Reason:** WBS 8.2 must settle "badly hurt at 14 of 20" with a written rule, and WBS 8.7 must implement it exactly. The other conventions remove the disagreements most likely to lower the agreement measured in the 8.11 pilot. They lean towards no divergence when in doubt, as CLAUDE.md §10.2 requires.
 
 **Changed:** `docs/rubric.md` v0.6: new §5 (hit-point bands, with a lookup table for `max_hp` 4–30), §6 (borderline conventions) and §7 (open points for the pilot). `tests/test_rubric.py` checks the table against `hp_band`. CLAUDE.md is unchanged until the rubric freeze at G3 (WBS 8.12).
+
+## 2026-10-12 — Weekly checkpoint, Week 2 (WBS 12.2)
+
+Attendees: SS, CI, SD · Note-taker: SS
+
+**Closed:** 3.3, 3.4, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5, 4.7, 4.8, 4.9, 8.2, 8.3, 12.8
+**Slipped:** none of the Week 2 tasks. The checkpoint itself was held on 12 Oct instead of Sat 10 Oct, because of exams.
+**Hours vs. estimate:** SS 13/13 · CI 12.5/12.5 · SD 9/9. Actual hours equal the `TASK_CHECKLIST.md` estimates.
+
+**Gates and risks:** G1b (11 Oct) is met: model, quantisation and K are frozen in `config/model.json` (3.6), and the handover note is committed (12.8, #44). The 3.6 and 3.7 confirmations it waited on are given below. No risk-register trigger has fired. 4.6 and 4.10–4.13 are scheduled for Weeks 3 and 4, and the team continues as scheduled after the blackout. R2 is checked again at the Week 3 checkpoint (#46).
+
+**Decisions:**
+1. The model freeze (2026-10-05 entry, WBS 3.6) is confirmed as written: `llama3.1:8b`, Q4_K_M, Ollama 0.35.1, K = 8.
+2. No grammar-constrained decoding and no JSON mode (2026-10-06 entry, WBS 3.7) is confirmed as written.
+
+**Open, carried to next week:** sign-off of `docs/conventions.md` (1.4) — CI, SD · the engine's NPC action policy rules — SS (4.19, #136) · whether the minimal FastAPI interface is built (CLAUDE.md §16) — all
