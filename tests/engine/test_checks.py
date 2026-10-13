@@ -61,6 +61,7 @@ def _seed_with_total_in(actor: Combatant, skill: str, low: int, high: int) -> tu
 # --- bonus per skill ---------------------------------------------------------
 
 
+@pytest.mark.rule_suite("skill_checks")
 @pytest.mark.parametrize(
     ("combatant_id", "skill", "expected"),
     [
@@ -78,6 +79,7 @@ def test_skill_bonus(state: GameState, combatant_id: str, skill: str, expected: 
 # --- at, above and below the DC (rule suite) ---------------------------------
 
 
+@pytest.mark.rule_suite("skill_checks")
 @pytest.mark.parametrize("skill", SUPPORTED_SKILLS)
 @pytest.mark.parametrize(
     ("dc_offset", "success"),
@@ -92,6 +94,7 @@ def test_check_against_dc(lyra: Combatant, skill: str, dc_offset: int, success: 
     assert result.success is success
 
 
+@pytest.mark.rule_suite("skill_checks")
 def test_negative_bonus_can_fail_on_a_roll_that_would_otherwise_pass(state: GameState) -> None:
     rat = state.combatants["npc_rat_01"]
     seed, total = _seed_with_total_in(rat, "strength", 5, 23)
@@ -103,6 +106,7 @@ def test_negative_bonus_can_fail_on_a_roll_that_would_otherwise_pass(state: Game
 # --- roll shape and narration facts ------------------------------------------
 
 
+@pytest.mark.rule_suite("skill_checks")
 def test_total_is_d20_plus_bonus(lyra: Combatant) -> None:
     result = skill_check(DiceRoller(12345), lyra, "stealth", 15)
     assert result.roll.notation == "1d20+5"
@@ -132,6 +136,7 @@ def test_narration_facts_match_the_schema(lyra: Combatant) -> None:
     }
 
 
+@pytest.mark.rule_suite("skill_checks")
 @pytest.mark.parametrize("mode", ["advantage", "disadvantage"])
 def test_scenario_granted_advantage(lyra: Combatant, mode: str) -> None:
     result = skill_check(DiceRoller(99), lyra, "perception", 12, mode)

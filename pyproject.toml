@@ -40,6 +40,9 @@ adm = ["bench/*.json"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--strict-markers"
+markers = [
+    "rule_suite(area): one case of the CLAUDE.md section 13 rule suite (tests/engine/test_rule_suite.py)",
+]
 
 [tool.ruff]
 target-version = "py311"

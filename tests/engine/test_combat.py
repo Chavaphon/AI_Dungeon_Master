@@ -83,6 +83,7 @@ def _assert_valid(state: GameState) -> None:
 # --- rolling and ordering (rule suite) ---------------------------------------
 
 
+@pytest.mark.rule_suite("initiative")
 def test_initiative_is_d20_plus_dex_modifier_in_listed_order(exploring: GameState) -> None:
     combatants = [exploring.combatants[cid] for cid in ENCOUNTER]
     entries = roll_initiative(DiceRoller(12345), combatants)
@@ -93,17 +94,20 @@ def test_initiative_is_d20_plus_dex_modifier_in_listed_order(exploring: GameStat
         assert e.roll.total == e.roll.individual_dice[0] + e.roll.modifier
 
 
+@pytest.mark.rule_suite("initiative")
 def test_order_is_highest_total_first() -> None:
     entries = [_entry("npc_a", 10, 8), _entry("npc_b", 10, 19), _entry("pc_c", 10, 12)]
     assert initiative_order(entries) == ["npc_b", "pc_c", "npc_a"]
 
 
+@pytest.mark.rule_suite("initiative")
 def test_tie_breaks_on_higher_dex_score_not_modifier() -> None:
     # dex 14 and 15 both give +2; the score itself decides.
     entries = [_entry("npc_a", 14, 15), _entry("npc_b", 15, 15)]
     assert initiative_order(entries) == ["npc_b", "npc_a"]
 
 
+@pytest.mark.rule_suite("initiative")
 def test_tie_on_total_and_dex_breaks_on_smaller_id() -> None:
     entries = [_entry(cid, 15, 12) for cid in ("pc_lyra", "npc_rat_02", "npc_rat_01")]
     assert initiative_order(entries) == ["npc_rat_01", "npc_rat_02", "pc_lyra"]
@@ -198,6 +202,14 @@ def test_starting_during_an_encounter_raises(mid_combat: GameState) -> None:
         start_encounter(mid_combat, DiceRoller(1), ENCOUNTER)
 
 
+def test_starting_with_nobody_conscious_raises(exploring: GameState) -> None:
+    for cid in ENCOUNTER:
+        _knock_out(exploring, cid)
+    with pytest.raises(ValueError, match="no conscious combatant"):
+        start_encounter(exploring, DiceRoller(1), ENCOUNTER)
+    assert exploring.encounter_active is False
+
+
 # --- turn advance and round wrap (rule suite) --------------------------------
 
 
@@ -211,6 +223,7 @@ def test_advance_moves_to_the_next_in_order(mid_combat: GameState) -> None:
     assert step.to_dict() == example["engine_steps"][0]
 
 
+@pytest.mark.rule_suite("initiative")
 def test_wrapping_the_order_increments_the_round(mid_combat: GameState) -> None:
     mid_combat.active_combatant_id = "npc_rat_02"
     step = advance_initiative(mid_combat)
@@ -220,6 +233,7 @@ def test_wrapping_the_order_increments_the_round(mid_combat: GameState) -> None:
     assert [c.path for c in step.state_diff] == ["active_combatant_id", "round_number"]
 
 
+@pytest.mark.rule_suite("initiative")
 def test_advance_skips_an_unconscious_combatant(mid_combat: GameState) -> None:
     mid_combat.active_combatant_id = "npc_rat_01"
     _knock_out(mid_combat, "pc_lyra")
@@ -257,6 +271,14 @@ def test_advance_outside_an_encounter_raises(exploring: GameState) -> None:
         advance_initiative(exploring)
 
 
+def test_advance_with_nobody_conscious_raises(mid_combat: GameState) -> None:
+    # The encounter-end step closes such an encounter before the turn advances.
+    for cid in mid_combat.initiative_order:
+        _knock_out(mid_combat, cid)
+    with pytest.raises(ValueError, match="no conscious combatant"):
+        advance_initiative(mid_combat)
+
+
 # --- attack resolution (WBS 4.5, rule suite) ---------------------------------
 # In state_02_mid_combat Lyra (short sword: +5, 1d6+3) is active and the rats
 # have AC 12. npc_rat_01 is at 4 of 11 HP; npc_rat_02 is at 11 of 11 and Dodging.
@@ -279,6 +301,7 @@ def _result(outcome: AttackOutcome) -> dict:
     return {"ok": True, "tool": "attack", **outcome.to_dict()}
 
 
+@pytest.mark.rule_suite("attack")
 def test_attack_reproduces_the_contract_example(mid_combat: GameState) -> None:
     mid_combat.combatants["npc_rat_01"].current_hp = 11
     outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 12), (6, 4)))
@@ -289,6 +312,7 @@ def test_attack_reproduces_the_contract_example(mid_combat: GameState) -> None:
     _assert_valid(mid_combat)
 
 
+@pytest.mark.rule_suite("attack")
 def test_attack_total_equal_to_ac_hits(mid_combat: GameState) -> None:
     # 7 + 5 = 12, exactly the rat's AC.
     outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 7)))
@@ -298,6 +322,7 @@ def test_attack_total_equal_to_ac_hits(mid_combat: GameState) -> None:
     assert len(outcome.rolls) == 2
 
 
+@pytest.mark.rule_suite("attack")
 def test_attack_below_ac_misses_and_changes_nothing(mid_combat: GameState) -> None:
     before = mid_combat.to_dict()
     outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 6)))
@@ -311,6 +336,7 @@ def test_attack_below_ac_misses_and_changes_nothing(mid_combat: GameState) -> No
     RESULT_VALIDATOR.validate(_result(outcome))
 
 
+@pytest.mark.rule_suite("attack")
 def test_natural_20_hits_any_ac_and_is_critical(mid_combat: GameState) -> None:
     mid_combat.combatants["npc_rat_01"].armour_class = 30
     outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 20)))
@@ -319,6 +345,7 @@ def test_natural_20_hits_any_ac_and_is_critical(mid_combat: GameState) -> None:
     assert outcome.facts.critical is True
 
 
+@pytest.mark.rule_suite("attack")
 def test_natural_1_misses_whatever_the_bonus(mid_combat: GameState) -> None:
     mid_combat.item_definitions["item_short_sword"].attack_bonus = 30
     outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 1)))
@@ -327,6 +354,7 @@ def test_natural_1_misses_whatever_the_bonus(mid_combat: GameState) -> None:
     assert outcome.facts.damage == 0
 
 
+@pytest.mark.rule_suite("attack")
 def test_critical_doubles_the_dice_and_not_the_modifier(mid_combat: GameState) -> None:
     mid_combat.combatants["npc_rat_01"].current_hp = 11
     outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 20), (6, 2), (6, 3)))
@@ -356,6 +384,7 @@ def test_damage_past_zero_clamps_and_knocks_out(mid_combat: GameState) -> None:
     _assert_valid(mid_combat)
 
 
+@pytest.mark.rule_suite("attack")
 def test_damage_is_never_negative(mid_combat: GameState) -> None:
     mid_combat.item_definitions["item_short_sword"].damage_bonus = -5
     outcome = _sword(mid_combat, "npc_rat_01", _seed_for((20, 15), (6, 1)))
@@ -376,6 +405,7 @@ def test_attack_on_a_dodging_target_has_disadvantage(mid_combat: GameState) -> N
     assert outcome.facts.hit is False
 
 
+@pytest.mark.rule_suite("attack")
 def test_natural_20_is_judged_after_disadvantage_selection(mid_combat: GameState) -> None:
     mid_combat.combatants["npc_rat_02"].armour_class = 30
     outcome = _sword(mid_combat, "npc_rat_02", _seed_for((20, 20), (20, 5)))
@@ -390,6 +420,16 @@ def test_attacker_may_target_itself(mid_combat: GameState) -> None:
     _assert_valid(mid_combat)
 
 
+def test_attacker_may_target_an_ally(mid_combat: GameState) -> None:
+    # One rat bites the other (bite: +4, 1d4+2). 15 + 4 hits AC 12; 1 + 2 = 3 damage.
+    seed = _seed_for((20, 15), (4, 1))
+    outcome = attack(mid_combat, DiceRoller(seed), "npc_rat_02", "npc_rat_01", "item_rat_bite")
+    assert outcome.facts.hit is True
+    assert outcome.facts.damage == 3
+    assert mid_combat.combatants["npc_rat_01"].current_hp == 1
+    _assert_valid(mid_combat)
+
+
 def test_same_seed_gives_the_same_attack(mid_combat: GameState) -> None:
     results = [
         _sword(mid_combat.model_copy(deep=True), "npc_rat_01", 99).to_dict() for _ in range(2)
@@ -397,6 +437,7 @@ def test_same_seed_gives_the_same_attack(mid_combat: GameState) -> None:
     assert results[0] == results[1]
 
 
+@pytest.mark.rule_suite("zero_hp")
 def test_attacking_an_unconscious_target_raises(mid_combat: GameState) -> None:
     _knock_out(mid_combat, "npc_rat_01")
     with pytest.raises(ValueError, match="unconscious"):
@@ -428,6 +469,12 @@ def test_hp_band_thresholds(current: int, maximum: int, band: str) -> None:
     assert hp_band(current, maximum) == band
 
 
+@pytest.mark.parametrize(("current", "maximum"), [(-1, 20), (21, 20), (0, 0)])
+def test_hp_band_out_of_range_raises(current: int, maximum: int) -> None:
+    with pytest.raises(ValueError, match="out of range"):
+        hp_band(current, maximum)
+
+
 # --- zero hit points and encounter end (WBS 4.8, rule suite) -----------------
 
 
@@ -438,6 +485,7 @@ def _assert_hp_legal(state: GameState) -> None:
     _assert_valid(state)
 
 
+@pytest.mark.rule_suite("zero_hp")
 def test_damage_beyond_current_hp_stops_at_zero_and_knocks_out(mid_combat: GameState) -> None:
     hp_before, hp_after, diff = apply_damage(mid_combat, "npc_rat_01", 50)
     rat = mid_combat.combatants["npc_rat_01"]
@@ -469,6 +517,7 @@ def test_negative_damage_raises(mid_combat: GameState) -> None:
         apply_damage(mid_combat, "npc_rat_01", -1)
 
 
+@pytest.mark.rule_suite("zero_hp")
 def test_unconscious_combatant_stays_down_with_no_death_saves(mid_combat: GameState) -> None:
     # No stabilisation roll and no death: two full rounds pass, the rat stays at 0
     # and never gets a turn, and nothing is rolled for it.
@@ -482,6 +531,7 @@ def test_unconscious_combatant_stays_down_with_no_death_saves(mid_combat: GameSt
     assert "npc_rat_01" in mid_combat.initiative_order
 
 
+@pytest.mark.rule_suite("zero_hp")
 def test_last_hostile_down_ends_in_victory(mid_combat: GameState) -> None:
     _knock_out(mid_combat, "npc_rat_01")
     apply_damage(mid_combat, "npc_rat_02", 11)
@@ -499,6 +549,7 @@ def test_last_hostile_down_ends_in_victory(mid_combat: GameState) -> None:
     _assert_hp_legal(mid_combat)
 
 
+@pytest.mark.rule_suite("zero_hp")
 def test_player_character_down_ends_in_defeat(mid_combat: GameState) -> None:
     apply_damage(mid_combat, "pc_lyra", 14)
     step = end_encounter_if_over(mid_combat)
@@ -531,6 +582,7 @@ def test_end_check_outside_an_encounter_raises(exploring: GameState) -> None:
         end_encounter_if_over(exploring)
 
 
+@pytest.mark.rule_suite("zero_hp")
 @settings(max_examples=50, deadline=None)
 @given(seed=st.integers(min_value=0, max_value=2**32 - 1), data=st.data())
 def test_hp_is_never_negative_and_state_legal_at_every_step(seed: int, data: st.DataObject) -> None:
