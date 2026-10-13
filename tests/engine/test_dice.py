@@ -37,6 +37,7 @@ ROLL_VALIDATOR = Draft202012Validator(
 # --- parser ---------------------------------------------------------------
 
 
+@pytest.mark.rule_suite("dice")
 @pytest.mark.parametrize(
     ("notation", "expected"),
     [
@@ -51,6 +52,7 @@ def test_parse_valid(notation: str, expected: DiceExpression) -> None:
     assert parse_notation(notation) == expected
 
 
+@pytest.mark.rule_suite("dice")
 @pytest.mark.parametrize(
     "notation",
     [
@@ -96,6 +98,7 @@ def _sequence(seed: int) -> list[int]:
     return [roller.roll(f"1d{sides}").total for sides in SIDES * 20]
 
 
+@pytest.mark.rule_suite("dice")
 def test_identical_seed_reproduces_identical_sequence() -> None:
     assert _sequence(12345) == _sequence(12345)
 
@@ -104,6 +107,7 @@ def test_different_seeds_differ() -> None:
     assert _sequence(12345) != _sequence(12346)
 
 
+@pytest.mark.rule_suite("dice")
 def test_golden_sequence_is_pinned() -> None:
     # Pins the seed -> dice mapping, so a change in how dice are drawn (or a
     # Python version that draws them differently) fails here instead of
@@ -115,6 +119,7 @@ def test_golden_sequence_is_pinned() -> None:
 GOLDEN_D20_12345 = [9, 1, 17, 6, 8, 4, 12, 4, 3, 9]
 
 
+@pytest.mark.rule_suite("dice")
 def test_rollers_with_the_same_seed_are_independent() -> None:
     first, second = DiceRoller(7), DiceRoller(7)
     a = first.roll("1d20")
@@ -132,6 +137,7 @@ def test_seed_must_be_an_int() -> None:
 # --- roll results ----------------------------------------------------------
 
 
+@pytest.mark.rule_suite("dice")
 @given(
     seed=st.integers(),
     count=st.integers(min_value=1, max_value=20),
@@ -159,6 +165,7 @@ def test_result_records_canonical_notation() -> None:
     assert DiceRoller(1).roll("1d6+0").notation == "1d6"
 
 
+@pytest.mark.rule_suite("advantage")
 @pytest.mark.parametrize(("mode", "pick"), [("advantage", max), ("disadvantage", min)])
 def test_advantage_rolls_two_d20_and_keeps_one(mode: str, pick: object) -> None:
     roller = DiceRoller(99)
@@ -170,6 +177,7 @@ def test_advantage_rolls_two_d20_and_keeps_one(mode: str, pick: object) -> None:
         assert result.advantage_mode == mode
 
 
+@pytest.mark.rule_suite("advantage")
 def test_advantage_dice_are_recorded_in_the_order_rolled() -> None:
     plain, advantaged = DiceRoller(3), DiceRoller(3)
     first, second = plain.roll("1d20").total, plain.roll("1d20").total
@@ -229,6 +237,7 @@ def test_critical_roll_rejects_bad_notation() -> None:
 # --- advantage and disadvantage (WBS 4.7, rule suite) ------------------------
 
 
+@pytest.mark.rule_suite("advantage")
 @pytest.mark.parametrize(
     "sources",
     [
@@ -242,6 +251,7 @@ def test_advantage_and_disadvantage_cancel(sources: tuple[str, ...]) -> None:
     assert combine_advantage(*sources) == "normal"  # type: ignore[arg-type]
 
 
+@pytest.mark.rule_suite("advantage")
 @pytest.mark.parametrize("mode", ["advantage", "disadvantage"])
 def test_sources_of_one_kind_do_not_stack(mode: str) -> None:
     assert combine_advantage(mode, mode) == mode  # type: ignore[arg-type]
@@ -260,6 +270,7 @@ def test_single_source_or_none(sources: tuple[str, ...], expected: str) -> None:
     assert combine_advantage(*sources) == expected  # type: ignore[arg-type]
 
 
+@pytest.mark.rule_suite("advantage")
 def test_cancelled_roll_is_a_single_d20() -> None:
     plain = DiceRoller(7).roll("1d20+5")
     cancelled = DiceRoller(7).roll("1d20+5", combine_advantage("advantage", "disadvantage"))

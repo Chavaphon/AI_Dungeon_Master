@@ -31,22 +31,26 @@ def combatants() -> dict[str, Combatant]:
 # --- ability modifier (rule suite: 4 cases) --------------------------------
 
 
+@pytest.mark.rule_suite("abilities")
 @pytest.mark.parametrize(("score", "expected"), [(1, -5), (20, 5)])
 def test_modifier_at_the_score_boundaries(score: int, expected: int) -> None:
     assert ability_modifier(score) == expected
 
 
+@pytest.mark.rule_suite("abilities")
 @pytest.mark.parametrize(("score", "expected"), [(7, -2), (9, -1), (3, -4)])
 def test_odd_scores_below_10_round_down(score: int, expected: int) -> None:
     # Integer truncation towards zero would give -1, 0 and -3 here.
     assert ability_modifier(score) == expected
 
 
+@pytest.mark.rule_suite("abilities")
 @pytest.mark.parametrize(("score", "expected"), [(10, 0), (11, 0), (12, 1), (13, 1)])
 def test_modifier_around_10(score: int, expected: int) -> None:
     assert ability_modifier(score) == expected
 
 
+@pytest.mark.rule_suite("abilities")
 @pytest.mark.parametrize("score", [0, 21, -1])
 def test_scores_outside_1_to_20_are_rejected(score: int) -> None:
     with pytest.raises(ValueError, match="outside 1..20"):
