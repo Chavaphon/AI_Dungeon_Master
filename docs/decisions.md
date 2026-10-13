@@ -275,3 +275,20 @@ Attendees: SS, CI, SD · Note-taker: SS
 2. No grammar-constrained decoding and no JSON mode (2026-10-06 entry, WBS 3.7) is confirmed as written.
 
 **Open, carried to next week:** sign-off of `docs/conventions.md` (1.4) — CI, SD · the engine's NPC action policy rules — SS (4.19, #136) · whether the minimal FastAPI interface is built (CLAUDE.md §16) — all
+
+## 2026-10-13 — Ollama client: timeouts, transport retries, summary cap (WBS 6.1)
+
+Decided by: CI · Supersedes: none
+
+**Decision:**
+1. `adm/orchestration/client.py` is the single loader of `config/model.json`. Every request sends `num_ctx` and every sampling option with the values the 3.4–3.6 evidence used, no `think` field and no `format` field. Replies are not streamed, so the read timeout bounds the whole generation: a stalled server raises instead of hanging the run.
+2. Timeouts are module constants, not `config/model.json` keys, because that file's key set is frozen: connect 5 s, chat 60 s, load 120 s. The chat bound is about five times the worst case at 8192 tokens; the load bound covers the 35 s first load after a reboot (`docs/hardware.md` §3).
+3. Connection errors, timeouts and 5xx replies are retried at most twice, after 1 s and 2 s. A 4xx reply or a body that is not a chat reply is not retried. Exhausted retries raise `ModelUnavailable`, which aborts the run; it is not a `turn_failure`. These transport retries are separate from the turn loop's retry budget of two (CLAUDE.md §7.1).
+4. Every reply carries `transport_retries`. A retry reaches a server that may already have seen the request, and earlier requests can change a reply (`docs/model_selection.md` §3.2), so **a run with any transport retry is not guaranteed to replay byte-identically**. The batch runner (7.6, #82) must re-run such a run from a fresh load. The audit schema is unchanged.
+5. The rolling summary call (6.7) runs at temperature 0.0 with `num_predict` 200, the §8.1 cap. The client returns Ollama's `done_reason`, so a summary that hits the cap shows `"length"` and 6.7 truncates it at a sentence boundary.
+6. The seed sent to Ollama must be in 0 to 2³² − 2. llama.cpp reads the seed as an unsigned 32-bit integer and treats `0xFFFFFFFF`, which is what −1 becomes, as "pick a random seed". Run seeds outside that range raise `ValueError` rather than silently break invariant 4.
+7. `fresh_load()` unloads the model (`keep_alive: 0`), polls `/api/ps` until it is gone (at most 30 s), and loads it with `num_ctx` and no prompt. Loads and chats send `keep_alive: -1`, so an idle interactive session never reloads the model part-way through a run. `verify()` refuses a server whose version, or a model whose digest, differs from `config/model.json`.
+
+**Reason:** WBS 6.1 must stop a stalled generation from hanging an unattended batch, while keeping invariant 4 checkable. Point 4 makes the one case where a retry could change a reply visible instead of silent. Points 6 and 7 close two ways a run could stop being reproducible without anyone noticing.
+
+**Changed:** `adm/orchestration/client.py` added. `tests/orchestration/test_client.py` added; it makes no model calls, uses an `httpx.MockTransport` fake Ollama, and tests the stall against a local socket that never answers. No new dependencies; CLAUDE.md and the schemas are unchanged.
