@@ -292,3 +292,26 @@ Decided by: CI · Supersedes: none
 **Reason:** WBS 6.1 must stop a stalled generation from hanging an unattended batch, while keeping invariant 4 checkable. Point 4 makes the one case where a retry could change a reply visible instead of silent. Points 6 and 7 close two ways a run could stop being reproducible without anyone noticing.
 
 **Changed:** `adm/orchestration/client.py` added. `tests/orchestration/test_client.py` added; it makes no model calls, uses an `httpx.MockTransport` fake Ollama, and tests the stall against a local socket that never answers. No new dependencies; CLAUDE.md and the schemas are unchanged.
+
+## 2026-10-14 — Tool-call parser: extraction and safe repairs (WBS 6.3)
+
+Decided by: CI · Supersedes: none
+
+**Decision:**
+1. `adm/orchestration/parser.py` turns the condition D tool-call reply into a proposed call or a parse failure. It reads no state and does not check the tool contract. An unknown tool, a missing argument, or the string `"null"` in place of `null` is a parsed call, which the validator rejects with `SCHEMA_VIOLATION` (`docs/tool_contract.md` §1). The parser does not normalise `"null"`.
+2. The call is the first JSON object with a `tool` key. It may be inside the first code fence, or have prose or tags such as `</think>` around it. Objects without `tool`, such as an echoed `<state>` block, are skipped. A later object with `tool` is ignored and flagged.
+3. If nothing decodes as written, three repairs are tried, each of which cannot change what the model meant: trailing commas are removed, Python's `None`, `True` and `False` become JSON literals, and brackets missing at the end of a cut-off reply are closed. Text inside JSON strings is never edited. A reply cut off inside a string stays a failure, because closing it would invent content. Single quotes and unquoted keys are not rewritten: rewriting them could corrupt a justification that contains an apostrophe.
+4. Every extraction and repair is listed on the result (`code_fence`, `surrounding_text`, `multiple_objects`, `trailing_comma`, `python_literal`, `closed_truncation`). A recovered parse is therefore visible rather than hidden from M2, which the 2026-10-06 entry (WBS 3.7) asked for.
+5. A failure is a value with reason `no_json` or `no_tool_key`. Its message is the logged one from `schemas/examples/audit_turn_rejected.json`. The retry prompt with one example belongs to the failure pipeline (6.4, #63).
+6. The 31 recorded replies the tests use are copied from the gitignored `results/bench/` into `tests/orchestration/fixtures/recorded_toolcall_outputs.jsonl`, with each line naming its run file and line. All 31 broke the tool contract. They are:
+   - 20 Qwen prose replies
+   - 2 schema-invalid Granite replies
+   - 3 Granite replies with trailing tags
+   - 1 echoed state block
+   - 5 Llama prose replies
+
+   The benchmark had no fenced, broken or cut-off JSON, so those cases are hand-written in the tests and are not counted as recorded.
+
+**Reason:** WBS 6.3 must recover from malformed output without hiding the failures M2 counts, and without making the parser a second validator. The Week 2 data shows that what `llama3.1:8b` gets wrong is prose instead of JSON, not broken JSON. The repairs are therefore kept to the ones that cannot change a call's meaning.
+
+**Changed:** `adm/orchestration/parser.py` added. `tests/orchestration/test_parser.py` and `tests/orchestration/fixtures/recorded_toolcall_outputs.jsonl` added. No new dependencies; CLAUDE.md and the schemas are unchanged.
