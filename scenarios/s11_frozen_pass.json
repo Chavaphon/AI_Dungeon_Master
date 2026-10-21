@@ -1,0 +1,424 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s11_frozen_pass",
+  "display_name": "The Frozen Pass",
+  "opening_narration": "Snow hisses across the trail and your breath freezes on your scarf. The gash on your leg from the rockfall still throbs. Ahead, Old Tobin leans on his stick and squints up at the pass.",
+  "locations": [
+    "the trail",
+    "the pass",
+    "the snowdrift",
+    "the stone cairn",
+    "the overhang",
+    "the valley",
+    "the village"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_ysolde": {
+        "combatant_id": "pc_ysolde",
+        "display_name": "Ysolde",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 10,
+          "dex": 14,
+          "con": 12,
+          "int": 14,
+          "wis": 13,
+          "cha": 12
+        },
+        "proficient_skills": [
+          "perception"
+        ],
+        "armour_class": 14,
+        "max_hp": 20,
+        "current_hp": 10,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": 5,
+        "spellcasting_modifier": 3,
+        "spell_slots_1": 2
+      },
+      "npc_wolf_01": {
+        "combatant_id": "npc_wolf_01",
+        "display_name": "wolf",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 12,
+          "dex": 15,
+          "con": 12,
+          "int": 3,
+          "wis": 12,
+          "cha": 6
+        },
+        "proficient_skills": [
+          "perception",
+          "stealth"
+        ],
+        "armour_class": 11,
+        "max_hp": 4,
+        "current_hp": 4,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_wolf_02": {
+        "combatant_id": "npc_wolf_02",
+        "display_name": "wolf",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 12,
+          "dex": 15,
+          "con": 12,
+          "int": 3,
+          "wis": 12,
+          "cha": 6
+        },
+        "proficient_skills": [
+          "perception",
+          "stealth"
+        ],
+        "armour_class": 11,
+        "max_hp": 4,
+        "current_hp": 4,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_ysolde": {
+        "item_quarterstaff": 1,
+        "item_rations": 2,
+        "item_blanket": 1
+      },
+      "npc_wolf_01": {
+        "item_wolf_bite": 1
+      },
+      "npc_wolf_02": {
+        "item_wolf_bite": 1
+      }
+    },
+    "item_definitions": {
+      "item_quarterstaff": {
+        "item_id": "item_quarterstaff",
+        "display_name": "quarterstaff",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d6",
+        "damage_bonus": 0
+      },
+      "item_rations": {
+        "item_id": "item_rations",
+        "display_name": "ration",
+        "is_weapon": false
+      },
+      "item_blanket": {
+        "item_id": "item_blanket",
+        "display_name": "blanket",
+        "is_weapon": false
+      },
+      "item_wolf_bite": {
+        "item_id": "item_wolf_bite",
+        "display_name": "bite",
+        "is_weapon": true,
+        "attack_bonus": 1,
+        "damage_dice": "1d4",
+        "damage_bonus": 0
+      }
+    },
+    "npc_relationships": {
+      "npc_old_tobin": {
+        "npc_id": "npc_old_tobin",
+        "display_name": "Old Tobin",
+        "stance": "neutral",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_cross_pass": {
+        "quest_id": "quest_cross_pass",
+        "display_name": "Over the Pass",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 3
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 7,
+      "combatant_ids": [
+        "pc_ysolde",
+        "npc_wolf_01",
+        "npc_wolf_02"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I check how bad the gash on my leg is",
+      "expected_call": null
+    },
+    {
+      "text": "I ask Old Tobin to guide me over the pass, and he agrees",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_cross_pass",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I bind the gash with a strip torn from my cloak before we set off",
+      "expected_call": null
+    },
+    {
+      "text": "I eat one of my rations to keep my strength up",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_ysolde",
+          "item_id": "item_rations",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I push through the waist-deep snowdrift",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ysolde",
+          "skill": "strength",
+          "dc": 13
+        }
+      },
+      "check_advantage": "disadvantage"
+    },
+    {
+      "text": "We reach the stone cairn that marks the halfway point",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_cross_pass",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I listen through the wind for the howling Tobin warned me about",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ysolde",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "As the wolves close in, I press my hand to my leg and cast a healing spell",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ysolde",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "pc_ysolde"
+        }
+      }
+    },
+    {
+      "text": "I hurl a bolt of fire at the leading wolf",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ysolde",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_wolf_01"
+        }
+      }
+    },
+    {
+      "text": "I throw fire at the same wolf again",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ysolde",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_wolf_01"
+        }
+      }
+    },
+    {
+      "text": "I crack my staff across the wolf's muzzle",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_ysolde",
+          "target_id": "npc_wolf_01",
+          "weapon_id": "item_quarterstaff"
+        }
+      }
+    },
+    {
+      "text": "I turn and send a bolt of fire at the second wolf",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ysolde",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_wolf_02"
+        }
+      }
+    },
+    {
+      "text": "I put my back to the rocks and keep the wolves at staff's length",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_ysolde"
+        }
+      }
+    },
+    {
+      "text": "I hurl fire at the second wolf",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ysolde",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_wolf_02"
+        }
+      }
+    },
+    {
+      "text": "I cast fire at the second wolf again",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ysolde",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_wolf_02"
+        }
+      }
+    },
+    {
+      "text": "I send one more bolt at the first wolf if it is still standing",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ysolde",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_wolf_01"
+        }
+      }
+    },
+    {
+      "text": "I warm my hands while Tobin checks the path ahead",
+      "expected_call": null
+    },
+    {
+      "text": "I wrap my blanket around Tobin's shoulders and tell him to keep it",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_ysolde",
+          "item_id": "item_blanket",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I tell Tobin I could not have crossed without him",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_old_tobin",
+          "direction": "up",
+          "justification": "Ysolde gave Tobin her blanket and thanked him for guiding her."
+        }
+      }
+    },
+    {
+      "text": "We crest the pass and see the valley below",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_cross_pass",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I lead us quietly under the overhang heavy with snow",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ysolde",
+          "skill": "stealth",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I ask Tobin for one of his healing herbs",
+      "expected_call": null
+    },
+    {
+      "text": "I cast my last healing spell on the bite on my arm",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ysolde",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "pc_ysolde"
+        }
+      }
+    },
+    {
+      "text": "I share my last ration with Tobin",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_ysolde",
+          "item_id": "item_rations",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I tell Tobin he will always have a friend in me",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_old_tobin",
+          "direction": "up",
+          "justification": "Ysolde shared her last ration with Tobin on the way down."
+        }
+      }
+    },
+    {
+      "text": "We reach the village at the foot of the pass",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_cross_pass",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I rent a bed at the inn and sleep through to morning",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. Ysolde starts already hurt, at 10 of 20 hit points (wounded), so input 0 invites a band phrase before anything has happened, and narration of her as fresh or unhurt there is a CONTRADICT divergence. Binding the gash at input 2 has no mechanical effect, so narration of it healing her is also a CONTRADICT divergence. She heals at the start of the fight (input 7) and again after it (input 22), which spends both of her slots. Input 4 has disadvantage from the scenario because of the deep snow. Fire Bolt is a cantrip and spends nothing. Input 21 asks for healing herbs Tobin does not have, to test PHANTOM detection; its expected call is null. Input 26 asks for a night's sleep, but there are no rests: narration that restores her spell slots or hit points is a divergence. Old Tobin is not a combatant and goes up twice, from neutral to allied. Inputs 8 to 15 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}
