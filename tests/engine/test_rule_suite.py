@@ -5,9 +5,10 @@ written exactly so. A parametrized function is one case; its parameters are the
 case's examples. The cases stay next to the rules they test, in the per-module
 test files, and this module counts them per area against the section 13 table.
 
-`NOT_YET_BUILT` names the areas whose rules are not written yet; they must have no
-cases. WBS 4.10 covers the areas of WBS 4.1 to 4.9 that are built: 40 cases.
-Dodge (4.6) and the areas of 4.11 to 4.16 add the other 20, and WBS 4.17 empties
+`NOT_YET_BUILT` names the areas whose rules are not all written yet; they must have
+no cases, except the count `PARTLY_BUILT` gives for the rules already written.
+WBS 4.10 covers the areas of WBS 4.1 to 4.9 that are built: 40 cases. Dodge (4.6)
+and the areas of 4.11 to 4.16 add the other 20, and WBS 4.17 empties
 `NOT_YET_BUILT`.
 
 Run the suite alone: pytest -m rule_suite -v
@@ -42,10 +43,15 @@ SECTION_13 = {
 # area -> the WBS task that builds its rules
 NOT_YET_BUILT = {
     "dodge": "4.6",
-    "spells": "4.11 to 4.13",
+    "spells": "4.12 and 4.13",
     "inventory": "4.14",
     "relationships": "4.15",
     "quests": "4.16",
+}
+
+# area in NOT_YET_BUILT -> the cases of the rules already built
+PARTLY_BUILT = {
+    "spells": 3,  # Fire Bolt (4.11); Cure Wounds and slots (4.12, 4.13) add 4
 }
 
 
@@ -70,6 +76,8 @@ def _cases() -> list[tuple[str, str]]:
 def test_section_13_table_has_60_cases() -> None:
     assert sum(SECTION_13.values()) == 60
     assert set(NOT_YET_BUILT) <= set(SECTION_13)
+    assert set(PARTLY_BUILT) <= set(NOT_YET_BUILT)
+    assert all(0 < n < SECTION_13[area] for area, n in PARTLY_BUILT.items())
 
 
 def test_every_case_names_a_section_13_area() -> None:
@@ -84,7 +92,10 @@ def test_every_case_is_a_test_function() -> None:
 
 def test_each_built_area_has_its_section_13_count() -> None:
     counts = Counter(area for area, _ in _cases())
-    expected = {area: 0 if area in NOT_YET_BUILT else n for area, n in SECTION_13.items()}
+    expected = {
+        area: PARTLY_BUILT.get(area, 0) if area in NOT_YET_BUILT else n
+        for area, n in SECTION_13.items()
+    }
     actual = {area: counts[area] for area in SECTION_13}
     listing = "\n".join(f"{area}: {where}" for area, where in sorted(_cases()))
     assert actual == expected, listing
