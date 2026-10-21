@@ -437,7 +437,6 @@ def test_same_seed_gives_the_same_attack(mid_combat: GameState) -> None:
     assert results[0] == results[1]
 
 
-@pytest.mark.rule_suite("zero_hp")
 def test_attacking_an_unconscious_target_raises(mid_combat: GameState) -> None:
     _knock_out(mid_combat, "npc_rat_01")
     with pytest.raises(ValueError, match="unconscious"):

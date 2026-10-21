@@ -43,7 +43,7 @@ SECTION_13 = {
 # area -> the WBS task that builds its rules
 NOT_YET_BUILT = {
     "dodge": "4.6",
-    "spells": "4.12 and 4.13",
+    "spells": "4.13",
     "inventory": "4.14",
     "relationships": "4.15",
     "quests": "4.16",
@@ -51,7 +51,7 @@ NOT_YET_BUILT = {
 
 # area in NOT_YET_BUILT -> the cases of the rules already built
 PARTLY_BUILT = {
-    "spells": 3,  # Fire Bolt (4.11); Cure Wounds and slots (4.12, 4.13) add 4
+    "spells": 6,  # Fire Bolt (4.11) 3, Cure Wounds (4.12) 3; slot exhaustion (4.13) adds 1
 }
 
 
