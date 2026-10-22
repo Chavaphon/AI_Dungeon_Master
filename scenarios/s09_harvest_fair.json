@@ -1,0 +1,376 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s09_harvest_fair",
+  "display_name": "The Harvest Fair",
+  "opening_narration": "Bunting snaps above the village green and the air smells of roasting chestnuts. Somewhere past the cider stall a pig squeals, a fence cracks, and Miller Dunn comes running, red in the face.",
+  "locations": [
+    "the village green",
+    "the cider stall",
+    "the turnip field",
+    "the boar pen"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_nia": {
+        "combatant_id": "pc_nia",
+        "display_name": "Nia",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 14,
+          "dex": 15,
+          "con": 13,
+          "int": 10,
+          "wis": 14,
+          "cha": 10
+        },
+        "proficient_skills": [
+          "perception",
+          "stealth"
+        ],
+        "armour_class": 14,
+        "max_hp": 22,
+        "current_hp": 22,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_boar": {
+        "combatant_id": "npc_boar",
+        "display_name": "wild boar",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 15,
+          "dex": 10,
+          "con": 13,
+          "int": 2,
+          "wis": 9,
+          "cha": 5
+        },
+        "proficient_skills": [],
+        "armour_class": 11,
+        "max_hp": 13,
+        "current_hp": 13,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_nia": {
+        "item_spear": 1
+      },
+      "npc_boar": {
+        "item_boar_tusks": 1
+      }
+    },
+    "item_definitions": {
+      "item_spear": {
+        "item_id": "item_spear",
+        "display_name": "spear",
+        "is_weapon": true,
+        "attack_bonus": 4,
+        "damage_dice": "1d6",
+        "damage_bonus": 2
+      },
+      "item_cider": {
+        "item_id": "item_cider",
+        "display_name": "bottle of cider",
+        "is_weapon": false
+      },
+      "item_boar_tusks": {
+        "item_id": "item_boar_tusks",
+        "display_name": "tusks",
+        "is_weapon": true,
+        "attack_bonus": 3,
+        "damage_dice": "1d6",
+        "damage_bonus": 1
+      }
+    },
+    "npc_relationships": {
+      "npc_miller_dunn": {
+        "npc_id": "npc_miller_dunn",
+        "display_name": "Miller Dunn",
+        "stance": "neutral",
+        "history": []
+      },
+      "npc_steward": {
+        "npc_id": "npc_steward",
+        "display_name": "the steward",
+        "stance": "friendly",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_runaway_boar": {
+        "quest_id": "quest_runaway_boar",
+        "display_name": "The Runaway Boar",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      },
+      "quest_lost_ring": {
+        "quest_id": "quest_lost_ring",
+        "display_name": "The Steward's Ring",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 6,
+      "combatant_ids": [
+        "pc_nia",
+        "npc_boar"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I wander between the stalls and take in the fair",
+      "expected_call": null
+    },
+    {
+      "text": "I accept the bottle of cider the stallholder presses into my hands",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_nia",
+          "item_id": "item_cider",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I tell Miller Dunn I will catch the boar that broke out of his pen",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_runaway_boar",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I look for the boar's tracks through the trampled straw",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_nia",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I agree to help the steward look for the ring she lost",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_lost_ring",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I sneak up on the boar while it is busy rooting in the turnips",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_nia",
+          "skill": "stealth",
+          "dc": 13
+        }
+      },
+      "check_advantage": "advantage"
+    },
+    {
+      "text": "I thrust my spear at the boar",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_nia",
+          "target_id": "npc_boar",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I stab at the boar again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_nia",
+          "target_id": "npc_boar",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I leap aside as the boar lowers its tusks and charges",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_nia"
+        }
+      }
+    },
+    {
+      "text": "I drive my spear at the boar's shoulder",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_nia",
+          "target_id": "npc_boar",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I jab at the boar again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_nia",
+          "target_id": "npc_boar",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I keep at the boar until it goes down",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_nia",
+          "target_id": "npc_boar",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I give the boar one more jab if it is still on its feet",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_nia",
+          "target_id": "npc_boar",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I drink my cider to steady my nerves",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_nia",
+          "item_id": "item_cider",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I check whether the boar's tusks caught me",
+      "expected_call": null
+    },
+    {
+      "text": "I tie up the stunned boar and drag it back to its pen",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_runaway_boar",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I tell Miller Dunn his boar is back in its pen",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_miller_dunn",
+          "direction": "up",
+          "justification": "Nia caught the runaway boar and returned it to its pen."
+        }
+      }
+    },
+    {
+      "text": "I show Miller Dunn the broken latch so he can fix it",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_runaway_boar",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I search the turnip field for the steward's ring",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_nia",
+          "skill": "perception",
+          "dc": 15
+        }
+      }
+    },
+    {
+      "text": "I ask the fortune teller whether she has seen a ring",
+      "expected_call": null
+    },
+    {
+      "text": "I tell the steward the ring must have been trampled into the mud and is gone for good",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_lost_ring",
+          "transition": "fail"
+        }
+      }
+    },
+    {
+      "text": "I suggest to the steward that she lost the ring on purpose",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_steward",
+          "direction": "down",
+          "justification": "Nia accused the steward of losing her own ring on purpose."
+        }
+      }
+    },
+    {
+      "text": "I ask the steward whether she is still angry with me",
+      "expected_call": null
+    },
+    {
+      "text": "I help Miller Dunn mend the fence around the pen",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_miller_dunn",
+          "direction": "up",
+          "justification": "Nia spent the afternoon helping Miller Dunn mend his fence."
+        }
+      }
+    },
+    {
+      "text": "I sit on the fence and watch the fair's bonfire being lit",
+      "expected_call": null
+    },
+    {
+      "text": "I head home as the music starts",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. Mostly a social scenario with one short fight against a single boar from input 6. Nia is not a spellcaster. Input 5 grants advantage because the boar is distracted. The cider has no mechanical effect: drinking it at input 13 removes it from inventory and changes no hit points, so narration of it healing Nia is a CONTRADICT divergence. Input 14 is a narration-only turn that invites a hit-point band phrase about Nia. Input 19 names a fortune teller who is not in state, to test PHANTOM detection; its expected call is null. The steward's ring quest is meant to fail (input 20). Two NPCs move in opposite directions: Miller Dunn goes up twice to allied, and the steward drops from friendly to neutral at input 21, so her reply at input 22 should be cool rather than warm. The boar is unconscious, not dead, at input 15: there is no death in this game. Inputs 6 to 12 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}

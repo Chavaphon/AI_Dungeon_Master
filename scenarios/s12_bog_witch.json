@@ -1,0 +1,416 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s12_bog_witch",
+  "display_name": "The Bog Witch",
+  "opening_narration": "The boardwalk sinks under your boots and black water seeps over the planks. Fog hangs low over the reeds. Somewhere out there is the witch's hut, and the village behind you blames her for every withered field.",
+  "locations": [
+    "the bog",
+    "the boardwalk",
+    "the witch's hut",
+    "the spring",
+    "the village"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_corin": {
+        "combatant_id": "pc_corin",
+        "display_name": "Corin",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 11,
+          "dex": 13,
+          "con": 14,
+          "int": 15,
+          "wis": 12,
+          "cha": 14
+        },
+        "proficient_skills": [
+          "perception"
+        ],
+        "armour_class": 13,
+        "max_hp": 20,
+        "current_hp": 20,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": 6,
+        "spellcasting_modifier": 3,
+        "spell_slots_1": 2
+      },
+      "npc_leech_01": {
+        "combatant_id": "npc_leech_01",
+        "display_name": "giant leech",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 12,
+          "dex": 11,
+          "con": 13,
+          "int": 1,
+          "wis": 8,
+          "cha": 2
+        },
+        "proficient_skills": [],
+        "armour_class": 11,
+        "max_hp": 6,
+        "current_hp": 6,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_leech_02": {
+        "combatant_id": "npc_leech_02",
+        "display_name": "giant leech",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 12,
+          "dex": 11,
+          "con": 13,
+          "int": 1,
+          "wis": 8,
+          "cha": 2
+        },
+        "proficient_skills": [],
+        "armour_class": 11,
+        "max_hp": 6,
+        "current_hp": 6,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_corin": {
+        "item_dagger": 1,
+        "item_salt_pouch": 1
+      },
+      "npc_leech_01": {
+        "item_leech_mouth": 1
+      },
+      "npc_leech_02": {
+        "item_leech_mouth": 1
+      }
+    },
+    "item_definitions": {
+      "item_dagger": {
+        "item_id": "item_dagger",
+        "display_name": "dagger",
+        "is_weapon": true,
+        "attack_bonus": 3,
+        "damage_dice": "1d4",
+        "damage_bonus": 1
+      },
+      "item_salt_pouch": {
+        "item_id": "item_salt_pouch",
+        "display_name": "pouch of salt",
+        "is_weapon": false
+      },
+      "item_blighted_reed": {
+        "item_id": "item_blighted_reed",
+        "display_name": "blighted reed",
+        "is_weapon": false
+      },
+      "item_leech_mouth": {
+        "item_id": "item_leech_mouth",
+        "display_name": "sucking mouth",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d4",
+        "damage_bonus": 0
+      }
+    },
+    "npc_relationships": {
+      "npc_bog_witch": {
+        "npc_id": "npc_bog_witch",
+        "display_name": "the bog witch",
+        "stance": "hostile",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_bog_blight": {
+        "quest_id": "quest_bog_blight",
+        "display_name": "The Bog Blight",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 4,
+      "combatant_ids": [
+        "pc_corin",
+        "npc_leech_01",
+        "npc_leech_02"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I look out over the bog from the end of the boardwalk",
+      "expected_call": null
+    },
+    {
+      "text": "I set out to find what is blighting the village's crops",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_bog_blight",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I peer through the fog for the witch's hut",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_corin",
+          "skill": "perception",
+          "dc": 14
+        }
+      },
+      "check_advantage": "disadvantage"
+    },
+    {
+      "text": "I step lightly along the sunken boardwalk",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_corin",
+          "skill": "stealth",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I hurl a bolt of fire at the leech rising out of the water",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_corin",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_leech_01"
+        }
+      }
+    },
+    {
+      "text": "I cast fire at the same leech again",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_corin",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_leech_01"
+        }
+      }
+    },
+    {
+      "text": "I stab at the leech with my dagger",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_corin",
+          "target_id": "npc_leech_01",
+          "weapon_id": "item_dagger"
+        }
+      }
+    },
+    {
+      "text": "I turn and throw fire at the second leech",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_corin",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_leech_02"
+        }
+      }
+    },
+    {
+      "text": "I back along the boardwalk and keep out of reach of their mouths",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_corin"
+        }
+      }
+    },
+    {
+      "text": "I send another bolt of fire at the second leech",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_corin",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_leech_02"
+        }
+      }
+    },
+    {
+      "text": "I keep casting fire at the second leech",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_corin",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_leech_02"
+        }
+      }
+    },
+    {
+      "text": "I burn whichever leech is still moving, starting with the first",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_corin",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_leech_01"
+        }
+      }
+    },
+    {
+      "text": "I pull a leech's teeth out of my arm and look at the wound",
+      "expected_call": null
+    },
+    {
+      "text": "I cast a healing spell on the bite",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_corin",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "pc_corin"
+        }
+      }
+    },
+    {
+      "text": "I call out to the witch that I mean her no harm",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_bog_witch",
+          "direction": "up",
+          "justification": "Corin approached the witch's hut openly and promised her no harm."
+        }
+      }
+    },
+    {
+      "text": "I leave my pouch of salt on her doorstep as a peace offering",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_corin",
+          "item_id": "item_salt_pouch",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I ask the witch why she cursed the village",
+      "expected_call": null
+    },
+    {
+      "text": "I apologise for the villagers who burned her herb garden",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_bog_witch",
+          "direction": "up",
+          "justification": "Corin apologised for the villagers who burned the witch's garden."
+        }
+      }
+    },
+    {
+      "text": "The witch says the blight comes from a choked spring, so I go to see it",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_bog_blight",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I heave the fallen log out of the spring",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_corin",
+          "skill": "strength",
+          "dc": 14
+        }
+      }
+    },
+    {
+      "text": "I pull a blighted reed from the spring to show the village",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_corin",
+          "item_id": "item_blighted_reed",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I tell the witch she should have cleared the spring herself",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_bog_witch",
+          "direction": "down",
+          "justification": "Corin blamed the witch for leaving the spring choked."
+        }
+      }
+    },
+    {
+      "text": "I ask the witch for a potion to cure my wounds",
+      "expected_call": null
+    },
+    {
+      "text": "I burn the blighted reed so the rot cannot spread",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_corin",
+          "item_id": "item_blighted_reed",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I return to the village and tell them the spring runs clean",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_bog_blight",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I heal my scratches with my last spell before the walk home",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_corin",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "pc_corin"
+        }
+      }
+    },
+    {
+      "text": "I wave to the witch's hut from the edge of the bog",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. The bog witch starts hostile, the only NPC in the short suite to do so, and she is not a combatant. Inputs 14 and 17 move her up to unfriendly and then neutral; input 21 moves her back down to unfriendly. Her replies at input 16 should be cold, and narration of her as warm or friendly anywhere is a RELATION divergence. Input 2 has disadvantage from the scenario because of the fog. Fire Bolt is a cantrip; Cure Wounds at inputs 13 and 25 spends both of Corin's slots. Input 12 is a narration-only turn that invites a hit-point band phrase about Corin. Input 22 asks for a potion that is not in state, to test PHANTOM detection; its expected call is null. The village and its people are not in state, so narration that names a villager is a phantom character. Inputs 4 to 11 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}

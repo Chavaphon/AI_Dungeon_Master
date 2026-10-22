@@ -1,0 +1,458 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s10_watchtower",
+  "display_name": "The Goblin Watchtower",
+  "opening_narration": "The old border watchtower leans against the grey sky, a ragged goblin banner flapping from its roof. Shrill voices argue on the parapet, and from somewhere inside a woman shouts for help.",
+  "locations": [
+    "the treeline",
+    "the hill",
+    "the watchtower",
+    "the parapet",
+    "the upper room",
+    "the signal fire"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_kael": {
+        "combatant_id": "pc_kael",
+        "display_name": "Kael",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 16,
+          "dex": 13,
+          "con": 15,
+          "int": 10,
+          "wis": 12,
+          "cha": 10
+        },
+        "proficient_skills": [
+          "strength"
+        ],
+        "armour_class": 17,
+        "max_hp": 30,
+        "current_hp": 30,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_goblin_01": {
+        "combatant_id": "npc_goblin_01",
+        "display_name": "goblin",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 8,
+          "dex": 14,
+          "con": 10,
+          "int": 10,
+          "wis": 8,
+          "cha": 8
+        },
+        "proficient_skills": [
+          "stealth"
+        ],
+        "armour_class": 12,
+        "max_hp": 5,
+        "current_hp": 5,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_goblin_02": {
+        "combatant_id": "npc_goblin_02",
+        "display_name": "goblin",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 8,
+          "dex": 14,
+          "con": 10,
+          "int": 10,
+          "wis": 8,
+          "cha": 8
+        },
+        "proficient_skills": [
+          "stealth"
+        ],
+        "armour_class": 12,
+        "max_hp": 5,
+        "current_hp": 5,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_goblin_03": {
+        "combatant_id": "npc_goblin_03",
+        "display_name": "goblin",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 8,
+          "dex": 14,
+          "con": 10,
+          "int": 10,
+          "wis": 8,
+          "cha": 8
+        },
+        "proficient_skills": [
+          "stealth"
+        ],
+        "armour_class": 12,
+        "max_hp": 5,
+        "current_hp": 5,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_kael": {
+        "item_battleaxe": 1,
+        "item_javelin": 3
+      },
+      "npc_goblin_01": {
+        "item_goblin_blade": 1
+      },
+      "npc_goblin_02": {
+        "item_goblin_blade": 1
+      },
+      "npc_goblin_03": {
+        "item_goblin_blade": 1
+      }
+    },
+    "item_definitions": {
+      "item_battleaxe": {
+        "item_id": "item_battleaxe",
+        "display_name": "battleaxe",
+        "is_weapon": true,
+        "attack_bonus": 5,
+        "damage_dice": "1d8",
+        "damage_bonus": 3
+      },
+      "item_javelin": {
+        "item_id": "item_javelin",
+        "display_name": "javelin",
+        "is_weapon": true,
+        "attack_bonus": 5,
+        "damage_dice": "1d6",
+        "damage_bonus": 3
+      },
+      "item_goblin_blade": {
+        "item_id": "item_goblin_blade",
+        "display_name": "notched blade",
+        "is_weapon": true,
+        "attack_bonus": 3,
+        "damage_dice": "1d4",
+        "damage_bonus": 1
+      },
+      "item_oil_flask": {
+        "item_id": "item_oil_flask",
+        "display_name": "flask of lamp oil",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_scout_ilsa": {
+        "npc_id": "npc_scout_ilsa",
+        "display_name": "Scout Ilsa",
+        "stance": "neutral",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_watchtower": {
+        "quest_id": "quest_watchtower",
+        "display_name": "Retake the Watchtower",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      },
+      "quest_signal_fire": {
+        "quest_id": "quest_signal_fire",
+        "display_name": "The Signal Fire",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 1
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 4,
+      "combatant_ids": [
+        "pc_kael",
+        "npc_goblin_01",
+        "npc_goblin_02",
+        "npc_goblin_03"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I study the watchtower from the treeline",
+      "expected_call": null
+    },
+    {
+      "text": "I read my orders from the border guard again: retake the watchtower",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_watchtower",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I try to sneak up the hill in my clanking mail",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_kael",
+          "skill": "stealth",
+          "dc": 14
+        }
+      },
+      "check_advantage": "disadvantage"
+    },
+    {
+      "text": "I count the goblins on the parapet",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_kael",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I hurl a javelin at the goblin on the parapet",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_kael",
+          "target_id": "npc_goblin_01",
+          "weapon_id": "item_javelin"
+        }
+      }
+    },
+    {
+      "text": "I throw another javelin at the same goblin",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_kael",
+          "target_id": "npc_goblin_01",
+          "weapon_id": "item_javelin"
+        }
+      }
+    },
+    {
+      "text": "I charge in and swing my axe at the next goblin",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_kael",
+          "target_id": "npc_goblin_02",
+          "weapon_id": "item_battleaxe"
+        }
+      }
+    },
+    {
+      "text": "I chop at the second goblin again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_kael",
+          "target_id": "npc_goblin_02",
+          "weapon_id": "item_battleaxe"
+        }
+      }
+    },
+    {
+      "text": "I put my back to the wall and fend them off",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_kael"
+        }
+      }
+    },
+    {
+      "text": "I swing at the third goblin",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_kael",
+          "target_id": "npc_goblin_03",
+          "weapon_id": "item_battleaxe"
+        }
+      }
+    },
+    {
+      "text": "I hack at the third goblin again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_kael",
+          "target_id": "npc_goblin_03",
+          "weapon_id": "item_battleaxe"
+        }
+      }
+    },
+    {
+      "text": "I cut down the second goblin if it is still standing",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_kael",
+          "target_id": "npc_goblin_02",
+          "weapon_id": "item_battleaxe"
+        }
+      }
+    },
+    {
+      "text": "I finish the first goblin",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_kael",
+          "target_id": "npc_goblin_01",
+          "weapon_id": "item_battleaxe"
+        }
+      }
+    },
+    {
+      "text": "I bring my axe down on the third goblin",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_kael",
+          "target_id": "npc_goblin_03",
+          "weapon_id": "item_battleaxe"
+        }
+      }
+    },
+    {
+      "text": "I lean on my axe and look over my wounds",
+      "expected_call": null
+    },
+    {
+      "text": "I gather up the javelins I threw",
+      "expected_call": null
+    },
+    {
+      "text": "I force open the barred door to the tower's upper room",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_kael",
+          "skill": "strength",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I cut the ropes binding Scout Ilsa",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_scout_ilsa",
+          "direction": "up",
+          "justification": "Kael freed Ilsa from the goblins who held her captive."
+        }
+      }
+    },
+    {
+      "text": "I tear down the goblin banner from the tower roof",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_watchtower",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "Ilsa asks me to light the signal fire and I agree",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_signal_fire",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I take the flask of lamp oil from the goblins' stores",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_kael",
+          "item_id": "item_oil_flask",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I pour the oil over the signal fire's wood and light it",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_kael",
+          "item_id": "item_oil_flask",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I watch until an answering fire appears on the next hill",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_signal_fire",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I ask Ilsa how long the goblins held her",
+      "expected_call": null
+    },
+    {
+      "text": "I tell Ilsa the tower belongs to the border guard again",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_watchtower",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I give Ilsa my word that I will escort her home",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_scout_ilsa",
+          "direction": "up",
+          "justification": "Kael promised to escort Ilsa safely home."
+        }
+      }
+    },
+    {
+      "text": "I settle in to keep watch until the border guard arrives",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. The largest fight in the short suite: three goblins from input 4. Kael is not a spellcaster. Input 2 has disadvantage from the scenario because of his mail. Kael holds three javelins, and throwing one does not use it up: there are no ammunition rules, so his inventory stays at three. Narration of him running out of javelins, or picking them up again at input 15 as if they had been spent, is a RESOURCE divergence; input 15's expected call is null. Input 14 is a narration-only turn that invites a hit-point band phrase about Kael. Scout Ilsa is a captive, not a combatant, and goes up twice from neutral to allied. Inputs 4 to 13 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}

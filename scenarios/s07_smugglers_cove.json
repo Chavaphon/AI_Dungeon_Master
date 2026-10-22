@@ -1,0 +1,409 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s07_smugglers_cove",
+  "display_name": "The Smugglers' Cove",
+  "opening_narration": "Below the cliff path, a rowing boat sits dragged up on the shingle, and two figures are stacking crates beside it by the light of a hooded lamp. Up on the harbour wall behind you, the harbourmaster watches the cove with a frown.",
+  "locations": [
+    "the harbour wall",
+    "the cliff path",
+    "the cove",
+    "the beach",
+    "the rowing boat"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_tamsin": {
+        "combatant_id": "pc_tamsin",
+        "display_name": "Tamsin",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 10,
+          "dex": 17,
+          "con": 13,
+          "int": 12,
+          "wis": 12,
+          "cha": 14
+        },
+        "proficient_skills": [
+          "stealth",
+          "perception"
+        ],
+        "armour_class": 15,
+        "max_hp": 22,
+        "current_hp": 22,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_smuggler_01": {
+        "combatant_id": "npc_smuggler_01",
+        "display_name": "smuggler",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 13,
+          "dex": 12,
+          "con": 12,
+          "int": 10,
+          "wis": 10,
+          "cha": 10
+        },
+        "proficient_skills": [],
+        "armour_class": 12,
+        "max_hp": 8,
+        "current_hp": 8,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_smuggler_02": {
+        "combatant_id": "npc_smuggler_02",
+        "display_name": "smuggler",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 13,
+          "dex": 12,
+          "con": 12,
+          "int": 10,
+          "wis": 10,
+          "cha": 10
+        },
+        "proficient_skills": [],
+        "armour_class": 12,
+        "max_hp": 8,
+        "current_hp": 8,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_tamsin": {
+        "item_rapier": 1,
+        "item_lantern": 1
+      },
+      "npc_smuggler_01": {
+        "item_cudgel": 1
+      },
+      "npc_smuggler_02": {
+        "item_cudgel": 1
+      }
+    },
+    "item_definitions": {
+      "item_rapier": {
+        "item_id": "item_rapier",
+        "display_name": "rapier",
+        "is_weapon": true,
+        "attack_bonus": 5,
+        "damage_dice": "1d8",
+        "damage_bonus": 3
+      },
+      "item_lantern": {
+        "item_id": "item_lantern",
+        "display_name": "lantern",
+        "is_weapon": false
+      },
+      "item_cudgel": {
+        "item_id": "item_cudgel",
+        "display_name": "cudgel",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d4",
+        "damage_bonus": 1
+      },
+      "item_cargo_manifest": {
+        "item_id": "item_cargo_manifest",
+        "display_name": "cargo manifest",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_harbourmaster": {
+        "npc_id": "npc_harbourmaster",
+        "display_name": "the harbourmaster",
+        "stance": "neutral",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_stolen_cargo": {
+        "quest_id": "quest_stolen_cargo",
+        "display_name": "The Stolen Cargo",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 3
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 5,
+      "combatant_ids": [
+        "pc_tamsin",
+        "npc_smuggler_01",
+        "npc_smuggler_02"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I shutter my lantern and look down at the cove from the cliff path",
+      "expected_call": null
+    },
+    {
+      "text": "I tell the harbourmaster I will find out where the missing cargo went",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_stolen_cargo",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I creep down the cliff path in the dark, keeping to the shadows",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_tamsin",
+          "skill": "stealth",
+          "dc": 14
+        }
+      },
+      "check_advantage": "advantage"
+    },
+    {
+      "text": "I watch the smugglers by the rowing boat and count how many there are",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_tamsin",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I offer the smugglers ten gold coins to hand back the cargo and leave",
+      "expected_call": null
+    },
+    {
+      "text": "I lunge at the nearest smuggler with my rapier",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_tamsin",
+          "target_id": "npc_smuggler_01",
+          "weapon_id": "item_rapier"
+        }
+      }
+    },
+    {
+      "text": "I thrust at the same smuggler again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_tamsin",
+          "target_id": "npc_smuggler_01",
+          "weapon_id": "item_rapier"
+        }
+      }
+    },
+    {
+      "text": "I grab a boathook from the boat and swing it at the other smuggler",
+      "expected_call": null
+    },
+    {
+      "text": "I turn my rapier on the second smuggler",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_tamsin",
+          "target_id": "npc_smuggler_02",
+          "weapon_id": "item_rapier"
+        }
+      }
+    },
+    {
+      "text": "I step back and parry, keeping both of them at bay",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_tamsin"
+        }
+      }
+    },
+    {
+      "text": "I lunge at the second smuggler",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_tamsin",
+          "target_id": "npc_smuggler_02",
+          "weapon_id": "item_rapier"
+        }
+      }
+    },
+    {
+      "text": "I press the second smuggler with another thrust",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_tamsin",
+          "target_id": "npc_smuggler_02",
+          "weapon_id": "item_rapier"
+        }
+      }
+    },
+    {
+      "text": "I finish the first smuggler if he is still standing",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_tamsin",
+          "target_id": "npc_smuggler_01",
+          "weapon_id": "item_rapier"
+        }
+      }
+    },
+    {
+      "text": "I strike at the second smuggler once more",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_tamsin",
+          "target_id": "npc_smuggler_02",
+          "weapon_id": "item_rapier"
+        }
+      }
+    },
+    {
+      "text": "I check the cut on my side",
+      "expected_call": null
+    },
+    {
+      "text": "I search the rowing boat for the stolen crates",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_tamsin",
+          "skill": "perception",
+          "dc": 11
+        }
+      }
+    },
+    {
+      "text": "I take the cargo manifest from the boat's locker",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_tamsin",
+          "item_id": "item_cargo_manifest",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I read the manifest by lantern light to see whose cargo this was",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_stolen_cargo",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I haul the crates up the beach above the tide line",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_tamsin",
+          "skill": "strength",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I leave my lantern burning on the rocks to mark the crates",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_tamsin",
+          "item_id": "item_lantern",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I climb back up and tell the harbourmaster where the crates are",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_harbourmaster",
+          "direction": "up",
+          "justification": "Tamsin found the stolen crates and drove the smugglers off the beach."
+        }
+      }
+    },
+    {
+      "text": "I hand the harbourmaster the cargo manifest",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_tamsin",
+          "item_id": "item_cargo_manifest",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I point out the name on the manifest: the harbourmaster's own deputy",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_stolen_cargo",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I ask the harbourmaster what will happen to the deputy",
+      "expected_call": null
+    },
+    {
+      "text": "I tell the harbourmaster I will speak against the deputy if it comes to a hearing",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_harbourmaster",
+          "direction": "up",
+          "justification": "Tamsin offered to speak against the deputy at a hearing."
+        }
+      }
+    },
+    {
+      "text": "I ask the harbourmaster whether that closes the matter",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_stolen_cargo",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I walk back along the harbour wall",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. Tamsin is not a spellcaster, so narration of her casting a spell is a divergence. Input 2 grants advantage because the cove is dark and her lantern is shuttered. Input 4 offers gold coins, but there is no currency in this game and Tamsin carries none: the expected call is null, and narration of coins changing hands is worth checking. Input 7 asks to swing a boathook that is not in state, to test PHANTOM detection; its expected call is null. Input 14 is a narration-only turn that invites a hit-point band phrase about Tamsin. Inputs 22 to 24 talk about the harbourmaster's deputy, who is not in state: narration that brings the deputy on stage is a phantom character. Input 19 leaves the lantern behind, so later narration of Tamsin carrying a lantern is a RESOURCE divergence. Inputs 5 to 13 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}
