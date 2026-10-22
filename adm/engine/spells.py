@@ -1,4 +1,4 @@
-"""Spells (CLAUDE.md section 4.6): Fire Bolt (WBS 4.11) and Cure Wounds (WBS 4.12).
+"""Spells (CLAUDE.md section 4.6): Fire Bolt (WBS 4.11), Cure Wounds (WBS 4.12), slots (4.13).
 
 Fire Bolt is a cantrip and a ranged spell attack. It takes the attack code path,
 `resolve_attack` in combat.py, with the caster's `spell_attack_bonus` in place of
@@ -14,6 +14,12 @@ whatever it heals. It may target an unconscious combatant, which comes back
 `active` and acts on its next turn in the existing initiative order, and it is
 legal outside an encounter. Its diff is the HP, the status on a revival, then
 the slot.
+
+Spell slots are `spell_slots_1`, level 1 only, set by the scenario. Cure Wounds
+is the only thing that spends one, and a Cure Wounds with none left is refused.
+There is no rest, short or long (sections 4.6 and 14), so slots never recover
+within a session: nothing in the engine writes `spell_slots_1` except that
+decrement, and tests/engine/test_spells.py checks it.
 
 Each spell changes the state in place and returns the parts of the result
 envelope (docs/tool_contract.md section 2). It assumes the validator (WBS 5.2)

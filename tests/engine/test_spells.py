@@ -1,15 +1,17 @@
-"""Fire Bolt (WBS 4.11) and Cure Wounds (WBS 4.12), CLAUDE.md section 4.6.
+"""Fire Bolt (WBS 4.11), Cure Wounds (WBS 4.12) and spell slots (WBS 4.13), CLAUDE.md 4.6.
 
 Fire Bolt is a ranged spell attack on the attack code path (`resolve_attack`):
 `1d20 + spell attack bonus` against AC, 1d10 damage, 2d10 on a critical, and no
 resource spent. Cure Wounds heals `1d8 + spellcasting modifier`, minimum 1, never
-past max HP, revives an unconscious target and spends one level-1 slot. The tests
+past max HP, revives an unconscious target and spends one level-1 slot. A cast
+with no slot left is refused, and slots never recover: there is no rest. The tests
 roll with a real seeded `DiceRoller` and look for a seed that gives the case they
 need.
 
 Run: pytest tests/engine/test_spells.py -v
 """
 
+import ast
 import json
 from pathlib import Path
 
@@ -266,13 +268,66 @@ def test_cure_wounds_works_outside_an_encounter() -> None:
     _assert_valid(state)
 
 
-def test_cure_wounds_with_no_slot_left_raises(mid_combat: GameState) -> None:
-    mid_combat.combatants["pc_lyra"].spell_slots_1 = 0
-    with pytest.raises(ValueError, match="no level-1 spell slot"):
-        _cure(mid_combat, "pc_lyra", 1)
-    assert mid_combat.combatants["pc_lyra"].current_hp == 14
-
-
 def test_cure_wounds_by_a_non_caster_raises(mid_combat: GameState) -> None:
     with pytest.raises(ValueError, match="not a caster"):
         cure_wounds(mid_combat, DiceRoller(1), "npc_rat_01", "npc_rat_01")
+
+
+# --- Spell slots and rest policy (WBS 4.13) -----------------------------------
+# Slots are spent one per Cure Wounds and never come back: there is no rest.
+
+
+@pytest.mark.rule_suite("spells")
+def test_each_cast_spends_a_slot_and_a_cast_at_zero_is_refused(mid_combat: GameState) -> None:
+    lyra = mid_combat.combatants["pc_lyra"]
+    lyra.current_hp = 1
+    roller = DiceRoller(7)
+    for slots_left in (1, 0):
+        outcome = cure_wounds(mid_combat, roller, "pc_lyra", "pc_lyra")
+        assert lyra.spell_slots_1 == outcome.facts.slots_remaining == slots_left
+        assert outcome.state_diff[-1].path == "combatants.pc_lyra.spell_slots_1"
+        assert (outcome.state_diff[-1].from_, outcome.state_diff[-1].to) == (
+            slots_left + 1,
+            slots_left,
+        )
+    before = mid_combat.to_dict()
+    with pytest.raises(ValueError, match="no level-1 spell slot"):
+        cure_wounds(mid_combat, roller, "pc_lyra", "pc_lyra")
+    assert mid_combat.to_dict() == before  # refused: nothing written, slots stay at 0
+    _assert_valid(mid_combat)
+
+
+def _slot_writes() -> list[tuple[str, ast.Assign | ast.AugAssign | ast.AnnAssign]]:
+    """Every statement under adm/ that assigns to an attribute named `spell_slots_1`."""
+    writes = []
+    for path in sorted((ROOT / "adm").rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                targets = node.targets
+            elif isinstance(node, ast.AugAssign | ast.AnnAssign):
+                targets = [node.target]
+            else:
+                continue
+            if any(isinstance(t, ast.Attribute) and t.attr == "spell_slots_1" for t in targets):
+                writes.append((path.relative_to(ROOT).as_posix(), node))
+    return writes
+
+
+def _subtracts_one(node: ast.Assign | ast.AugAssign | ast.AnnAssign) -> bool:
+    """`x = <expr> - 1` or `x -= 1`."""
+    if isinstance(node, ast.AugAssign):
+        op, right = node.op, node.value
+    elif isinstance(node.value, ast.BinOp):
+        op, right = node.value.op, node.value.right
+    else:
+        return False
+    return isinstance(op, ast.Sub) and isinstance(right, ast.Constant) and right.value == 1
+
+
+def test_no_engine_code_restores_a_slot() -> None:
+    # The rest policy (section 4.6): slots never recover within a session, so the
+    # only write to spell_slots_1 is Cure Wounds' decrement of one.
+    writes = _slot_writes()
+    assert [where for where, _ in writes] == ["adm/engine/spells.py"]
+    assert _subtracts_one(writes[0][1]), ast.unparse(writes[0][1])
