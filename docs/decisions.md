@@ -332,3 +332,19 @@ Attendees: SS, CI, SD · Note-taker: CI
 3. The engine's NPC action policy (4.19, #136) is agreed. On its turn, an NPC that holds a weapon attacks. Its target is the conscious combatant of the opposing faction (hostile against party, party against hostile) with the lowest `current_hp`, ties broken by the smaller `combatant_id`. Its weapon is the first weapon id in its sorted inventory. An NPC with no weapon dodges. The policy rolls no dice of its own, so it adds nothing to the seeded RNG stream. SS writes the rules into `docs/` in the 4.19 pull request.
 
 **Open, carried to next week:** none.
+
+## 2026-10-24 — Prompt assembly, block order and K reduction (WBS 6.2)
+
+Decided by: CI · Supersedes: none
+
+**Decision:**
+1. **State comes before tools** in the D tool-call prompt. CLAUDE.md §8 listed tool definitions as item 2 and state as item 3, while §9.1 gives `d_toolcall.txt` as "preamble, state block, tool definitions". §8 is corrected to match §9.1, and so is the "§8 step 2" reference in `docs/tool_contract.md` §5.
+2. **Where the summary and history go.** Each template's fixed blocks (preamble, state, tools or facts) come first. Then the rolling summary, then the last K turns. The condition's instruction comes last, closest to the input: C's self-check, D's tool-call instruction, and D narration's facts block. The prompt is one system message and one user message holding the player input. The history is a `Player:` / `DM:` transcript, never `assistant` messages (2026-10-05 entry, point 3).
+3. **Templates in `config/prompts/` now, as drafts.** The five condition templates hold the §9.1 text verbatim, with `{summary}` and `{history}` paragraphs. A paragraph with nothing to fill it is dropped. Two shared block files are added: `summary_block.txt` and `history_block.txt`, worded as the 3.5 drafts. WBS 7.5 (#81) freezes all seven files. No module branches on the condition; a template uses only the placeholders it holds (invariant 7).
+4. **Tokens are estimated, not counted:** `ceil(characters / 3.5) + 5` per message. It is deterministic, so a replay reduces K at the same turns. It over-counts every one of the nine `llama3.1:8b` prompts recorded in 3.5, by 3.5–10.9% (`docs/context_budget.md` §9.1). The budget is `context_tokens` less the phase's reply cap: 7992 for a tool call, 7892 for narration.
+5. **K reduction.** The assembler tries K, K−1, … 0 and uses the first prompt that fits. It drops the oldest turns and never cuts the middle. The turn record's `k_used` logs the reduction. A turn has one K: the loop assembles the turn's largest prompt first (the D tool call, or the single A–C call) and passes its `k_used` on. If even K = 0 does not fit, `PromptTooLarge` is raised. That is a state beyond the authoring ceiling, so it is a bug, not a turn failure.
+6. **R3 is not triggered.** The §2 worst case at K = 8 is estimated at 7765 of 7992 tokens for the D tool call, with no reduction (`docs/context_budget.md` §9.2).
+
+**Reason:** §8 and §9.1 disagreed about the order. K = 8 was validated on the §9.1 order (3.3, 3.5), so that order is kept, and swapping it would need a new benchmark. The instruction-last rule is the layout 3.5 validated for D, applied the same way to every template. No tokeniser runs offline. Counting through Ollama would add a model call per turn, and earlier requests can change a reply (`docs/model_selection.md` §3). An estimate that over-counts can only reduce K early, never let a prompt overflow.
+
+**Changed:** `adm/orchestration/prompt.py`, `config/prompts/` (seven files) and `tests/orchestration/test_prompt.py` added. CLAUDE.md: §3 lists the two block files; §8 swaps items 2 and 3 and states the message layout, the reduction rule and the estimate. `docs/tool_contract.md` §5: step 3. `docs/context_budget.md` §9 added. No new dependencies.

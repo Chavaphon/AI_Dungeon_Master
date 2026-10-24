@@ -157,3 +157,43 @@ This choice depends on two conditions:
 ## 8. Raw data
 
 `results/` is gitignored. All four run folders hold `summary.json` and per-model jsonl files with every request and raw reply. They go in the team Drive folder under `bench/context/`, next to `bench/toolcall/`.
+
+## 9. The 6.2 check: token estimate and worst case
+
+WBS 6.2 (#58) · Owner: CI · Run 2026-10-24.
+
+`adm/orchestration/prompt.py` has to decide whether a prompt fits before sending it, and there is no tokeniser offline. Asking Ollama would add a model call each turn, and that can change later replies (`docs/model_selection.md` §3). So the assembler estimates: `ceil(characters / 3.5) + 5` per message. The estimate is deterministic, so a replay makes the same K choices (invariant 4).
+
+### 9.1 Calibration
+
+Run 3 (`20261005T054107Z`) recorded `llama3.1:8b`'s `prompt_eval_count` for the D tool-call prompt with the ceiling state, the fixture summary, the longest input and K transcript turns. The same prompts are rebuilt from the repository fixtures by `adm.bench.context.toolcall_messages`.
+
+| K | Recorded tokens | Characters | Chars per token | Estimate | Over by |
+|---|---|---|---|---|---|
+| 0 | 4428 | 16009 | 3.62 | 4585 | +3.5% |
+| 4 | 4725 | 17295 | 3.66 | 4953 | +4.8% |
+| 8 | 5002 | 18498 | 3.70 | 5296 | +5.9% |
+| 12 | 5268 | 19668 | 3.73 | 5631 | +6.9% |
+| 16 | 5548 | 20849 | 3.76 | 5968 | +7.6% |
+| 20 | 5846 | 22140 | 3.79 | 6337 | +8.4% |
+| 24 | 6151 | 23476 | 3.82 | 6719 | +9.2% |
+| 28 | 6442 | 24784 | 3.85 | 7092 | +10.1% |
+| 32 | 6727 | 26061 | 3.87 | 7457 | +10.9% |
+
+The estimate over-counts every recorded prompt. The JSON state is the densest text (3.6 characters per token), and prose is lighter (4.3), so the margin grows with K. `tests/orchestration/test_prompt.py` checks all nine rows.
+
+### 9.2 Worst case at K = 8
+
+This is the §2 worst case, built with the real templates: the ceiling state, the fixture summary (201 tokens, over the 200 cap), 8 turns whose narrations are padded to 1320 characters (300 tokens at 4.4 characters per token, longer than any 300-token narration of the fixture prose), and the longest input. The budget is `context_tokens` less the reply cap of the call's phase.
+
+| Template | Estimate | Budget | K used |
+|---|---|---|---|
+| `d_toolcall` | 7765 | 7992 | 8 |
+| `c` | 6322 | 7892 | 8 |
+| `b` | 6243 | 7892 | 8 |
+| `d_narration` (3 facts) | 3832 | 7892 | 8 |
+| `a` | 3563 | 7892 | 8 |
+
+**The worst-case prompt fits at K = 8 with no reduction, so risk R3 is not triggered.** The largest prompt, D's tool call, is 227 estimated tokens under budget. Because the estimate over-counts, the real margin is wider: the §3 figure for Llama is 4444 + 8 × 327 = 7060 tokens. A test asserts every row.
+
+No live `prompt_eval_count` was taken for the assembled prompt in this task; the evidence is the calibration above.
