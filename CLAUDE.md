@@ -146,6 +146,7 @@ config/
   model.json
   prompts/            # a.txt b.txt c.txt d_toolcall.txt d_narration.txt
                       # summary_block.txt history_block.txt (shared by all five)
+                      # summary.txt (the rolling summary call, section 8.1)
 scenarios/            # s01..s12 + long01..long04
 experiments/          # run manifests
 runs/                 # audit logs, gitignored
@@ -558,6 +559,7 @@ Items 1–5 are one system message; item 6 is the only other message. The condit
 ### 8.1 Rolling summary
 
 - Regenerated every `K` turns by a separate model call at temperature 0.0.
+- Each regeneration folds the K narrated turns since the last one into the previous summary. A turn may be in both the summary and the verbatim window, but never in neither (`adm/orchestration/summary.py`).
 - Hard cap 200 tokens. If the model exceeds it, truncate at a sentence boundary and log.
 - The summary prompt asks only for events, decisions and unresolved threads. It must not restate numeric state, because the state file is injected separately and a stale number in the summary is a divergence source of our own making.
 - Every regeneration is written to the audit log.
@@ -890,6 +892,10 @@ Added at WBS 3.7 (reasons in `docs/decisions.md`):
 Added at the Week 3 checkpoint (WBS 12.3; reasons in `docs/decisions.md`):
 
 27. No web interface; the text CLI is the only client.
+
+Added at WBS 6.7 (reasons in `docs/decisions.md`):
+
+28. Each rolling-summary regeneration folds the last K narrated turns into the previous summary, so turns overlap with the verbatim window and none is dropped. A reply that hits the 200-token cap is cut after its last sentence.
 
 ## 16. Open questions for the team
 

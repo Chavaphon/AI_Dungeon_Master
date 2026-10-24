@@ -348,3 +348,17 @@ Decided by: CI · Supersedes: none
 **Reason:** §8 and §9.1 disagreed about the order. K = 8 was validated on the §9.1 order (3.3, 3.5), so that order is kept, and swapping it would need a new benchmark. The instruction-last rule is the layout 3.5 validated for D, applied the same way to every template. No tokeniser runs offline. Counting through Ollama would add a model call per turn, and earlier requests can change a reply (`docs/model_selection.md` §3). An estimate that over-counts can only reduce K early, never let a prompt overflow.
 
 **Changed:** `adm/orchestration/prompt.py`, `config/prompts/` (seven files) and `tests/orchestration/test_prompt.py` added. CLAUDE.md: §3 lists the two block files; §8 swaps items 2 and 3 and states the message layout, the reduction rule and the estimate. `docs/tool_contract.md` §5: step 3. `docs/context_budget.md` §9 added. No new dependencies.
+
+## 2026-10-24 — Rolling summary: coverage, trigger, prompt and cap (WBS 6.7)
+
+Decided by: CI · Supersedes: none
+
+**Decision:**
+1. **Coverage: overlap, no gap.** CLAUDE.md §8.1 says the summary covers "turns older than K" and is regenerated every K turns; both cannot hold exactly. After turn n with n % K == 0, the new summary is the model's fold of the previous summary and the K turns played since the last regeneration. Those turns are still in the verbatim window, so a turn can be in both for up to K turns, but no turn is ever in neither. CLAUDE.md §8.1 states the rule.
+2. **Trigger.** A turn here is a narrated turn: a failed turn has no narration and is not counted. K is `K_verbatim_turns` from `config/model.json`, never a turn's reduced `k_used`. At K = 8 a 50-turn session regenerates 6 times, so the long scenarios meet the §12 minimum of five.
+3. **Prompt.** `config/prompts/summary.txt` is added as a draft that WBS 7.5 (#81) freezes with the other seven files. It is the same in every condition (invariant 7). It has no narration preamble and no state, so the summary has no numbers to restate, and it reuses `summary_block.txt` and `history_block.txt`. The instruction comes last, as in every other template; the user message is the fixed line "Write the summary.". The summary must see every turn it folds in, so a prompt that would need K reduced raises `PromptTooLarge`; the worst case is about 3000 of 7992 tokens.
+4. **Cap.** The call runs at temperature 0.0 with `num_predict` 200 (2026-10-13 entry, point 5), so a reply cannot pass the cap; one that reaches it ends with `done_reason` "length". That reply is cut after its last complete sentence (`.`, `!` or `?`, with any closing quotes or brackets, before a space or the end) and logged with `truncated: true`. If it has no complete sentence it is kept whole. The uncut reply stays in the model call's `raw_output`.
+
+**Reason:** With the strict reading, up to K − 1 turns would leave the prompt entirely between regenerations, which loses context for no gain; repeating a few turns costs little and loses nothing. Folding only the new turns into the previous summary keeps the summary prompt bounded however long the session runs.
+
+**Changed:** `adm/orchestration/summary.py`, `config/prompts/summary.txt` and `tests/orchestration/test_summary.py` added. `adm/orchestration/prompt.py` lists the summary template in `TEMPLATES`. `tests/orchestration/test_prompt.py` checks the shared preamble only in the five condition templates. CLAUDE.md: §3 lists `summary.txt`, §8.1 states the coverage rule, and §15 adds item 28. No new dependencies; the schemas are unchanged.

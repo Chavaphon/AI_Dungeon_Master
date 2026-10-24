@@ -51,13 +51,15 @@ TOOLS_SCHEMA_PATH = ROOT / "schemas" / "tools.schema.json"
 
 Doc = dict[str, Any]
 
-# The condition templates of CLAUDE.md section 9.1 and the placeholders each holds.
+# The condition templates of CLAUDE.md section 9.1, the rolling summary's (section
+# 8.1, the same in every condition), and the placeholders each holds.
 TEMPLATES: dict[str, frozenset[str]] = {
     "a": frozenset({"summary", "history"}),
     "b": frozenset({"state_json", "summary", "history"}),
     "c": frozenset({"state_json", "summary", "history"}),
     "d_toolcall": frozenset({"state_json", "tools_json", "summary", "history"}),
     "d_narration": frozenset({"narration_facts_json", "summary", "history"}),
+    "summary": frozenset({"summary", "history"}),
 }
 # The two blocks shared by every template.
 BLOCKS: dict[str, frozenset[str]] = {

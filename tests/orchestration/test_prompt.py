@@ -119,7 +119,7 @@ def _contract_module() -> Any:
 # --- templates ---
 
 
-@pytest.mark.parametrize("name", list(prompt.TEMPLATES))
+@pytest.mark.parametrize("name", [*CONDITION_TEMPLATES, "d_narration"])
 def test_every_template_starts_with_the_shared_preamble(name: str) -> None:
     assert TEXTS[name].startswith(PREAMBLE + "\n\n")
 

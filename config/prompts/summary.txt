@@ -1,0 +1,12 @@
+You keep the running record of a text-based fantasy role-playing game.
+
+{summary}
+
+{history}
+
+Write a new summary of the whole game so far, combining the earlier summary,
+if there is one, with the turns above. Write one plain paragraph of under 150
+words. Include only events, decisions the player made, and unresolved threads.
+Do not state any numbers: no hit points, spell slots, item counts, dice,
+difficulty or turn numbers. Do not add anything that is not in the summary or
+the turns.
