@@ -1,0 +1,686 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "long04_mountain_monastery",
+  "display_name": "The Mountain Monastery",
+  "opening_narration": "The path to the monastery of the high bell starts beside a frozen stream and climbs into cloud. You are a pilgrim, and you have already walked a week to reach this mountain. Your guide, Sorin, stamps his feet in the snow and eyes the sky.",
+  "locations": [
+    "the mountain path",
+    "the stream",
+    "the ice bridge",
+    "the wayside shrine",
+    "the monastery gate",
+    "the infirmary",
+    "the storeroom",
+    "the cloister",
+    "the scriptorium",
+    "the frozen chimney",
+    "the summit",
+    "the bell tower",
+    "the summit shrine"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_ansa": {
+        "combatant_id": "pc_ansa",
+        "display_name": "Ansa",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 10,
+          "dex": 13,
+          "con": 14,
+          "int": 12,
+          "wis": 16,
+          "cha": 12
+        },
+        "proficient_skills": [
+          "perception"
+        ],
+        "armour_class": 14,
+        "max_hp": 24,
+        "current_hp": 24,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": 5,
+        "spellcasting_modifier": 3,
+        "spell_slots_1": 3
+      },
+      "npc_harpy_01": {
+        "combatant_id": "npc_harpy_01",
+        "display_name": "harpy",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 12,
+          "dex": 13,
+          "con": 10,
+          "int": 7,
+          "wis": 10,
+          "cha": 13
+        },
+        "proficient_skills": [],
+        "armour_class": 10,
+        "max_hp": 5,
+        "current_hp": 5,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_harpy_02": {
+        "combatant_id": "npc_harpy_02",
+        "display_name": "harpy",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 12,
+          "dex": 13,
+          "con": 10,
+          "int": 7,
+          "wis": 10,
+          "cha": 13
+        },
+        "proficient_skills": [],
+        "armour_class": 10,
+        "max_hp": 5,
+        "current_hp": 5,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_ansa": {
+        "item_quarterstaff": 1,
+        "item_rope": 1
+      },
+      "npc_harpy_01": {
+        "item_harpy_claws": 1
+      },
+      "npc_harpy_02": {
+        "item_harpy_claws": 1
+      }
+    },
+    "item_definitions": {
+      "item_quarterstaff": {
+        "item_id": "item_quarterstaff",
+        "display_name": "quarterstaff",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d6",
+        "damage_bonus": 0
+      },
+      "item_harpy_claws": {
+        "item_id": "item_harpy_claws",
+        "display_name": "claws",
+        "is_weapon": true,
+        "attack_bonus": 3,
+        "damage_dice": "1d4",
+        "damage_bonus": 1
+      },
+      "item_rope": {
+        "item_id": "item_rope",
+        "display_name": "rope",
+        "is_weapon": false
+      },
+      "item_frost_lily": {
+        "item_id": "item_frost_lily",
+        "display_name": "frost-lily",
+        "is_weapon": false
+      },
+      "item_prayer_beads": {
+        "item_id": "item_prayer_beads",
+        "display_name": "prayer beads",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_abbot": {
+        "npc_id": "npc_abbot",
+        "display_name": "the abbot",
+        "stance": "unfriendly",
+        "history": []
+      },
+      "npc_brother_tam": {
+        "npc_id": "npc_brother_tam",
+        "display_name": "Brother Tam",
+        "stance": "friendly",
+        "history": []
+      },
+      "npc_sorin": {
+        "npc_id": "npc_sorin",
+        "display_name": "Sorin",
+        "stance": "neutral",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_pilgrims_climb": {
+        "quest_id": "quest_pilgrims_climb",
+        "display_name": "The Pilgrim's Climb",
+        "state": "active",
+        "stage": 1,
+        "max_stage": 4
+      },
+      "quest_fevered_monk": {
+        "quest_id": "quest_fevered_monk",
+        "display_name": "The Fevered Monk",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      },
+      "quest_storeroom_thief": {
+        "quest_id": "quest_storeroom_thief",
+        "display_name": "The Storeroom Thief",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      },
+      "quest_high_bell": {
+        "quest_id": "quest_high_bell",
+        "display_name": "The High Bell",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 1
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 38,
+      "combatant_ids": [
+        "pc_ansa",
+        "npc_harpy_01",
+        "npc_harpy_02"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I tighten my boots at the foot of the mountain path",
+      "expected_call": null
+    },
+    {
+      "text": "I ask Sorin the guide how long the climb to the monastery will take",
+      "expected_call": null
+    },
+    {
+      "text": "I pick the frost-lilies growing beside the stream",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "item_id": "item_frost_lily",
+          "delta": 2
+        }
+      }
+    },
+    {
+      "text": "I scramble up the first rocky stretch of the path",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "skill": "strength",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I tell Sorin we have reached the wayside shrine, the first stage of my pilgrimage",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_pilgrims_climb",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "Sorin warns me the ice bridge is unsafe, and I tell him I will cross it anyway",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_sorin",
+          "direction": "down",
+          "justification": "Ansa brushed off Sorin's warning about the ice bridge."
+        }
+      }
+    },
+    {
+      "text": "I edge across the slick ice bridge",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "skill": "strength",
+          "dc": 14
+        }
+      },
+      "check_advantage": "disadvantage"
+    },
+    {
+      "text": "I look back to see whether Sorin has followed me",
+      "expected_call": null
+    },
+    {
+      "text": "I search the rocks for more frost-lilies",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "skill": "perception",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I pick another frost-lily from a crack in the rock",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "item_id": "item_frost_lily",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I ring the small bell at the wayside shrine",
+      "expected_call": null
+    },
+    {
+      "text": "I tell Sorin I am sorry I did not listen to him",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_sorin",
+          "direction": "up",
+          "justification": "Ansa apologised to Sorin for ignoring his warning."
+        }
+      }
+    },
+    {
+      "text": "I reach the monastery gate and ask to see the abbot",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_pilgrims_climb",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I bow to the abbot and ask for shelter",
+      "expected_call": null
+    },
+    {
+      "text": "I offer my healing to the monks in the infirmary",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_abbot",
+          "direction": "up",
+          "justification": "Ansa offered her healing to the monastery without being asked."
+        }
+      }
+    },
+    {
+      "text": "Brother Tam shows me a monk sick with fever, and I agree to help him",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_fevered_monk",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I give the infirmarian all my frost-lilies for a fever draught",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "item_id": "item_frost_lily",
+          "delta": -3
+        }
+      }
+    },
+    {
+      "text": "I sit with the sick monk through the night",
+      "expected_call": null
+    },
+    {
+      "text": "At dawn I tell Brother Tam the fever has broken",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_fevered_monk",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I tease Brother Tam about falling asleep during the vigil",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_brother_tam",
+          "direction": "down",
+          "justification": "Ansa mocked Brother Tam for sleeping through the vigil."
+        }
+      }
+    },
+    {
+      "text": "I tell the abbot the sick monk will live",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_fevered_monk",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I accept the prayer beads the abbot gives me",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "item_id": "item_prayer_beads",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I agree to find out who has been stealing from the storeroom",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_storeroom_thief",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I hide in the storeroom after the evening meal",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "skill": "stealth",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I watch the storeroom door in the dark",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "skill": "perception",
+          "dc": 14
+        }
+      }
+    },
+    {
+      "text": "I catch Brother Tam taking bread and ask him why",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_storeroom_thief",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I promise Tam I will keep his secret, since the bread was for the village children",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_brother_tam",
+          "direction": "up",
+          "justification": "Ansa kept Brother Tam's secret about the bread for the village children."
+        }
+      }
+    },
+    {
+      "text": "I tell the abbot I could not catch the thief",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_storeroom_thief",
+          "transition": "fail"
+        }
+      }
+    },
+    {
+      "text": "I walk the cloister and think about Tam's secret",
+      "expected_call": null
+    },
+    {
+      "text": "I copy a page in the scriptorium to pass the afternoon",
+      "expected_call": null
+    },
+    {
+      "text": "I ask the abbot about the summit and the high bell",
+      "expected_call": null
+    },
+    {
+      "text": "I tell the abbot I will climb to the high bell and ring it for the new year",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_high_bell",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I take a second rope from the monastery stores",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "item_id": "item_rope",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I set off for the summit before dawn",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_pilgrims_climb",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I climb the frozen chimney below the summit",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "skill": "strength",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I tie off a rope at the top of the chimney and leave it for the way down",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "item_id": "item_rope",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I listen to the shrieking above the summit rocks",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I creep toward the bell tower",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_ansa",
+          "skill": "stealth",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I hurl a fire bolt at the nearest harpy",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ansa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_harpy_01"
+        }
+      }
+    },
+    {
+      "text": "I cast fire bolt at the same harpy",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ansa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_harpy_01"
+        }
+      }
+    },
+    {
+      "text": "I crouch and cover my head as they dive at me",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_ansa"
+        }
+      }
+    },
+    {
+      "text": "I hurl fire at the second harpy",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ansa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_harpy_02"
+        }
+      }
+    },
+    {
+      "text": "I cast fire bolt at the second harpy again",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ansa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_harpy_02"
+        }
+      }
+    },
+    {
+      "text": "I send another fire bolt at the first harpy if it is still flying",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ansa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_harpy_01"
+        }
+      }
+    },
+    {
+      "text": "I burn the second harpy if it is still in the air",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ansa",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_harpy_02"
+        }
+      }
+    },
+    {
+      "text": "I mend my cuts with a healing prayer",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_ansa",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "pc_ansa"
+        }
+      }
+    },
+    {
+      "text": "I ring the high bell",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_high_bell",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I kneel at the summit shrine and finish my pilgrimage",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_pilgrims_climb",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I tell the abbot the high bell has rung",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_abbot",
+          "direction": "up",
+          "justification": "Ansa climbed to the summit and rang the high bell for the new year."
+        }
+      }
+    },
+    {
+      "text": "I climb back down the chimney on the rope I left",
+      "expected_call": null
+    },
+    {
+      "text": "The abbot names me a friend of the monastery, and I thank him",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_abbot",
+          "direction": "up",
+          "justification": "Ansa served the monastery in the infirmary and at the summit."
+        }
+      }
+    },
+    {
+      "text": "I wonder how many more healing prayers I have in me",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. A long session (WBS 8.5) of 52 inputs whose only fight, against two harpies, comes late, from input 38, after 37 inputs of social and quest play. The pilgrimage quest is already active at stage 1 in the starting state, so the first input that touches it is an advance (input 4), not a start; it reaches stage 4 at input 33 and completes at input 47. Four quests in all: the fevered monk completes, the storeroom thief fails at input 27 because Ansa keeps Tam's secret, and the high bell (max_stage 1) completes. Three NPCs: the abbot climbs three steps from unfriendly to allied (inputs 14, 48 and 50), and Brother Tam and Sorin each go down one step and later back up one, so both end where they began. Frost-lilies go 2, 3, 0 at inputs 2, 9 and 16; rope goes 1, 2, 1 at inputs 32 and 35, so the climb down at input 49 uses the rope left behind, not one in the pack. Ansa is a caster with 3 spell slots and spends one, on herself, at input 45, so input 51 should find 2 left. The ice bridge at input 6 is rolled with scenario disadvantage. Inputs 38 to 44 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}
