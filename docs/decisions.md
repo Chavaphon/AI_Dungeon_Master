@@ -315,3 +315,20 @@ Decided by: CI · Supersedes: none
 **Reason:** WBS 6.3 must recover from malformed output without hiding the failures M2 counts, and without making the parser a second validator. The Week 2 data shows that what `llama3.1:8b` gets wrong is prose instead of JSON, not broken JSON. The repairs are therefore kept to the ones that cannot change a call's meaning.
 
 **Changed:** `adm/orchestration/parser.py` added. `tests/orchestration/test_parser.py` and `tests/orchestration/fixtures/recorded_toolcall_outputs.jsonl` added. No new dependencies; CLAUDE.md and the schemas are unchanged.
+
+## 2026-10-24 — Weekly checkpoint, Week 3 (WBS 12.3)
+
+Attendees: SS, CI, SD · Note-taker: CI
+
+**Closed:** 4.10, 4.11, 4.12, 4.13, 6.1, 6.3, 8.4, 8.5
+**Slipped:** none.
+**Hours vs. estimate:** SS 11/11 · CI 6/6 · SD 9/9. Actual hours equal the `TASK_CHECKLIST.md` estimates.
+
+**Gates and risks:** G2 / Milestone 1 (1 Nov) is on track: a playable 50-turn session, shown by 6.11 (#73). No risk-register trigger has fired. R2 is checked again at the Week 4 checkpoint (#56), the day before G2; R3 is checked at 6.2 (#58).
+
+**Decisions:**
+1. `docs/conventions.md` (1.4) is signed off by CI and SD. Its two open points are settled as proposed: replay compares every audit field except `timestamp` and `latency_ms`, as CLAUDE.md §11 already says, and the band thresholds live in the engine (`hp_band` in `adm/engine/combat.py`) with the lexicon in `eval`. Its status is changed to signed off.
+2. The minimal FastAPI interface is not built. This answers the last open question in CLAUDE.md §16. The only client is the text CLI (6.10, #72). CLAUDE.md §14, §15 (item 27) and §16 are updated.
+3. The engine's NPC action policy (4.19, #136) is agreed. On its turn, an NPC that holds a weapon attacks. Its target is the conscious combatant of the opposing faction (hostile against party, party against hostile) with the lowest `current_hp`, ties broken by the smaller `combatant_id`. Its weapon is the first weapon id in its sorted inventory. An NPC with no weapon dodges. The policy rolls no dice of its own, so it adds nothing to the seeded RNG stream. SS writes the rules into `docs/` in the 4.19 pull request.
+
+**Open, carried to next week:** none.

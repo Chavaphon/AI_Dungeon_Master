@@ -1,6 +1,6 @@
 # Module boundaries and coding conventions
 
-WBS 1.4 · Owner: SS · Status: **draft, awaiting sign-off** · CLAUDE.md wins on any conflict.
+WBS 1.4 · Owner: SS · Status: **signed off 2026-10-24** · CLAUDE.md wins on any conflict.
 
 ## 1. Module boundaries
 
@@ -35,6 +35,8 @@ The rules behind this table:
 
 ## 3. Open points to settle at sign-off
 
+Both were settled as proposed at the Week 3 checkpoint (`docs/decisions.md`, 2026-10-24). They are kept here as the record of what was asked.
+
 1. **"Byte-identical run" (invariant 4) versus timestamps.** `timestamp` and `latency_ms` differ on every run. Proposal: replay compares the state-hash sequence and every audit field except those two.
 2. **Where `hp_band` lives** (§1 above). CLAUDE.md §3 puts band *classification* in `eval/bands.py`, but the engine also needs the thresholds. Proposal: thresholds go in `engine`, and the lexicon stays in `eval`.
 
@@ -43,5 +45,5 @@ The rules behind this table:
 | Member | Agreed | Date |
 |---|---|---|
 | Shayanis (SS) | Yes | 2026-09-29 |
-| Chavaphon (CI) | | |
-| Sudakarn (SD) | | |
+| Chavaphon (CI) | Yes | 2026-10-24 |
+| Sudakarn (SD) | Yes | 2026-10-24 |
