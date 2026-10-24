@@ -1,0 +1,635 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "long02_hollow_manor",
+  "display_name": "The Hollow Manor",
+  "opening_narration": "Rain hammers the gravel drive of Hollow Manor. Lamps burn in only two of its many windows. The village says a grey lady walks its halls at night, and the housekeeper has written, twice, asking for someone who will not run.",
+  "locations": [
+    "the manor gates",
+    "the entrance hall",
+    "the gardens",
+    "the woods",
+    "the long gallery",
+    "the study",
+    "the pantry",
+    "the chapel",
+    "the guest room"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_wren": {
+        "combatant_id": "pc_wren",
+        "display_name": "Wren",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 10,
+          "dex": 12,
+          "con": 14,
+          "int": 12,
+          "wis": 16,
+          "cha": 13
+        },
+        "proficient_skills": [
+          "perception"
+        ],
+        "armour_class": 15,
+        "max_hp": 22,
+        "current_hp": 22,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": 5,
+        "spellcasting_modifier": 3,
+        "spell_slots_1": 2
+      },
+      "npc_animated_armour": {
+        "combatant_id": "npc_animated_armour",
+        "display_name": "animated armour",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 14,
+          "dex": 11,
+          "con": 13,
+          "int": 1,
+          "wis": 3,
+          "cha": 1
+        },
+        "proficient_skills": [],
+        "armour_class": 12,
+        "max_hp": 11,
+        "current_hp": 11,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_wren": {
+        "item_mace": 1,
+        "item_candle": 3,
+        "item_holy_water": 1
+      },
+      "npc_animated_armour": {
+        "item_gauntlet": 1
+      }
+    },
+    "item_definitions": {
+      "item_mace": {
+        "item_id": "item_mace",
+        "display_name": "mace",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d6",
+        "damage_bonus": 0
+      },
+      "item_gauntlet": {
+        "item_id": "item_gauntlet",
+        "display_name": "iron gauntlet",
+        "is_weapon": true,
+        "attack_bonus": 3,
+        "damage_dice": "1d4",
+        "damage_bonus": 1
+      },
+      "item_candle": {
+        "item_id": "item_candle",
+        "display_name": "candle",
+        "is_weapon": false
+      },
+      "item_holy_water": {
+        "item_id": "item_holy_water",
+        "display_name": "flask of holy water",
+        "is_weapon": false
+      },
+      "item_iron_key": {
+        "item_id": "item_iron_key",
+        "display_name": "iron key",
+        "is_weapon": false
+      },
+      "item_silver_locket": {
+        "item_id": "item_silver_locket",
+        "display_name": "silver locket",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_mrs_hale": {
+        "npc_id": "npc_mrs_hale",
+        "display_name": "Mrs Hale",
+        "stance": "unfriendly",
+        "history": []
+      },
+      "npc_grey_lady": {
+        "npc_id": "npc_grey_lady",
+        "display_name": "the Grey Lady",
+        "stance": "neutral",
+        "history": []
+      },
+      "npc_tobin": {
+        "npc_id": "npc_tobin",
+        "display_name": "old Tobin",
+        "stance": "friendly",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_grey_lady": {
+        "quest_id": "quest_grey_lady",
+        "display_name": "The Grey Lady's Rest",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 3
+      },
+      "quest_locked_study": {
+        "quest_id": "quest_locked_study",
+        "display_name": "The Locked Study",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      },
+      "quest_tobins_dog": {
+        "quest_id": "quest_tobins_dog",
+        "display_name": "Tobin's Dog",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 1
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 30,
+      "combatant_ids": [
+        "pc_wren",
+        "npc_animated_armour"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I stand at the manor gates in the rain and look up at the dark windows",
+      "expected_call": null
+    },
+    {
+      "text": "I knock and ask the housekeeper to let me in out of the rain",
+      "expected_call": null
+    },
+    {
+      "text": "I tell Mrs Hale I have come about the lady who walks the halls at night",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_grey_lady",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I light one of my candles before going inside",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "item_id": "item_candle",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I study the portraits in the entrance hall",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "skill": "perception",
+          "dc": 11
+        }
+      }
+    },
+    {
+      "text": "I tell Mrs Hale how well she keeps the house",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_mrs_hale",
+          "direction": "up",
+          "justification": "Wren praised the care Mrs Hale takes of the manor."
+        }
+      }
+    },
+    {
+      "text": "I ask Mrs Hale in which rooms the lady is seen",
+      "expected_call": null
+    },
+    {
+      "text": "I go out to the gardens and greet old Tobin the groundskeeper",
+      "expected_call": null
+    },
+    {
+      "text": "I promise Tobin I will look for the dog that ran off into the woods",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_tobins_dog",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I search the hedges for the dog's tracks",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "skill": "perception",
+          "dc": 14
+        }
+      }
+    },
+    {
+      "text": "I call for the dog along the edge of the woods",
+      "expected_call": null
+    },
+    {
+      "text": "As night falls I go back inside and climb to the long gallery",
+      "expected_call": null
+    },
+    {
+      "text": "I hide behind a curtain and wait for the lady to appear",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "skill": "stealth",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "When the grey figure drifts past, I speak to her softly and ask her name",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_grey_lady",
+          "direction": "up",
+          "justification": "Wren spoke kindly to the Grey Lady instead of fleeing from her."
+        }
+      }
+    },
+    {
+      "text": "I follow the Grey Lady to the locked door of the study",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_grey_lady",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I put my shoulder to the study door",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "skill": "strength",
+          "dc": 16
+        }
+      }
+    },
+    {
+      "text": "I ask Mrs Hale whether there is a key to the study",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_locked_study",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I search the pantry shelves for the key",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I take the iron key from the hook behind the flour jars",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "item_id": "item_iron_key",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "My first candle has burned down, so I light a fresh one",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "item_id": "item_candle",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I unlock the study door with the iron key",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_locked_study",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I leave the key in the study lock",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "item_id": "item_iron_key",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I search the study desk",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "skill": "perception",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I take the silver locket from the desk drawer",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "item_id": "item_silver_locket",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I open the locket and look at the painted face inside",
+      "expected_call": null
+    },
+    {
+      "text": "I tell Mrs Hale the study is open at last",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_locked_study",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I accuse Tobin of letting his dog run off on purpose",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_tobin",
+          "direction": "down",
+          "justification": "Wren accused Tobin of losing his own dog on purpose."
+        }
+      }
+    },
+    {
+      "text": "I tell Tobin I have stopped looking for his dog",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_tobins_dog",
+          "transition": "fail"
+        }
+      }
+    },
+    {
+      "text": "I carry the locket down to the chapel where the lady is buried",
+      "expected_call": null
+    },
+    {
+      "text": "I light my last candle at the chapel door",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "item_id": "item_candle",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I hurl a bolt of fire at the suit of armour lurching toward me",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_wren",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_animated_armour"
+        }
+      }
+    },
+    {
+      "text": "I cast another fire bolt at the armour",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_wren",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_animated_armour"
+        }
+      }
+    },
+    {
+      "text": "I throw myself aside as its gauntlet swings down",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_wren"
+        }
+      }
+    },
+    {
+      "text": "I send fire into the gap under its helm",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_wren",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_animated_armour"
+        }
+      }
+    },
+    {
+      "text": "I strike at the armour with my mace",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_wren",
+          "target_id": "npc_animated_armour",
+          "weapon_id": "item_mace"
+        }
+      }
+    },
+    {
+      "text": "I cast fire bolt at the armour again",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_wren",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_animated_armour"
+        }
+      }
+    },
+    {
+      "text": "I keep burning the armour until it falls apart",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_wren",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_animated_armour"
+        }
+      }
+    },
+    {
+      "text": "I say a prayer over my own wounds",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_wren",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "pc_wren"
+        }
+      }
+    },
+    {
+      "text": "I splash my holy water over the fallen armour to be sure",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "item_id": "item_holy_water",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I check how badly the armour hurt me",
+      "expected_call": null
+    },
+    {
+      "text": "I place the locket in the Grey Lady's hands",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "item_id": "item_silver_locket",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I tell the Grey Lady her locket has come home",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_grey_lady",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I promise the Grey Lady I will tell her story",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_grey_lady",
+          "direction": "up",
+          "justification": "Wren returned the Grey Lady's locket and promised to tell her story."
+        }
+      }
+    },
+    {
+      "text": "I watch the Grey Lady fade into the morning light",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_grey_lady",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I tell Mrs Hale the lady is at rest",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_mrs_hale",
+          "direction": "up",
+          "justification": "Wren laid the Grey Lady to rest and ended the haunting of the manor."
+        }
+      }
+    },
+    {
+      "text": "I look for Tobin in the garden to say I am sorry",
+      "expected_call": null
+    },
+    {
+      "text": "I search the chapel for anything else hidden there",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_wren",
+          "skill": "perception",
+          "dc": 15
+        }
+      }
+    },
+    {
+      "text": "I pray over my wounds once more before the walk home",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_wren",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "pc_wren"
+        }
+      }
+    },
+    {
+      "text": "I ask Mrs Hale whether Tobin's dog ever came back",
+      "expected_call": null
+    },
+    {
+      "text": "I count the candles I have left",
+      "expected_call": null
+    },
+    {
+      "text": "I sleep in the manor's guest room until noon",
+      "expected_call": null
+    },
+    {
+      "text": "I take my leave of Mrs Hale and walk down the drive",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. A long session (WBS 8.5) of 52 inputs with one fight, against a single suit of animated armour from input 30, which is not a combatant until then. Wren is a caster with 2 spell slots: Cure Wounds at input 37 spends the first and input 47 the second, so she ends the session with none. The Grey Lady is an NPC with a relationship only, not a combatant, and she cannot be attacked. Candles are the numeric thread: 3 at the start, burned at inputs 3, 19 and 29, so input 49 should find none. The holy water at input 38 has no mechanical effect on the already-fallen armour, and narration of it doing damage or healing is a CONTRADICT divergence. The iron key is gained at input 18 and left in the lock at input 21; the locket is gained at input 23 and given up at input 40. Three quests: the Grey Lady's rest runs to stage 3 and completes, the locked study runs to its max_stage 2 and completes, and Tobin's dog fails at input 27; input 48 asks about the dog afterwards. Three NPCs: Mrs Hale goes up twice from unfriendly to friendly, the Grey Lady up twice to allied, and Tobin down once to neutral and is never won back, so input 45 should not find him warm. The study door at input 15 (strength, DC 16) usually fails, and the key is the intended way in. The night's sleep at input 50 restores nothing (no rests). Inputs 30 to 36 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}

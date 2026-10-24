@@ -1,0 +1,666 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "long01_border_road",
+  "display_name": "The Border Road",
+  "opening_narration": "Five wagons stand in a line at the edge of town, their oxen steaming in the cold. Master Orlo, a broad man in a sheepskin coat, waves you over: the border fort is two days east, and the road has not been kind to caravans this autumn.",
+  "locations": [
+    "the town gate",
+    "the border road",
+    "the ravine",
+    "the hermit's hut",
+    "the camp",
+    "the narrows",
+    "the toll gate",
+    "the border fort"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_edda": {
+        "combatant_id": "pc_edda",
+        "display_name": "Edda",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 16,
+          "dex": 13,
+          "con": 15,
+          "int": 10,
+          "wis": 12,
+          "cha": 11
+        },
+        "proficient_skills": [
+          "perception",
+          "strength"
+        ],
+        "armour_class": 16,
+        "max_hp": 30,
+        "current_hp": 30,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_bandit_01": {
+        "combatant_id": "npc_bandit_01",
+        "display_name": "bandit",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 11,
+          "dex": 12,
+          "con": 12,
+          "int": 10,
+          "wis": 10,
+          "cha": 10
+        },
+        "proficient_skills": [],
+        "armour_class": 11,
+        "max_hp": 7,
+        "current_hp": 7,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_bandit_02": {
+        "combatant_id": "npc_bandit_02",
+        "display_name": "bandit",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 11,
+          "dex": 12,
+          "con": 12,
+          "int": 10,
+          "wis": 10,
+          "cha": 10
+        },
+        "proficient_skills": [],
+        "armour_class": 11,
+        "max_hp": 7,
+        "current_hp": 7,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_edda": {
+        "item_longsword": 1,
+        "item_ration": 3,
+        "item_sealed_letter": 1
+      },
+      "npc_bandit_01": {
+        "item_club": 1
+      },
+      "npc_bandit_02": {
+        "item_club": 1
+      }
+    },
+    "item_definitions": {
+      "item_longsword": {
+        "item_id": "item_longsword",
+        "display_name": "longsword",
+        "is_weapon": true,
+        "attack_bonus": 5,
+        "damage_dice": "1d8",
+        "damage_bonus": 3
+      },
+      "item_club": {
+        "item_id": "item_club",
+        "display_name": "club",
+        "is_weapon": true,
+        "attack_bonus": 3,
+        "damage_dice": "1d6",
+        "damage_bonus": 1
+      },
+      "item_ration": {
+        "item_id": "item_ration",
+        "display_name": "ration",
+        "is_weapon": false
+      },
+      "item_sealed_letter": {
+        "item_id": "item_sealed_letter",
+        "display_name": "sealed letter",
+        "is_weapon": false
+      },
+      "item_rope": {
+        "item_id": "item_rope",
+        "display_name": "coil of rope",
+        "is_weapon": false
+      },
+      "item_hermit_herbs": {
+        "item_id": "item_hermit_herbs",
+        "display_name": "bundle of herbs",
+        "is_weapon": false
+      },
+      "item_bandit_badge": {
+        "item_id": "item_bandit_badge",
+        "display_name": "brass badge",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_orlo": {
+        "npc_id": "npc_orlo",
+        "display_name": "Master Orlo",
+        "stance": "neutral",
+        "history": []
+      },
+      "npc_toll_captain": {
+        "npc_id": "npc_toll_captain",
+        "display_name": "the toll captain",
+        "stance": "unfriendly",
+        "history": []
+      },
+      "npc_hermit": {
+        "npc_id": "npc_hermit",
+        "display_name": "the hermit",
+        "stance": "neutral",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_border_caravan": {
+        "quest_id": "quest_border_caravan",
+        "display_name": "The Border Caravan",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 4
+      },
+      "quest_sealed_letter": {
+        "quest_id": "quest_sealed_letter",
+        "display_name": "The Sealed Letter",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 1
+      },
+      "quest_missing_mule": {
+        "quest_id": "quest_missing_mule",
+        "display_name": "The Missing Mule",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 24,
+      "combatant_ids": [
+        "pc_edda",
+        "npc_bandit_01",
+        "npc_bandit_02"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I check the straps on my pack and look over the caravan before we set out",
+      "expected_call": null
+    },
+    {
+      "text": "I tell Master Orlo I will guard his wagons as far as the border fort",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_border_caravan",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I agree to carry the sealed letter Orlo's sister wrote to the fort's commander",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_sealed_letter",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I scan the road ahead for anything that looks wrong",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "skill": "perception",
+          "dc": 11
+        }
+      }
+    },
+    {
+      "text": "I walk beside the lead wagon and ask Orlo about the road",
+      "expected_call": null
+    },
+    {
+      "text": "I put my shoulder to the second wagon and push it out of a rut",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "skill": "strength",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I take the coil of rope Orlo offers me for the river crossing",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "item_id": "item_rope",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "At the midday halt I eat one of my rations",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "item_id": "item_ration",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I ask the drovers why they keep glancing at the hills",
+      "expected_call": null
+    },
+    {
+      "text": "I tell Orlo I will look for the mule that slipped its tether in the night",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_missing_mule",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I look for the mule's tracks in the mud beside the road",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "skill": "perception",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I follow the hoofprints off the road toward the ravine",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_missing_mule",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I climb down the side of the ravine to look for the mule",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "skill": "strength",
+          "dc": 14
+        }
+      }
+    },
+    {
+      "text": "I knock on the door of the hermit's hut at the foot of the ravine and ask about the mule",
+      "expected_call": null
+    },
+    {
+      "text": "I pocket a bundle of the hermit's drying herbs while his back is turned",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "item_id": "item_hermit_herbs",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "When the hermit catches me, I tell him he should not leave things lying about",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_hermit",
+          "direction": "down",
+          "justification": "Edda took the hermit's herbs without asking and then mocked him for it."
+        }
+      }
+    },
+    {
+      "text": "I give up on the mule and tell Orlo it must have gone over the edge",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_missing_mule",
+          "transition": "fail"
+        }
+      }
+    },
+    {
+      "text": "I take the first watch by the campfire",
+      "expected_call": null
+    },
+    {
+      "text": "I eat a ration by the fire",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "item_id": "item_ration",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I chew some of the hermit's herbs before I sleep",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "item_id": "item_hermit_herbs",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "At dawn I tell Orlo the first leg is done and the wagons are ready to roll",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_border_caravan",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I listen for movement in the trees where the road narrows",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "skill": "perception",
+          "dc": 14
+        }
+      }
+    },
+    {
+      "text": "I move quietly ahead of the wagons to scout the narrows",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "skill": "stealth",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I shout a warning to the drovers as two men step out of the trees",
+      "expected_call": null
+    },
+    {
+      "text": "I draw my longsword and attack the nearest bandit",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_edda",
+          "target_id": "npc_bandit_01",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I swing at the same bandit again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_edda",
+          "target_id": "npc_bandit_01",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I raise my guard as both bandits rush me",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_edda"
+        }
+      }
+    },
+    {
+      "text": "I attack the second bandit",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_edda",
+          "target_id": "npc_bandit_02",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I cut at the second bandit again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_edda",
+          "target_id": "npc_bandit_02",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I strike at the first bandit if he is still on his feet",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_edda",
+          "target_id": "npc_bandit_01",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I press the second bandit until he drops",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_edda",
+          "target_id": "npc_bandit_02",
+          "weapon_id": "item_longsword"
+        }
+      }
+    },
+    {
+      "text": "I take the brass badge from the first bandit's coat",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "item_id": "item_bandit_badge",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I check how badly the bandits hurt me",
+      "expected_call": null
+    },
+    {
+      "text": "I tell Orlo the narrows are clear",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_border_caravan",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I tell Orlo his drovers stood their ground well",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_orlo",
+          "direction": "up",
+          "justification": "Edda drove off the bandits who ambushed Orlo's caravan."
+        }
+      }
+    },
+    {
+      "text": "I accept the two rations Orlo hands me from his own stores",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "item_id": "item_ration",
+          "delta": 2
+        }
+      }
+    },
+    {
+      "text": "I ride on the tailboard of the last wagon and rest my legs",
+      "expected_call": null
+    },
+    {
+      "text": "I turn the brass badge over and wonder who the bandits worked for",
+      "expected_call": null
+    },
+    {
+      "text": "I eat a ration as the fort comes into view",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "item_id": "item_ration",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "At the toll gate I show the toll captain the bandit's badge",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_toll_captain",
+          "direction": "up",
+          "justification": "Edda brought the toll captain proof of the bandits raiding the border road."
+        }
+      }
+    },
+    {
+      "text": "I hand the badge over for the captain to keep",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "item_id": "item_bandit_badge",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I ask the toll captain to let the caravan through without a search",
+      "expected_call": null
+    },
+    {
+      "text": "I keep an eye on the gate guards while the wagons roll through",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I deliver the sealed letter to the fort's commander",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_edda",
+          "item_id": "item_sealed_letter",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I tell Orlo his sister's letter is in the commander's hands",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_sealed_letter",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I tell Orlo his wagons are safe inside the fort walls",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_border_caravan",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I ask Orlo for the coin he promised me for the escort",
+      "expected_call": null
+    },
+    {
+      "text": "I shake Orlo's hand and tell him the job is done",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_border_caravan",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I tell Orlo I would ride with him again any time",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_orlo",
+          "direction": "up",
+          "justification": "Edda saw Orlo's caravan safely to the fort and offered to ride with him again."
+        }
+      }
+    },
+    {
+      "text": "I empty my pack onto the bunk and count what is left",
+      "expected_call": null
+    },
+    {
+      "text": "I ask the drovers whether anyone has seen the lost mule",
+      "expected_call": null
+    },
+    {
+      "text": "I sleep the night in the fort's barracks",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. A long session (WBS 8.5) of 52 inputs with one fight, against two bandits from input 24, about halfway through. Edda is not a spellcaster and has no way to heal, so whatever hit points she loses at inputs 24 to 30 stay lost for the rest of the session: inputs 32, 49 and 51 invite a hit-point band phrase 2, 19 and 21 inputs after the fight, and the night's sleep at input 51 restores nothing (no rests). Rations are the numeric thread: 3 at the start, 2 after input 7, 1 after input 18, 3 after Orlo's gift at input 35 and 2 after input 38; input 49 asks for a count. The hermit's herbs have no mechanical effect: chewing them at input 19 changes no hit points. The letter leaves the inventory at input 43 and the badge at input 40. Three quests: the caravan runs the full ladder to stage 4 and completes, the letter (max_stage 1) completes, and the mule quest fails at input 16; input 50 asks about the mule after it was given up. Three NPCs: Orlo goes up twice to allied, the toll captain up once to neutral, and the hermit down once to unfriendly. Input 46 asks for coin, and there is no currency in the game, so narration that adds money to the inventory is a PHANTOM. Inputs 24 to 30 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game. The badge is taken at input 31 even if the first bandit is still standing."
+}

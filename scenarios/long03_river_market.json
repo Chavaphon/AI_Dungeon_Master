@@ -1,0 +1,640 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "long03_river_market",
+  "display_name": "The River Market",
+  "opening_narration": "The river market is in full cry: fishwives shouting prices, gulls fighting over scraps, barges nosing up to the quay. The post-house clerk has three parcels and nobody to carry them, and he looks very pleased to see you.",
+  "locations": [
+    "the quay",
+    "the market",
+    "the alley",
+    "the post-house",
+    "the chandler's shop",
+    "Marta's fish stall",
+    "the jetty",
+    "the ferry",
+    "the far bank",
+    "the harbour master's shed",
+    "the rope-maker's",
+    "the tinker's barrow",
+    "the weaver's house",
+    "the bakery"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_pell": {
+        "combatant_id": "pc_pell",
+        "display_name": "Pell",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 11,
+          "dex": 16,
+          "con": 12,
+          "int": 13,
+          "wis": 12,
+          "cha": 14
+        },
+        "proficient_skills": [
+          "perception",
+          "stealth"
+        ],
+        "armour_class": 14,
+        "max_hp": 20,
+        "current_hp": 20,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_thug_01": {
+        "combatant_id": "npc_thug_01",
+        "display_name": "thug",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 13,
+          "dex": 11,
+          "con": 12,
+          "int": 9,
+          "wis": 10,
+          "cha": 9
+        },
+        "proficient_skills": [],
+        "armour_class": 11,
+        "max_hp": 5,
+        "current_hp": 5,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_thug_02": {
+        "combatant_id": "npc_thug_02",
+        "display_name": "thug",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 13,
+          "dex": 11,
+          "con": 12,
+          "int": 9,
+          "wis": 10,
+          "cha": 9
+        },
+        "proficient_skills": [],
+        "armour_class": 11,
+        "max_hp": 5,
+        "current_hp": 5,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_pell": {
+        "item_dagger": 1
+      },
+      "npc_thug_01": {
+        "item_cudgel": 1
+      },
+      "npc_thug_02": {
+        "item_cudgel": 1
+      }
+    },
+    "item_definitions": {
+      "item_dagger": {
+        "item_id": "item_dagger",
+        "display_name": "dagger",
+        "is_weapon": true,
+        "attack_bonus": 5,
+        "damage_dice": "1d4",
+        "damage_bonus": 3
+      },
+      "item_cudgel": {
+        "item_id": "item_cudgel",
+        "display_name": "cudgel",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d4",
+        "damage_bonus": 1
+      },
+      "item_parcel": {
+        "item_id": "item_parcel",
+        "display_name": "parcel",
+        "is_weapon": false
+      },
+      "item_fish": {
+        "item_id": "item_fish",
+        "display_name": "fish",
+        "is_weapon": false
+      },
+      "item_lantern": {
+        "item_id": "item_lantern",
+        "display_name": "lantern",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_marta": {
+        "npc_id": "npc_marta",
+        "display_name": "Marta",
+        "stance": "friendly",
+        "history": []
+      },
+      "npc_ferryman": {
+        "npc_id": "npc_ferryman",
+        "display_name": "the ferryman",
+        "stance": "neutral",
+        "history": []
+      },
+      "npc_harbour_master": {
+        "npc_id": "npc_harbour_master",
+        "display_name": "the harbour master",
+        "stance": "unfriendly",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_three_parcels": {
+        "quest_id": "quest_three_parcels",
+        "display_name": "Three Parcels",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 3
+      },
+      "quest_martas_net": {
+        "quest_id": "quest_martas_net",
+        "display_name": "Marta's Stolen Net",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      },
+      "quest_mooring_toll": {
+        "quest_id": "quest_mooring_toll",
+        "display_name": "The Mooring Toll",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 1
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 5,
+      "combatant_ids": [
+        "pc_pell",
+        "npc_thug_01",
+        "npc_thug_02"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I push through the crowd on the quay and take in the market",
+      "expected_call": null
+    },
+    {
+      "text": "I agree to deliver three parcels for the post-house clerk",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_three_parcels",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I tuck the three parcels into my satchel",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "item_id": "item_parcel",
+          "delta": 3
+        }
+      }
+    },
+    {
+      "text": "I watch for anyone following me between the stalls",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I slip into an alley to lose the two men on my tail",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "skill": "stealth",
+          "dc": 14
+        }
+      }
+    },
+    {
+      "text": "I pull my dagger and stab at the first thug",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_pell",
+          "target_id": "npc_thug_01",
+          "weapon_id": "item_dagger"
+        }
+      }
+    },
+    {
+      "text": "I stab at the first thug again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_pell",
+          "target_id": "npc_thug_01",
+          "weapon_id": "item_dagger"
+        }
+      }
+    },
+    {
+      "text": "I duck behind a crate as the second thug swings his cudgel",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_pell"
+        }
+      }
+    },
+    {
+      "text": "I go for the second thug",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_pell",
+          "target_id": "npc_thug_02",
+          "weapon_id": "item_dagger"
+        }
+      }
+    },
+    {
+      "text": "I slash at the second thug again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_pell",
+          "target_id": "npc_thug_02",
+          "weapon_id": "item_dagger"
+        }
+      }
+    },
+    {
+      "text": "I stab the first thug if he is still standing",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_pell",
+          "target_id": "npc_thug_01",
+          "weapon_id": "item_dagger"
+        }
+      }
+    },
+    {
+      "text": "I finish the second thug if he is still up",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_pell",
+          "target_id": "npc_thug_02",
+          "weapon_id": "item_dagger"
+        }
+      }
+    },
+    {
+      "text": "I check my satchel to make sure the parcels are safe",
+      "expected_call": null
+    },
+    {
+      "text": "I catch my breath against the alley wall and look at my bruises",
+      "expected_call": null
+    },
+    {
+      "text": "I deliver the first parcel to the chandler's shop",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "item_id": "item_parcel",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I tell the post-house clerk the first parcel is delivered",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_three_parcels",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I stop at Marta's fish stall and ask why she looks so upset",
+      "expected_call": null
+    },
+    {
+      "text": "I offer to find the net someone cut from Marta's boat",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_martas_net",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I look for scraps of net along the jetty",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "skill": "perception",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I accept the four fish Marta gives me for my trouble",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "item_id": "item_fish",
+          "delta": 4
+        }
+      }
+    },
+    {
+      "text": "I ask the ferryman to take me across to the far bank",
+      "expected_call": null
+    },
+    {
+      "text": "I give the ferryman two fish for the crossing",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "item_id": "item_fish",
+          "delta": -2
+        }
+      }
+    },
+    {
+      "text": "I chat with the ferryman about the river on the way over",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_ferryman",
+          "direction": "up",
+          "justification": "Pell paid fairly for the crossing and kept the ferryman company."
+        }
+      }
+    },
+    {
+      "text": "I find Marta's net drying behind the harbour master's shed",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_martas_net",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I tell the harbour master he is a thief",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_harbour_master",
+          "direction": "down",
+          "justification": "Pell called the harbour master a thief in front of his own men."
+        }
+      }
+    },
+    {
+      "text": "I haul the net off his rack while his men watch",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "skill": "strength",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I carry the net back to Marta",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_martas_net",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I promise Marta I will buy from her stall every week",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_marta",
+          "direction": "up",
+          "justification": "Pell recovered Marta's stolen net and brought it back to her."
+        }
+      }
+    },
+    {
+      "text": "I deliver the second parcel to the rope-maker",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "item_id": "item_parcel",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I report the second delivery to the clerk",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_three_parcels",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I agree to argue the fishers' case against the new mooring toll",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_mooring_toll",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I tell the harbour master I am sorry for what I called him",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_harbour_master",
+          "direction": "up",
+          "justification": "Pell apologised to the harbour master before arguing the toll case."
+        }
+      }
+    },
+    {
+      "text": "I argue that the toll will ruin the small boats",
+      "expected_call": null
+    },
+    {
+      "text": "I tell the fishers the harbour master will not drop the toll",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_mooring_toll",
+          "transition": "fail"
+        }
+      }
+    },
+    {
+      "text": "I trade two fish at the tinker's barrow",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "item_id": "item_fish",
+          "delta": -2
+        }
+      }
+    },
+    {
+      "text": "I take the lantern the tinker gives me for them",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "item_id": "item_lantern",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I ask the ferryman to take me back across",
+      "expected_call": null
+    },
+    {
+      "text": "I complain loudly to the other passengers that his boat leaks",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_ferryman",
+          "direction": "down",
+          "justification": "Pell mocked the ferryman's boat in front of his other passengers."
+        }
+      }
+    },
+    {
+      "text": "I light my lantern as the market lamps come on",
+      "expected_call": null
+    },
+    {
+      "text": "I search the dark lanes for the weaver's house",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I hand over the third parcel at the weaver's door",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "item_id": "item_parcel",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I tell the clerk all three parcels are delivered",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_three_parcels",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I ask the clerk whether the thugs were after the parcels",
+      "expected_call": null
+    },
+    {
+      "text": "I check my satchel for anything I have left",
+      "expected_call": null
+    },
+    {
+      "text": "I buy a hot pie with the coin I earned today",
+      "expected_call": null
+    },
+    {
+      "text": "I press my sore ribs where the cudgel caught me",
+      "expected_call": null
+    },
+    {
+      "text": "I sneak past the harbour master's men on my way home",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_pell",
+          "skill": "stealth",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I stop at Marta's stall to say goodnight",
+      "expected_call": null
+    },
+    {
+      "text": "I ask the ferryman whether he is still cross with me",
+      "expected_call": null
+    },
+    {
+      "text": "I climb the stairs to my room above the bakery",
+      "expected_call": null
+    },
+    {
+      "text": "I sleep until morning",
+      "expected_call": null
+    },
+    {
+      "text": "I look over my wounds in the morning light",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. A long session (WBS 8.5) of 52 inputs whose only fight, against two thugs, comes early, from input 5. Pell is not a spellcaster and has no way to heal, so the hit points lost at inputs 5 to 11 hold for the remaining 40 inputs: inputs 13, 45 and 51 invite a hit-point band phrase 2, 34 and 40 inputs after the fight. This is the longest gap in the suite between damage and its recall. The night's sleep at input 50 restores nothing (no rests). Two numeric threads: parcels go 3, 2, 1, 0 at inputs 2, 14, 28 and 40, and fish go 4, 2, 0 at inputs 19, 21 and 34; input 43 asks for what is left, which is the dagger and the lantern. Fish are traded and the lantern is gained as two separate changes, because items do not move between inventories. Input 44 spends coin, and there is no currency in the game. Three quests: the parcels run to stage 3 and complete, Marta's net completes at stage 2, and the mooring toll (max_stage 1) fails at input 33. Three NPCs and both directions: Marta goes up once to allied, the ferryman up to friendly at input 22 and back down to neutral at input 37, and the harbour master down from unfriendly to hostile at input 24 and back up to unfriendly at input 31. Input 48 asks the ferryman how he feels, after he went up and then down. Inputs 5 to 11 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}
