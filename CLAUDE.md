@@ -839,7 +839,7 @@ Building any of these is scope creep and costs someone else their week.
 - A database or vector store. JSON files only.
 - Retrieval-augmented generation over lore documents.
 - Fine-tuning, LoRA, quantisation experiments.
-- A graphical client. Text CLI only; a minimal FastAPI page is optional and last.
+- A graphical or web client, including a FastAPI page. Text CLI only.
 - Human-participant studies. The player study was withdrawn.
 
 ---
@@ -884,8 +884,12 @@ Added at WBS 3.7 (reasons in `docs/decisions.md`):
 
 26. Tool calls are generated in plain prompt mode: no grammar-constrained decoding and no Ollama JSON mode.
 
+Added at the Week 3 checkpoint (WBS 12.3; reasons in `docs/decisions.md`):
+
+27. No web interface; the text CLI is the only client.
+
 ## 16. Open questions for the team
 
 Do not resolve these alone.
 
-- Whether the minimal FastAPI interface is built at all. It is optional and has no reserved time.
+None at present.
