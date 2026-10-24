@@ -145,6 +145,7 @@ adm/
 config/
   model.json
   prompts/            # a.txt b.txt c.txt d_toolcall.txt d_narration.txt
+                      # summary_block.txt history_block.txt (shared by all five)
 scenarios/            # s01..s12 + long01..long04
 experiments/          # run manifests
 runs/                 # audit logs, gitignored
@@ -542,15 +543,17 @@ This cannot be detected automatically. Do not try. Record enough in the turn rec
 Order matters — the stable prefix goes first so it stays identical across turns.
 
 1. System prompt (condition-specific, from `config/prompts/`)
-2. Tool definitions (conditions D only)
-3. Current state, injected as JSON (conditions B, C, D)
+2. Current state, injected as JSON (conditions B, C, D)
+3. Tool definitions (conditions D only)
 4. Rolling summary of turns older than K
 5. Last `K` turns verbatim, oldest first
 6. Current player input
 
 *(HARNESS artefact — this procedure is the execution guideline: it defines exactly what context the model receives and in what order.)*
 
-`K` defaults to 8 and is frozen in `config/model.json` after benchmarking. **If the assembled prompt would exceed `context_tokens`, reduce K for that turn and log it.** Never silently truncate from the middle.
+Items 1–5 are one system message; item 6 is the only other message. The condition's closing instruction (C's self-check, D's tool-call instruction) comes after item 5. The last K turns are a `Player:` / `DM:` transcript block, never `assistant` chat messages (`docs/context_budget.md` §5). `adm/orchestration/prompt.py` assembles every prompt.
+
+`K` defaults to 8 and is frozen in `config/model.json` after benchmarking. **If the assembled prompt would exceed `context_tokens`, reduce K for that turn and log it** in the turn record's `k_used`. The reduction drops the oldest turns first. Never silently truncate from the middle. Tokens are estimated deterministically from characters (`docs/context_budget.md` §9).
 
 ### 8.1 Rolling summary
 

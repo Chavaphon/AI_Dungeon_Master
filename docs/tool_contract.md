@@ -144,7 +144,7 @@ Every rejection is `{ok: false, tool, rejection_code, message, valid_options, re
 
 ## 5. Model-facing tool definitions
 
-The tool list in the condition D prompt (§8 step 2, WBS 6.2) is derived from the schema, never written by hand: one `{name, description, parameters}` per tool, where `parameters` is `args_<tool>` without its top-level `description`. `model_tool_definitions()` in the test file is the reference derivation. The 3.3 micro-benchmark uses the same list.
+The tool list in the condition D prompt (§8 step 3, WBS 6.2) is derived from the schema, never written by hand: one `{name, description, parameters}` per tool, where `parameters` is `args_<tool>` without its top-level `description`. `model_tool_definitions()` in the test file is the reference derivation. The 3.3 micro-benchmark uses the same list.
 
 ## 6. Gaps in CLAUDE.md filled here
 
