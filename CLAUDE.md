@@ -122,6 +122,7 @@ adm/
     dice.py           # DiceRoller, seeded; XdY+Z parser
     combat.py         # initiative, attack, dodge, turn advance
     spells.py         # fire_bolt, cure_wounds, slot accounting
+    npc.py            # NPC action policy and NPC turns
     checks.py         # skill checks
     inventory.py
     quests.py
@@ -271,7 +272,7 @@ There are **no death saving throws** and no death.
 - The encounter ends when either every hostile is unconscious (`outcome: "victory"`) or the player character is unconscious (`outcome: "defeat"`).
 - Combat tool calls (`attack`, `cast_spell`, `dodge`) with no active encounter, whether the first one has not started or the last one has resolved, are rejected with `ENCOUNTER_OVER`. Cure Wounds is exempt and may heal between fights.
 - No tool starts an encounter. The scenario says before which scripted input each one starts and who is in it (section 12).
-- NPC turns are taken by the engine with a fixed, rule-based policy over the current state, with no model call (WBS 4.19). Each NPC call goes through the validator and is logged as an `npc_action` engine step (section 11).
+- NPC turns are taken by the engine with a fixed, rule-based policy over the current state, with no model call (WBS 4.19, `docs/npc_policy.md`). An NPC attacks the conscious opponent with the lowest HP using the first weapon it holds, and dodges if it has no weapon or no opponent. Each NPC call goes through the validator and is logged as an `npc_action` engine step (section 11). NPCs who win initiative act as soon as the encounter starts, before the player's call.
 
 ---
 
@@ -644,7 +645,7 @@ listed, and do not contradict any value here.
 
 Note that D's narration call does **not** receive the full state, only the facts. This is the architecture, not an oversight.
 
-`{narration_facts_json}` is a JSON array: the `narration_facts` of the player's executed call first, then those of each `npc_action` engine step in the turn, in the order they happened. NPC actions are narrated; the template text is unchanged.
+`{narration_facts_json}` is a JSON array: the `narration_facts` of the player's executed call and of each `npc_action` engine step in the turn, in the order they happened: NPC actions before the call (when an encounter starts with NPCs ahead of the PC), then the player's call, then the NPC actions after it. NPC actions are narrated; the template text is unchanged.
 
 ---
 
@@ -901,6 +902,10 @@ Added at WBS 6.7 (reasons in `docs/decisions.md`):
 Added at WBS 4.6 (reasons in `docs/decisions.md`):
 
 29. A Dodge that has not expired when its encounter ends is cleared by the encounter's end.
+
+Added at WBS 4.19 (reasons in `docs/decisions.md`):
+
+30. NPCs who win initiative act before the player's first call of the encounter, as `before_call` steps. A neutral NPC, or one with no conscious opponent, dodges.
 
 ## 16. Open questions for the team
 

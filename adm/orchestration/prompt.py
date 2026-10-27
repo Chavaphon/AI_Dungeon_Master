@@ -145,7 +145,8 @@ def tools_json() -> str:
 
 
 def facts_json(facts: Sequence[Doc]) -> str:
-    """The player's call's facts first, then each NPC action's (CLAUDE.md section 9.1)."""
+    """The facts of the player's call and each NPC action, in the order they happened
+    (CLAUDE.md section 9.1)."""
     return json.dumps(list(facts), indent=2, ensure_ascii=False)
 
 

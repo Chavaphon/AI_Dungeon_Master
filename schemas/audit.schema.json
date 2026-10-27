@@ -171,12 +171,13 @@
       "oneOf": [{"$ref": "#/$defs/npc_action"}, {"$ref": "#/$defs/bookkeeping_step"}]
     },
     "npc_action": {
+      "$comment": "before_call when NPCs win initiative and act before the player's first call of an encounter (WBS 4.19, docs/npc_policy.md).",
       "type": "object",
       "additionalProperties": false,
       "required": ["step", "when", "call", "result"],
       "properties": {
         "step": {"const": "npc_action"},
-        "when": {"const": "after_call"},
+        "when": {"enum": ["before_call", "after_call"]},
         "call": {"$ref": "#/$defs/executed_call"},
         "result": {"$ref": "tools.schema.json#/$defs/result_ok"}
       }

@@ -26,7 +26,7 @@ The argument schemas check **shape only**. Ids, `spell_id`, `skill`, `dc` and `j
 
 ## 2. The seven tools
 
-"Uses the action" means a successful call ends the actor's turn and the engine advances initiative (§4.4). Turn advance, Dodge expiry and NPC turns are engine steps after the tool. They appear in the turn's audit record (§11), not in the tool's `state_diff`.
+"Uses the action" means a successful call ends the actor's turn and the engine advances initiative (§4.4). Turn advance, Dodge expiry and NPC turns are engine steps after the tool, or before it when an encounter starts with NPCs ahead of the PC (`docs/npc_policy.md`). They appear in the turn's audit record (§11), not in the tool's `state_diff`.
 
 ### `attack(attacker_id, target_id, weapon_id)`
 
