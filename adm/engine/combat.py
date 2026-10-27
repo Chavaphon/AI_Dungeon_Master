@@ -36,11 +36,21 @@ victory when every hostile in the initiative order is. Hostiles outside the
 encounter, kept for a later one, do not count. Ending clears `initiative_order`
 and `active_combatant_id` and keeps the last `round_number`.
 
-`attack` changes the state in place and returns the parts of the result envelope
+Dodge (WBS 4.6, CLAUDE.md section 4.5). `dodge` sets the actor's `dodging` flag,
+and attacks against it then have disadvantage. The flag holds through everyone
+else's turns and across the round wrap. `expire_dodge` is the `dodge_expiry`
+step: run right after `advance_initiative`, it clears the flag when the turn
+comes back to the dodger, at the start of its next turn. An unconscious dodger is
+skipped, so its flag holds until it is revived and its turn comes. Ending an
+encounter clears every flag still set, so nobody is dodging outside a fight and
+a later encounter starts clean.
+
+`attack` and `dodge` change the state in place and returns the parts of the result envelope
 (docs/tool_contract.md section 2). It assumes the validator (WBS 5.2) has
 already rejected the call if it breaks a precondition; reaching here with an
-unconscious target or a non-weapon raises. Ending the turn, initiative advance
-and encounter end are engine steps after the tool, not part of it.
+unconscious target or a non-weapon, or a Dodge by an unconscious actor or with
+no encounter, raises. Ending the turn, initiative advance, Dodge expiry and
+encounter end are engine steps after the tool, not part of it.
 """
 
 from __future__ import annotations
@@ -70,7 +80,7 @@ class EngineStep(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    step: Literal["encounter_start", "initiative_advance", "encounter_end"]
+    step: Literal["encounter_start", "dodge_expiry", "initiative_advance", "encounter_end"]
     when: Literal["before_call", "after_call"]
     state_diff: list[StateChange]
     rolls: list[RollResult]
@@ -218,7 +228,8 @@ def encounter_outcome(state: GameState) -> EncounterOutcome | None:
 
 def end_encounter_if_over(state: GameState) -> EngineStep | None:
     """Close the encounter if it has an outcome, and return the `encounter_end`
-    step; return `None` and change nothing if it goes on."""
+    step; return `None` and change nothing if it goes on. Every Dodge still set
+    is cleared, in combatant id order."""
     outcome = encounter_outcome(state)
     if outcome is None:
         return None
@@ -227,7 +238,73 @@ def end_encounter_if_over(state: GameState) -> EngineStep | None:
     _set(state, "encounter_outcome", outcome, diff)
     _set(state, "initiative_order", [], diff)
     _set(state, "active_combatant_id", None, diff)
+    for combatant_id in sorted(state.combatants):
+        diff.extend(_set_dodging(state, combatant_id, False))
     return EngineStep(step="encounter_end", when="after_call", state_diff=diff, rolls=[])
+
+
+# --- dodge (WBS 4.6) ---------------------------------------------------------
+
+
+def _set_dodging(state: GameState, combatant_id: str, value: bool) -> list[StateChange]:
+    """Set a combatant's `dodging` flag and return the diff, empty if unchanged."""
+    combatant = state.combatants[combatant_id]
+    if combatant.dodging == value:
+        return []
+    change = StateChange(
+        path=f"combatants.{combatant_id}.dodging", from_=combatant.dodging, to=value
+    )
+    combatant.dodging = value
+    return [change]
+
+
+class DodgeFacts(BaseModel):
+    """`facts_dodge` in tools.schema.json."""
+
+    model_config = ConfigDict(frozen=True)
+
+    actor: str
+
+
+class DodgeOutcome(BaseModel):
+    """The `narration_facts`, `state_diff` and `rolls` of a Dodge's result envelope."""
+
+    model_config = ConfigDict(frozen=True)
+
+    facts: DodgeFacts
+    state_diff: list[StateChange]
+    rolls: list[RollResult]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "narration_facts": self.facts.model_dump(mode="json"),
+            "state_diff": [c.model_dump(mode="json", by_alias=True) for c in self.state_diff],
+            "rolls": [r.to_dict() for r in self.rolls],
+        }
+
+
+def dodge(state: GameState, actor_id: str) -> DodgeOutcome:
+    """Take the Dodge action (section 4.5): attacks against `actor_id` have
+    disadvantage until the start of its next turn."""
+    if not state.encounter_active:
+        raise ValueError("no active encounter")
+    actor = state.combatants[actor_id]
+    if actor.status != "active":
+        raise ValueError(f"{actor_id} is unconscious and cannot act")
+    diff = _set_dodging(state, actor_id, True)
+    return DodgeOutcome(facts=DodgeFacts(actor=actor.display_name), state_diff=diff, rolls=[])
+
+
+def expire_dodge(state: GameState) -> EngineStep | None:
+    """At the start of a turn, clear the active combatant's Dodge and return the
+    `dodge_expiry` step; return `None` and change nothing if it is not dodging."""
+    if not state.encounter_active:
+        raise ValueError("no active encounter")
+    assert state.active_combatant_id is not None
+    diff = _set_dodging(state, state.active_combatant_id, False)
+    if not diff:
+        return None
+    return EngineStep(step="dodge_expiry", when="after_call", state_diff=diff, rolls=[])
 
 
 # --- attack resolution -------------------------------------------------------

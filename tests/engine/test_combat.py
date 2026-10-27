@@ -1,6 +1,6 @@
 """Initiative, turn order, tie-break and round advance (WBS 4.4, CLAUDE.md section 4.4),
-attack resolution (WBS 4.5, CLAUDE.md section 4.5), and zero hit points and
-encounter end (WBS 4.8, CLAUDE.md section 4.8).
+attack resolution and Dodge (WBS 4.5 and 4.6, CLAUDE.md section 4.5), and zero
+hit points and encounter end (WBS 4.8, CLAUDE.md section 4.8).
 
 The tie-break tests build `InitiativeEntry` values with chosen totals, so each
 rule is tested on its own. The end-to-end tests roll with a real seeded
@@ -20,11 +20,15 @@ from referencing import Registry, Resource
 
 from adm.engine.combat import (
     AttackOutcome,
+    DodgeOutcome,
+    EngineStep,
     InitiativeEntry,
     advance_initiative,
     apply_damage,
     attack,
+    dodge,
     end_encounter_if_over,
+    expire_dodge,
     hp_band,
     initiative_order,
     roll_initiative,
@@ -395,6 +399,7 @@ def test_damage_is_never_negative(mid_combat: GameState) -> None:
     assert mid_combat.combatants["npc_rat_01"].current_hp == 4
 
 
+@pytest.mark.rule_suite("dodge")
 def test_attack_on_a_dodging_target_has_disadvantage(mid_combat: GameState) -> None:
     outcome = _sword(mid_combat, "npc_rat_02", _seed_for((20, 18), (20, 3)))
     roll = outcome.rolls[0]
@@ -446,6 +451,100 @@ def test_attacking_an_unconscious_target_raises(mid_combat: GameState) -> None:
 def test_attacking_with_a_non_weapon_raises(mid_combat: GameState) -> None:
     with pytest.raises(ValueError, match="not a weapon"):
         attack(mid_combat, DiceRoller(1), "pc_lyra", "npc_rat_01", "item_torch")
+
+
+# --- dodge (WBS 4.6, rule suite) ---------------------------------------------
+# In state_02_mid_combat the order is npc_rat_01, pc_lyra, npc_rat_02, Lyra is
+# active in round 3, and npc_rat_02 is Dodging.
+
+
+def _changes(step_or_outcome: EngineStep | DodgeOutcome) -> list[tuple[str, object, object]]:
+    return [(c.path, c.from_, c.to) for c in step_or_outcome.state_diff]
+
+
+@pytest.mark.rule_suite("dodge")
+def test_dodge_sets_the_flag_and_reproduces_the_contract_example(mid_combat: GameState) -> None:
+    outcome = dodge(mid_combat, "pc_lyra")
+    example = json.loads((EXAMPLES / "result_dodge.json").read_text(encoding="utf-8"))
+    result = {"ok": True, "tool": "dodge", **outcome.to_dict()}
+    assert result == example
+    RESULT_VALIDATOR.validate(result)
+    assert mid_combat.combatants["pc_lyra"].dodging is True
+    _assert_valid(mid_combat)
+
+
+@pytest.mark.rule_suite("dodge")
+def test_dodge_holds_through_other_turns_and_the_round_wrap(mid_combat: GameState) -> None:
+    mid_combat.combatants["npc_rat_02"].dodging = False
+    dodge(mid_combat, "pc_lyra")
+    advance_initiative(mid_combat)  # Lyra's turn ends: npc_rat_02
+    assert expire_dodge(mid_combat) is None
+    advance_initiative(mid_combat)  # wraps to npc_rat_01, round 4
+    assert mid_combat.round_number == 4
+    assert expire_dodge(mid_combat) is None
+    assert mid_combat.combatants["pc_lyra"].dodging is True
+    seed = _seed_for((20, 18), (20, 3))
+    bite = attack(mid_combat, DiceRoller(seed), "npc_rat_01", "pc_lyra", "item_rat_bite")
+    assert bite.facts.advantage_mode == "disadvantage"
+
+
+@pytest.mark.rule_suite("dodge")
+def test_dodge_clears_at_the_start_of_the_dodgers_next_turn(mid_combat: GameState) -> None:
+    mid_combat.combatants["npc_rat_02"].dodging = False
+    dodge(mid_combat, "pc_lyra")
+    for _ in range(2):  # npc_rat_02, then npc_rat_01 in round 4
+        advance_initiative(mid_combat)
+        expire_dodge(mid_combat)
+    advance_initiative(mid_combat)
+    assert mid_combat.active_combatant_id == "pc_lyra"
+    step = expire_dodge(mid_combat)
+    assert step is not None
+    assert (step.step, step.when, step.rolls) == ("dodge_expiry", "after_call", [])
+    assert _changes(step) == [("combatants.pc_lyra.dodging", True, False)]
+    STEP_VALIDATOR.validate(step.to_dict())
+    assert mid_combat.combatants["pc_lyra"].dodging is False
+    _assert_valid(mid_combat)
+
+
+def test_a_dodging_npc_loses_the_flag_when_its_turn_comes(mid_combat: GameState) -> None:
+    assert expire_dodge(mid_combat) is None  # Lyra's turn; she is not dodging
+    advance_initiative(mid_combat)
+    step = expire_dodge(mid_combat)
+    assert step is not None
+    assert _changes(step) == [("combatants.npc_rat_02.dodging", True, False)]
+
+
+def test_dodge_while_already_dodging_changes_nothing(mid_combat: GameState) -> None:
+    mid_combat.active_combatant_id = "npc_rat_02"
+    outcome = dodge(mid_combat, "npc_rat_02")
+    assert outcome.facts.actor == "giant rat"
+    assert outcome.state_diff == []
+    assert mid_combat.combatants["npc_rat_02"].dodging is True
+
+
+def test_unconscious_dodger_keeps_the_flag_while_skipped(mid_combat: GameState) -> None:
+    _knock_out(mid_combat, "npc_rat_02")
+    for _ in range(3):
+        advance_initiative(mid_combat)
+        assert expire_dodge(mid_combat) is None
+    assert mid_combat.combatants["npc_rat_02"].dodging is True
+
+
+def test_dodge_by_an_unconscious_actor_raises(mid_combat: GameState) -> None:
+    _knock_out(mid_combat, "pc_lyra")
+    with pytest.raises(ValueError, match="unconscious"):
+        dodge(mid_combat, "pc_lyra")
+
+
+def test_dodge_outside_an_encounter_raises(exploring: GameState) -> None:
+    with pytest.raises(ValueError, match="no active encounter"):
+        dodge(exploring, "pc_lyra")
+    assert exploring.combatants["pc_lyra"].dodging is False
+
+
+def test_dodge_expiry_outside_an_encounter_raises(exploring: GameState) -> None:
+    with pytest.raises(ValueError, match="no active encounter"):
+        expire_dodge(exploring)
 
 
 # --- hit-point bands (CLAUDE.md section 10.2) --------------------------------
@@ -542,6 +641,7 @@ def test_last_hostile_down_ends_in_victory(mid_combat: GameState) -> None:
         ("encounter_outcome", None, "victory"),
         ("initiative_order", ["npc_rat_01", "pc_lyra", "npc_rat_02"], []),
         ("active_combatant_id", "pc_lyra", None),
+        ("combatants.npc_rat_02.dodging", True, False),  # a Dodge does not outlast the fight
     ]
     STEP_VALIDATOR.validate(step.to_dict())
     assert mid_combat.round_number == 3  # kept, as in state_03_after_victory

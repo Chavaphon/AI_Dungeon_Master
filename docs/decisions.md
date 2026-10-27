@@ -362,3 +362,16 @@ Decided by: CI · Supersedes: none
 **Reason:** With the strict reading, up to K − 1 turns would leave the prompt entirely between regenerations, which loses context for no gain; repeating a few turns costs little and loses nothing. Folding only the new turns into the previous summary keeps the summary prompt bounded however long the session runs.
 
 **Changed:** `adm/orchestration/summary.py`, `config/prompts/summary.txt` and `tests/orchestration/test_summary.py` added. `adm/orchestration/prompt.py` lists the summary template in `TEMPLATES`. `tests/orchestration/test_prompt.py` checks the shared preamble only in the five condition templates. CLAUDE.md: §3 lists `summary.txt`, §8.1 states the coverage rule, and §15 adds item 28. No new dependencies; the schemas are unchanged.
+
+## 2026-10-27 — Dodge: expiry step, and every Dodge cleared at encounter end (WBS 4.6)
+
+Decided by: SS · Supersedes: none
+
+**Decision:**
+1. **Expiry is its own engine step.** `expire_dodge` in `adm/engine/combat.py` is the `dodge_expiry` step of `docs/audit_log.md` §2. The turn loop runs it right after each `initiative_advance`, the order used in `audit_turn_valid.json`. It clears `dodging` on the combatant whose turn is starting, and records nothing if that combatant is not dodging. So a Dodge holds through everyone else's turns and across the round wrap, and expires at the start of the dodger's next turn (CLAUDE.md §4.5, §15 item 6).
+2. **An unconscious dodger keeps the flag** while it is skipped. It cannot be attacked (§4.8), so the flag has no effect, and it clears when the combatant is revived and its turn comes.
+3. **Encounter end clears every Dodge.** CLAUDE.md §4.5 does not say what happens to a Dodge whose next turn never comes because the encounter ended first. The `encounter_end` step now resets every `dodging: true` to false, in combatant id order, as part of its diff.
+
+**Reason:** (3) Under the strict reading, a combatant would still be dodging during exploration and would carry disadvantage into a later encounter until its first turn there. That is a stale advantage, and the state injected in B, C and D would show a dodging rat outside any fight, which is a divergence source of our own making. `state_03_after_victory.json` already shows the dodging rat of `state_02_mid_combat.json` with `dodging: false` after the victory, so the examples assumed this rule.
+
+**Changed:** `adm/engine/combat.py`: `dodge`, `expire_dodge`, and the reset in `end_encounter_if_over`. `tests/engine/test_combat.py`: the four dodge rule-suite cases, and the victory test's diff now includes the reset. `tests/engine/test_rule_suite.py`: dodge leaves `NOT_YET_BUILT`. CLAUDE.md: the §4.5 Dodge bullets, and §15 adds item 29. `docs/audit_log.md` §2: the `encounter_end` row. No new dependencies; the schemas are unchanged.
