@@ -40,15 +40,15 @@ Everything from §11 is kept with the same name and meaning. Three fields are ad
 
 ## 2. Engine steps
 
-2.3 says that turn advance, Dodge expiry and NPC turns are engine steps after the tool, recorded in the turn record rather than the tool's `state_diff`. `engine_steps` is where they go. Each step has a `when`, `before_call` or `after_call`:
+2.3 says that turn advance, Dodge expiry and NPC turns are engine steps after the tool, recorded in the turn record rather than the tool's `state_diff`. `engine_steps` is where they go. Each step has a `when`, `before_call` or `after_call`. When an encounter starts and NPCs win initiative, their turns run before the player's call, so those steps are `before_call` (WBS 4.19, `docs/npc_policy.md` §2):
 
 | Step | When | Records |
 |---|---|---|
 | `encounter_start` | before | Initiative rolls; `encounter_active`, `initiative_order`, `round_number`, `active_combatant_id` (scenario `encounters`, WBS 2.5) |
-| `dodge_expiry` | after | `dodging` cleared at the start of that combatant's turn (§4.5) |
-| `npc_action` | after | The engine's call for an NPC and its full `result_ok`, with its own diff and rolls |
-| `initiative_advance` | after | `active_combatant_id`, and `round_number` when the order wraps (§4.4) |
-| `encounter_end` | after | `encounter_active`, `encounter_outcome` (§4.8), and any `dodging` still set, cleared (§4.5) |
+| `dodge_expiry` | after; before at encounter start | `dodging` cleared at the start of that combatant's turn (§4.5) |
+| `npc_action` | after; before at encounter start | The engine's call for an NPC and its full `result_ok`, with its own diff and rolls |
+| `initiative_advance` | after; before at encounter start | `active_combatant_id`, and `round_number` when the order wraps (§4.4) |
+| `encounter_end` | after; before at encounter start | `encounter_active`, `encounter_outcome` (§4.8), and any `dodging` still set, cleared (§4.5) |
 | `turn_increment` | after | `turn_number` |
 
 The top-level `state_diff` is the `before_call` steps, then the executed result's diff, then the `after_call` steps, concatenated in that order. `rolls` follows the same rule. So the top level is the whole turn, and the parts say where each change came from.

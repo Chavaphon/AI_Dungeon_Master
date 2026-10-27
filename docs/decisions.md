@@ -375,3 +375,26 @@ Decided by: SS · Supersedes: none
 **Reason:** (3) Under the strict reading, a combatant would still be dodging during exploration and would carry disadvantage into a later encounter until its first turn there. That is a stale advantage, and the state injected in B, C and D would show a dodging rat outside any fight, which is a divergence source of our own making. `state_03_after_victory.json` already shows the dodging rat of `state_02_mid_combat.json` with `dodging: false` after the victory, so the examples assumed this rule.
 
 **Changed:** `adm/engine/combat.py`: `dodge`, `expire_dodge`, and the reset in `end_encounter_if_over`. `tests/engine/test_combat.py`: the four dodge rule-suite cases, and the victory test's diff now includes the reset. `tests/engine/test_rule_suite.py`: dodge leaves `NOT_YET_BUILT`. CLAUDE.md: the §4.5 Dodge bullets, and §15 adds item 29. `docs/audit_log.md` §2: the `encounter_end` row. No new dependencies; the schemas are unchanged.
+
+## 2026-10-27 — NPC turns: before-call turns at encounter start, neutral NPCs dodge (WBS 4.19)
+
+Decided by: SS · Supersedes: none
+
+**Decision:**
+1. **The policy agreed at the Week 3 checkpoint** (2026-10-24, decision 3) is written down in `docs/npc_policy.md` and built in `adm/engine/npc.py`.
+2. **NPCs who win initiative act at encounter start.** When an encounter starts and NPCs come before the PC in the initiative order, their turns run right after `encounter_start`, before the player's call. They are recorded as `before_call` steps: `npc_action`, `initiative_advance`, `dodge_expiry` and, if the PC falls, `encounter_end`. `schemas/audit.schema.json` widens `npc_action.when` from `"after_call"` to either value. CLAUDE.md §9.1 now orders the narration facts as they happened: the before-call NPC actions, then the player's call, then the after-call NPC actions.
+3. **A neutral NPC, or one with no conscious opponent, dodges.** The agreed rule names opponents only for `hostile` and `party`, and gives "no weapon → dodge" as the fallback. The fallback now also covers "no opponent".
+4. **NPC turns run only after an action-using call.** That means `attack`, `cast_spell` and `dodge` (CLAUDE.md §4.5). They stop when the turn reaches the PC or the encounter ends. `take_npc_turn` is the one place an NPC call is executed, and where the 5.2 validator will check it. The policy only proposes legal calls, so a rejected NPC call is a bug and raises.
+
+**Reason:** (2) CLAUDE.md §4.4 says initiative fixes the order and `active_combatant_id` names whose turn it is. If the encounter started on an NPC's turn and the engine waited for the player's call, that call would be rejected with `NOT_YOUR_TURN`. Making the PC always act first would override the initiative rolls. The audit schema already allowed `before_call` for the bookkeeping steps; only `npc_action` was fixed to `after_call`. (3) No scenario puts a neutral combatant in an encounter, but the policy must be total, and dodging is the agreed fallback.
+
+**Changed:**
+- `adm/engine/npc.py`, `docs/npc_policy.md` and `tests/engine/test_npc.py` are added.
+- `adm/engine/combat.py`: `advance_initiative`, `expire_dodge` and `end_encounter_if_over` take a `when` keyword, defaulting to `after_call`.
+- `schemas/audit.schema.json`: `npc_action.when`.
+- `tests/test_audit_log.py`: the reject case `npc_action_before_call` becomes an accept test.
+- `adm/orchestration/prompt.py`: the `facts_json` docstring.
+- CLAUDE.md: §3 lists `npc.py`, §4.8 states the policy, §9.1 the fact order, and §15 adds item 30.
+- `docs/audit_log.md` §2 and `docs/tool_contract.md` §2: before-call NPC turns.
+
+No new dependencies.

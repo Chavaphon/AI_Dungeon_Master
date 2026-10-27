@@ -268,7 +268,6 @@ SCHEMA_REJECTS = {
     "executed_null_tool": _set("executed_call", {"tool": None}),
     "executed_bad_arguments": _set("executed_call.arguments.dc", 12),
     "unknown_engine_step": _set("engine_steps.0.step", "npc_flee"),
-    "npc_action_before_call": _set("engine_steps.2.when", "before_call"),
     "bad_roll": _set("rolls.0.individual_dice", [0]),
     "bad_diff_path": _set("state_diff.0.path", "Combatants.npc_rat_02.hp"),
     "unknown_turn_failure": _set("turn_failure", "timeout"),
@@ -345,6 +344,24 @@ def test_cross_field_rejects_on_rejected_turn(mutate: Callable[[Record], None]) 
     mutate(record)
     assert _schema_errors(record) == [], "case should pass the schema and fail only in Python"
     assert record_errors(record)
+
+
+def test_npc_actions_may_run_before_the_call() -> None:
+    # An NPC that wins initiative acts before the player's first call of the
+    # encounter (WBS 4.19): its steps are before_call and come first.
+    record = _valid()
+    steps = record["engine_steps"]
+    for step in steps[:-1]:  # all but turn_increment
+        step["when"] = "before_call"
+    result = record["validation"][-1]
+    for key in ("state_diff", "rolls"):
+        record[key] = (
+            [x for s in steps[:-1] for x in _step_part(s, key)]
+            + result[key]
+            + _step_part(steps[-1], key)
+        )
+    assert _schema_errors(record) == []
+    assert record_errors(record) == []
 
 
 def test_narration_only_turn_is_consistent() -> None:

@@ -15,7 +15,9 @@ but is skipped. `round_number` is 1 when an encounter starts and goes up by one
 each time the turn passes the end of the order.
 
 Each function changes the state in place and returns the `engine_steps` record
-of what it did (docs/audit_log.md section 2). Starting an encounter while one is
+of what it did (docs/audit_log.md section 2). The steps after a call are
+`after_call` by default; the NPC turns that open an encounter pass `before_call`
+(WBS 4.19, adm/engine/npc.py). Starting an encounter while one is
 active, or with an unknown or repeated combatant, is a programmer error: the
 scenario loader and the turn loop must not allow it, so it raises.
 
@@ -75,13 +77,16 @@ class StateChange(BaseModel):
     to: Any
 
 
+When = Literal["before_call", "after_call"]
+
+
 class EngineStep(BaseModel):
     """A `bookkeeping_step` of the turn record (audit.schema.json)."""
 
     model_config = ConfigDict(frozen=True)
 
     step: Literal["encounter_start", "dodge_expiry", "initiative_advance", "encounter_end"]
-    when: Literal["before_call", "after_call"]
+    when: When
     state_diff: list[StateChange]
     rolls: list[RollResult]
 
@@ -165,7 +170,7 @@ def start_encounter(
     )
 
 
-def advance_initiative(state: GameState) -> EngineStep:
+def advance_initiative(state: GameState, *, when: When = "after_call") -> EngineStep:
     """Pass the turn to the next conscious combatant in the order. Passing the end
     of the order wraps to the start and increments `round_number` once."""
     if not state.encounter_active:
@@ -186,7 +191,7 @@ def advance_initiative(state: GameState) -> EngineStep:
     diff: list[StateChange] = []
     _set(state, "active_combatant_id", order[index], diff)
     _set(state, "round_number", round_number, diff)
-    return EngineStep(step="initiative_advance", when="after_call", state_diff=diff, rolls=[])
+    return EngineStep(step="initiative_advance", when=when, state_diff=diff, rolls=[])
 
 
 # --- zero hit points and encounter end (WBS 4.8) -----------------------------
@@ -226,7 +231,7 @@ def encounter_outcome(state: GameState) -> EncounterOutcome | None:
     return None
 
 
-def end_encounter_if_over(state: GameState) -> EngineStep | None:
+def end_encounter_if_over(state: GameState, *, when: When = "after_call") -> EngineStep | None:
     """Close the encounter if it has an outcome, and return the `encounter_end`
     step; return `None` and change nothing if it goes on. Every Dodge still set
     is cleared, in combatant id order."""
@@ -240,7 +245,7 @@ def end_encounter_if_over(state: GameState) -> EngineStep | None:
     _set(state, "active_combatant_id", None, diff)
     for combatant_id in sorted(state.combatants):
         diff.extend(_set_dodging(state, combatant_id, False))
-    return EngineStep(step="encounter_end", when="after_call", state_diff=diff, rolls=[])
+    return EngineStep(step="encounter_end", when=when, state_diff=diff, rolls=[])
 
 
 # --- dodge (WBS 4.6) ---------------------------------------------------------
@@ -295,7 +300,7 @@ def dodge(state: GameState, actor_id: str) -> DodgeOutcome:
     return DodgeOutcome(facts=DodgeFacts(actor=actor.display_name), state_diff=diff, rolls=[])
 
 
-def expire_dodge(state: GameState) -> EngineStep | None:
+def expire_dodge(state: GameState, *, when: When = "after_call") -> EngineStep | None:
     """At the start of a turn, clear the active combatant's Dodge and return the
     `dodge_expiry` step; return `None` and change nothing if it is not dodging."""
     if not state.encounter_active:
@@ -304,7 +309,7 @@ def expire_dodge(state: GameState) -> EngineStep | None:
     diff = _set_dodging(state, state.active_combatant_id, False)
     if not diff:
         return None
-    return EngineStep(step="dodge_expiry", when="after_call", state_diff=diff, rolls=[])
+    return EngineStep(step="dodge_expiry", when=when, state_diff=diff, rolls=[])
 
 
 # --- attack resolution -------------------------------------------------------
