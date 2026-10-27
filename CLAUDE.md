@@ -228,6 +228,7 @@ Only `attack`, `cast_spell` and `dodge` use the turn's action: a successful call
 
 - Sets `dodging = true` on the actor.
 - Cleared at the **start of that actor's next turn**, not at the end of the round. A combatant who dodges keeps the benefit through everyone else's turns.
+- When an encounter ends, every Dodge still set is cleared, so nobody is dodging outside a fight.
 - Attacks against a dodging combatant are made with disadvantage.
 
 ### 4.6 Spells
@@ -896,6 +897,10 @@ Added at the Week 3 checkpoint (WBS 12.3; reasons in `docs/decisions.md`):
 Added at WBS 6.7 (reasons in `docs/decisions.md`):
 
 28. Each rolling-summary regeneration folds the last K narrated turns into the previous summary, so turns overlap with the verbatim window and none is dropped. A reply that hits the 200-token cap is cut after its last sentence.
+
+Added at WBS 4.6 (reasons in `docs/decisions.md`):
+
+29. A Dodge that has not expired when its encounter ends is cleared by the encounter's end.
 
 ## 16. Open questions for the team
 

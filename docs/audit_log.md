@@ -48,7 +48,7 @@ Everything from §11 is kept with the same name and meaning. Three fields are ad
 | `dodge_expiry` | after | `dodging` cleared at the start of that combatant's turn (§4.5) |
 | `npc_action` | after | The engine's call for an NPC and its full `result_ok`, with its own diff and rolls |
 | `initiative_advance` | after | `active_combatant_id`, and `round_number` when the order wraps (§4.4) |
-| `encounter_end` | after | `encounter_active`, `encounter_outcome` (§4.8) |
+| `encounter_end` | after | `encounter_active`, `encounter_outcome` (§4.8), and any `dodging` still set, cleared (§4.5) |
 | `turn_increment` | after | `turn_number` |
 
 The top-level `state_diff` is the `before_call` steps, then the executed result's diff, then the `after_call` steps, concatenated in that order. `rolls` follows the same rule. So the top level is the whole turn, and the parts say where each change came from.
