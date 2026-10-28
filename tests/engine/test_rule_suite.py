@@ -42,7 +42,6 @@ SECTION_13 = {
 
 # area -> the WBS task that builds its rules
 NOT_YET_BUILT = {
-    "inventory": "4.14",
     "relationships": "4.15",
     "quests": "4.16",
 }
