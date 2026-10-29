@@ -50,14 +50,7 @@ class Summary:
 
     def model_call(self) -> Doc:
         """The turn record's `model_calls` entry for the summary call."""
-        return {
-            "phase": "summary",
-            "attempt": 1,
-            "prompt_tokens": self.reply.prompt_tokens,
-            "completion_tokens": self.reply.completion_tokens,
-            "latency_ms": self.reply.latency_ms,
-            "raw_output": self.reply.raw_output,
-        }
+        return self.reply.model_call("summary", 1)
 
 
 def is_due(turns_played: int, k: int) -> bool:

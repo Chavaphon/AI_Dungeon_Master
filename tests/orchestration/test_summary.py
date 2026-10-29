@@ -76,7 +76,7 @@ class FakeClient:
     def chat(self, messages: Sequence[Message], *, phase: Phase, seed: int) -> ModelReply:
         self.calls.append((tuple(messages), phase, seed))
         text, done_reason = self.replies.pop(0)
-        return ModelReply(text, 2900, 120, 1800, done_reason, 0)
+        return ModelReply(text, 2900, 120, 1800, 1500, done_reason, 0)
 
 
 def _system(previous: str | None = PREVIOUS, turns: Sequence[HistoryTurn] = TURNS[:K]) -> str:
@@ -213,3 +213,4 @@ def test_regeneration_is_logged_in_the_turn_record_shape(done_reason: str, trunc
     _validator("model_call").validate(call)
     assert record == {"text": result.text, "truncated": truncated}
     assert call["phase"] == "summary" and call["attempt"] == 1
+    assert (call["latency_ms"], call["eval_ms"]) == (1800, 1500)

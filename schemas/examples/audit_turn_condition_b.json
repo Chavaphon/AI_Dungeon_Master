@@ -14,6 +14,7 @@
       "prompt_tokens": 2980,
       "completion_tokens": 61,
       "latency_ms": 3320,
+      "eval_ms": 960,
       "raw_output": "You lunge at the darting rat and your blade bites deep. It squeals and collapses into the water, and the second rat bares its teeth at you."
     }
   ],
@@ -31,5 +32,6 @@
   "narration_only": false,
   "k_used": 8,
   "summary_regenerated": false,
-  "summary": null
+  "summary": null,
+  "turn_latency_ms": 3340
 }

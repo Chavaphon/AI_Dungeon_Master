@@ -710,7 +710,7 @@ Validate the checker against 30 hand-labelled turns before using it. Record prec
 | M3 | Intent fidelity | Human-annotated on a 15% random sample. Binary per turn: does the executed call represent the player's request? *(This is the critic layer in the VERIFY pyramid — an active search for failures invisible to the automated checker.)* |
 | M4 | Rule-violation rate | Automated, all conditions |
 | M5 | Narrative quality | Two raters, blind to condition, 1–5 on coherence, vividness, tone appropriateness, plus one engagement item ("would you want to keep reading?") |
-| M6 | Latency and throughput | Mean and p95 seconds per turn, tokens per second |
+| M6 | Latency and throughput | Mean and p95 seconds per turn (`turn_latency_ms`), tokens per second (`completion_tokens / eval_ms` per model call) |
 
 Inter-rater agreement: Krippendorff's alpha on a 20% double-scored overlap. Target `>= 0.6`.
 
@@ -727,6 +727,7 @@ Beyond the example below:
 - `engine_steps` records the engine's work outside the player's call, in order: `encounter_start`, `dodge_expiry`, `npc_action`, `initiative_advance`, `encounter_end`, `turn_increment`. The top-level `state_diff` and `rolls` are the before-call steps, the executed result and the after-call steps, concatenated.
 - `summary` holds `{text, truncated}` when the rolling summary is regenerated.
 - `turn_number` is the turn being played, so it repeats after a failed turn.
+- M6 timings: each model call's `latency_ms` is its wall time and `eval_ms` is Ollama's generation time (`eval_duration`), so tokens per second is `completion_tokens / eval_ms`. `turn_latency_ms` is the wall time of the whole turn, every model call and the engine included.
 
 ```json
 {
@@ -740,7 +741,7 @@ Beyond the example below:
   "player_input": "I swing my sword at the bigger rat",
   "model_calls": [
     {"phase": "toolcall", "attempt": 1, "prompt_tokens": 3120,
-     "completion_tokens": 41, "latency_ms": 2210,
+     "completion_tokens": 41, "latency_ms": 2210, "eval_ms": 650,
      "raw_output": "{\"tool\": \"attack\", \"arguments\": {...}}"}
   ],
   "proposed_calls": [{"tool": "attack", "arguments": {"attacker_id": "pc_lyra", "target_id": "npc_rat_01", "weapon_id": "item_short_sword"}}],
@@ -757,11 +758,12 @@ Beyond the example below:
   "narration_only": false,
   "k_used": 8,
   "summary_regenerated": false,
-  "summary": null
+  "summary": null,
+  "turn_latency_ms": 5390
 }
 ```
 
-State hashes are how invariant 4 is tested: replay a seed, compare the hash sequence. Hashes are `sha256:` of the serialisation in `docs/conventions.md` §2. A byte-identical replay compares every audit field except `timestamp` and `latency_ms`.
+State hashes are how invariant 4 is tested: replay a seed, compare the hash sequence. Hashes are `sha256:` of the serialisation in `docs/conventions.md` §2. A byte-identical replay compares every audit field except the timings: `timestamp`, `latency_ms`, `eval_ms` and `turn_latency_ms`.
 
 ---
 
@@ -906,6 +908,10 @@ Added at WBS 4.6 (reasons in `docs/decisions.md`):
 Added at WBS 4.19 (reasons in `docs/decisions.md`):
 
 30. NPCs who win initiative act before the player's first call of the encounter, as `before_call` steps. A neutral NPC, or one with no conscious opponent, dodges.
+
+Added at WBS 6.8 (reasons in `docs/decisions.md`):
+
+31. M6 is logged as `eval_ms` per model call (tokens per second from server generation time, not wall time) and `turn_latency_ms` per turn. Like `timestamp` and `latency_ms`, they are left out of the replay comparison.
 
 ## 16. Open questions for the team
 
