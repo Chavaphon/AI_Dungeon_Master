@@ -14,6 +14,7 @@
       "prompt_tokens": 3120,
       "completion_tokens": 41,
       "latency_ms": 2210,
+      "eval_ms": 650,
       "raw_output": "{\"tool\": \"attack\", \"arguments\": {\"attacker_id\": \"pc_lyra\", \"target_id\": \"npc_rat_02\", \"weapon_id\": \"item_short_sword\"}}"
     },
     {
@@ -22,6 +23,7 @@
       "prompt_tokens": 512,
       "completion_tokens": 58,
       "latency_ms": 3105,
+      "eval_ms": 915,
       "raw_output": "The rat twists aside, but your short sword catches it on the backswing. It shrieks and drags itself back, badly hurt, leaving a dark smear on the wet stone."
     }
   ],
@@ -361,5 +363,6 @@
   "narration_only": false,
   "k_used": 8,
   "summary_regenerated": false,
-  "summary": null
+  "summary": null,
+  "turn_latency_ms": 5390
 }

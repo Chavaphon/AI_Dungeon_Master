@@ -115,14 +115,32 @@ def build_options(config: ModelConfig, phase: Phase, seed: int) -> Doc:
 
 @dataclass(frozen=True)
 class ModelReply:
-    """One model call: what the audit record's model_call needs, plus transport facts."""
+    """One model call: what the audit record's model_call needs, plus transport facts.
+
+    `latency_ms` is wall time and includes prompt evaluation. `eval_ms` is the
+    server's generation time alone, so tokens per second (M6) is
+    `completion_tokens / eval_ms`, as in the 3.4 benchmark (docs/model_benchmark.md).
+    """
 
     raw_output: str
     prompt_tokens: int
     completion_tokens: int
     latency_ms: int
+    eval_ms: int
     done_reason: str | None
     transport_retries: int
+
+    def model_call(self, phase: Phase, attempt: int) -> Doc:
+        """The turn record's `model_calls` entry for this call (docs/audit_log.md section 1)."""
+        return {
+            "phase": phase,
+            "attempt": attempt,
+            "prompt_tokens": self.prompt_tokens,
+            "completion_tokens": self.completion_tokens,
+            "latency_ms": self.latency_ms,
+            "eval_ms": self.eval_ms,
+            "raw_output": self.raw_output,
+        }
 
 
 class ModelError(Exception):
@@ -200,6 +218,7 @@ class OllamaClient:
             prompt_tokens=int(reply.get("prompt_eval_count") or 0),
             completion_tokens=int(reply.get("eval_count") or 0),
             latency_ms=latency_ms,
+            eval_ms=round(int(reply.get("eval_duration") or 0) / 1_000_000),
             done_reason=reply.get("done_reason"),
             transport_retries=retries,
         )

@@ -398,3 +398,18 @@ Decided by: SS · Supersedes: none
 - `docs/audit_log.md` §2 and `docs/tool_contract.md` §2: before-call NPC turns.
 
 No new dependencies.
+
+## 2026-10-29 — Latency and throughput fields in the audit log (WBS 6.8)
+
+Decided by: CI · Supersedes: none
+
+**Decision:**
+1. **`eval_ms` per model call.** Each `model_calls` entry gains `eval_ms`: Ollama's `eval_duration` in milliseconds, the generation time alone. Tokens per second (M6) is `completion_tokens / eval_ms`, the measure the 3.4 benchmark used (`docs/model_benchmark.md` §2). `latency_ms` stays as the call's wall time. A reply without `eval_duration` logs 0, like the token counts.
+2. **`turn_latency_ms` per turn.** The turn record gains `turn_latency_ms`: wall time from receiving the player input to writing the record, covering every model call (retries included) and the engine. Seconds per turn (M6) is `turn_latency_ms / 1000`. The turn loop (WBS 6.4, 6.6) measures it.
+3. **Both are timings, so neither is replayed.** A byte-identical replay compares every audit field except `timestamp`, `latency_ms`, `eval_ms` and `turn_latency_ms`.
+4. **Two cross-field rules.** `turn_latency_ms` is at least the sum of the turn's call latencies, and each call's `eval_ms` is at most its `latency_ms`.
+5. **One builder for `model_calls` entries.** `ModelReply.model_call(phase, attempt)` in `adm/orchestration/client.py` returns the entry. The summary uses it, and the turn loop is to use it for the toolcall and narration calls.
+
+**Reason:** Wall time includes evaluating a prompt of about 3000 tokens, so tokens per second from `latency_ms` would understate generation speed and could not be compared with the 3.4 figures. Summing the call latencies would leave out the engine and anything between calls, so seconds per turn gets its own field. The mean and p95 summaries stay in WBS 10.4.
+
+**Changed:** `adm/orchestration/client.py`: `ModelReply.eval_ms` and `ModelReply.model_call`. `adm/orchestration/summary.py`: `Summary.model_call` uses it. `schemas/audit.schema.json`: `model_call.eval_ms` and `turn_latency_ms`, both required. The three `schemas/examples/audit_turn_*.json`. `tests/orchestration/test_client.py`, `tests/orchestration/test_summary.py` and `tests/test_audit_log.py`. CLAUDE.md: §10.4 M6 row, §11 bullet, example and replay sentence, and §15 adds item 31. `docs/audit_log.md` §1, §3 and §4.5. `docs/conventions.md` §2. No new dependencies.
