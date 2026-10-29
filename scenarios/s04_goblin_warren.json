@@ -1,0 +1,442 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s04_goblin_warren",
+  "display_name": "The Goblin Warren",
+  "opening_narration": "The burrow in the hillside stinks of smoke and wet dog. Garrick the shepherd went in after his flock two days ago and has not come out. His wife stands at the edge of the field, twisting her apron, as you light your torch.",
+  "locations": [
+    "the warren",
+    "the tunnel",
+    "the goblins' nest",
+    "the field"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_mara": {
+        "combatant_id": "pc_mara",
+        "display_name": "Mara",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 16,
+          "dex": 12,
+          "con": 14,
+          "int": 9,
+          "wis": 13,
+          "cha": 10
+        },
+        "proficient_skills": [
+          "perception",
+          "strength"
+        ],
+        "armour_class": 15,
+        "max_hp": 24,
+        "current_hp": 24,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_goblin_boss": {
+        "combatant_id": "npc_goblin_boss",
+        "display_name": "goblin boss",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 12,
+          "dex": 14,
+          "con": 10,
+          "int": 10,
+          "wis": 8,
+          "cha": 10
+        },
+        "proficient_skills": [],
+        "armour_class": 13,
+        "max_hp": 9,
+        "current_hp": 9,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_goblin_runt": {
+        "combatant_id": "npc_goblin_runt",
+        "display_name": "little goblin",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 7,
+          "dex": 14,
+          "con": 9,
+          "int": 8,
+          "wis": 8,
+          "cha": 8
+        },
+        "proficient_skills": [],
+        "armour_class": 10,
+        "max_hp": 3,
+        "current_hp": 3,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_mara": {
+        "item_handaxe": 1,
+        "item_torch": 2
+      },
+      "npc_goblin_boss": {
+        "item_scimitar": 1
+      },
+      "npc_goblin_runt": {
+        "item_stolen_spoon": 1
+      }
+    },
+    "item_definitions": {
+      "item_handaxe": {
+        "item_id": "item_handaxe",
+        "display_name": "handaxe",
+        "is_weapon": true,
+        "attack_bonus": 5,
+        "damage_dice": "1d6",
+        "damage_bonus": 3
+      },
+      "item_scimitar": {
+        "item_id": "item_scimitar",
+        "display_name": "scimitar",
+        "is_weapon": true,
+        "attack_bonus": 4,
+        "damage_dice": "1d6",
+        "damage_bonus": 2
+      },
+      "item_torch": {
+        "item_id": "item_torch",
+        "display_name": "torch",
+        "is_weapon": false
+      },
+      "item_stolen_spoon": {
+        "item_id": "item_stolen_spoon",
+        "display_name": "silver spoon",
+        "is_weapon": false
+      },
+      "item_wedding_ring": {
+        "item_id": "item_wedding_ring",
+        "display_name": "wedding ring",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_garrick": {
+        "npc_id": "npc_garrick",
+        "display_name": "Garrick",
+        "stance": "neutral",
+        "history": []
+      },
+      "npc_garricks_wife": {
+        "npc_id": "npc_garricks_wife",
+        "display_name": "Garrick's wife",
+        "stance": "neutral",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_rescue_garrick": {
+        "quest_id": "quest_rescue_garrick",
+        "display_name": "Rescue Garrick",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      },
+      "quest_lost_sheep": {
+        "quest_id": "quest_lost_sheep",
+        "display_name": "The Lost Sheep",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 1
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 5,
+      "combatant_ids": [
+        "pc_mara",
+        "npc_goblin_boss",
+        "npc_goblin_runt"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I hold my torch high at the mouth of the warren",
+      "expected_call": null
+    },
+    {
+      "text": "I promise Garrick's wife I will bring him back from the goblins",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_rescue_garrick",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "My first torch gutters out, so I light my second",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_mara",
+          "item_id": "item_torch",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I listen for goblin voices further down the tunnel",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_mara",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I creep down the tunnel toward the firelight",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_mara",
+          "skill": "stealth",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I throw myself at the goblin boss with my handaxe",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_mara",
+          "target_id": "npc_goblin_boss",
+          "weapon_id": "item_handaxe"
+        }
+      }
+    },
+    {
+      "text": "I chop at the goblin boss again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_mara",
+          "target_id": "npc_goblin_boss",
+          "weapon_id": "item_handaxe"
+        }
+      }
+    },
+    {
+      "text": "I raise my guard as the boss slashes at me",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_mara"
+        }
+      }
+    },
+    {
+      "text": "I swing at the goblin boss",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_mara",
+          "target_id": "npc_goblin_boss",
+          "weapon_id": "item_handaxe"
+        }
+      }
+    },
+    {
+      "text": "I strike the goblin boss once more if he is still standing",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_mara",
+          "target_id": "npc_goblin_boss",
+          "weapon_id": "item_handaxe"
+        }
+      }
+    },
+    {
+      "text": "I turn on the little goblin darting around the fire",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_mara",
+          "target_id": "npc_goblin_runt",
+          "weapon_id": "item_handaxe"
+        }
+      }
+    },
+    {
+      "text": "I swing at the little goblin again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_mara",
+          "target_id": "npc_goblin_runt",
+          "weapon_id": "item_handaxe"
+        }
+      }
+    },
+    {
+      "text": "I corner the little goblin and strike at it",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_mara",
+          "target_id": "npc_goblin_runt",
+          "weapon_id": "item_handaxe"
+        }
+      }
+    },
+    {
+      "text": "I take one more swing at the little goblin if it is still dodging",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_mara",
+          "target_id": "npc_goblin_runt",
+          "weapon_id": "item_handaxe"
+        }
+      }
+    },
+    {
+      "text": "I check my wounds now that the fighting has stopped",
+      "expected_call": null
+    },
+    {
+      "text": "I cut the ropes binding Garrick",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_rescue_garrick",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I tell Garrick he is safe now",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_garrick",
+          "direction": "up",
+          "justification": "Mara fought off the goblins and cut Garrick free."
+        }
+      }
+    },
+    {
+      "text": "I search the goblins' nest of rags and bones",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_mara",
+          "skill": "perception",
+          "dc": 11
+        }
+      }
+    },
+    {
+      "text": "I pick Garrick's wedding ring out of the goblins' trinket pile",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_mara",
+          "item_id": "item_wedding_ring",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I ask Garrick whether the goblins took anything else",
+      "expected_call": null
+    },
+    {
+      "text": "I agree to look for the sheep the goblins drove off",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_lost_sheep",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I follow the bleating deeper into the warren",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_mara",
+          "skill": "perception",
+          "dc": 14
+        }
+      }
+    },
+    {
+      "text": "I find only bones and tell Garrick his sheep are gone",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_lost_sheep",
+          "transition": "fail"
+        }
+      }
+    },
+    {
+      "text": "I lead Garrick back out into the daylight",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_rescue_garrick",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I hand Garrick his ring",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_mara",
+          "item_id": "item_wedding_ring",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "When Garrick's wife thanks me, I tell her it was nothing",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_garricks_wife",
+          "direction": "up",
+          "justification": "Mara brought Garrick home safe from the goblin warren."
+        }
+      }
+    },
+    {
+      "text": "I ask Garrick's wife whether anyone will go back for the goblin boss's body",
+      "expected_call": null
+    },
+    {
+      "text": "I count the torches left in my pack",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. One encounter, from input 5, against a goblin boss and a little goblin. The little goblin holds no weapon, only a silver spoon, so under the engine's NPC policy it never attacks: it Dodges on every turn, and Mara's attacks on it at inputs 10 to 13 have disadvantage. Narration of the little goblin striking, biting or wounding Mara is a CONTRADICT divergence, and narration of it fighting back at all is worth checking. Mara is not a spellcaster and has no way to heal: input 14 invites a hit-point band phrase about her. Torches go from 2 to 1 at input 2, and input 27 asks for a count, which should be one. The ring is picked from a trinket pile, not taken from a goblin's inventory (CLAUDE.md section 6.1). The sheep quest (max_stage 1) is meant to fail (input 22). Input 26 asks about the goblin boss's body: he is unconscious, not dead, since there is no death in this game. Inputs 5 to 13 give more attacks than the fight usually needs; an attack on a goblin that is already down, or after the encounter has ended, is rejected and does not advance the game."
+}

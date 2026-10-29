@@ -1,0 +1,446 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s05_wayside_inn",
+  "display_name": "The Wayside Inn",
+  "opening_narration": "Rain drums on the shutters of the Wayside Inn. Inside it is warm and loud: a fire, a dozen travellers, two farmhands well into their cups, and a merchant guarding his pack of cloth. Bess the innkeeper is turning the bar upside down for something she has lost.",
+  "locations": [
+    "the Wayside Inn",
+    "the common room",
+    "the bar",
+    "the fireplace",
+    "the stairs",
+    "the guest room"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_hollis": {
+        "combatant_id": "pc_hollis",
+        "display_name": "Hollis",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 10,
+          "dex": 12,
+          "con": 13,
+          "int": 14,
+          "wis": 15,
+          "cha": 12
+        },
+        "proficient_skills": [
+          "perception"
+        ],
+        "armour_class": 13,
+        "max_hp": 20,
+        "current_hp": 20,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": 5,
+        "spellcasting_modifier": 3,
+        "spell_slots_1": 2
+      },
+      "npc_drunk_01": {
+        "combatant_id": "npc_drunk_01",
+        "display_name": "big drunk",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 14,
+          "dex": 9,
+          "con": 13,
+          "int": 8,
+          "wis": 7,
+          "cha": 9
+        },
+        "proficient_skills": [],
+        "armour_class": 10,
+        "max_hp": 5,
+        "current_hp": 5,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_drunk_02": {
+        "combatant_id": "npc_drunk_02",
+        "display_name": "drunk",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 12,
+          "dex": 10,
+          "con": 12,
+          "int": 8,
+          "wis": 7,
+          "cha": 9
+        },
+        "proficient_skills": [],
+        "armour_class": 10,
+        "max_hp": 5,
+        "current_hp": 5,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_merchant": {
+        "combatant_id": "npc_merchant",
+        "display_name": "merchant",
+        "is_player_character": false,
+        "faction": "neutral",
+        "abilities": {
+          "str": 9,
+          "dex": 10,
+          "con": 11,
+          "int": 13,
+          "wis": 12,
+          "cha": 14
+        },
+        "proficient_skills": [],
+        "armour_class": 10,
+        "max_hp": 9,
+        "current_hp": 9,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_hollis": {
+        "item_staff": 1
+      },
+      "npc_drunk_01": {
+        "item_fists": 1
+      },
+      "npc_drunk_02": {
+        "item_fists": 1
+      },
+      "npc_merchant": {
+        "item_bolt_of_cloth": 1
+      }
+    },
+    "item_definitions": {
+      "item_staff": {
+        "item_id": "item_staff",
+        "display_name": "staff",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d6",
+        "damage_bonus": 0
+      },
+      "item_fists": {
+        "item_id": "item_fists",
+        "display_name": "fists",
+        "is_weapon": true,
+        "attack_bonus": 2,
+        "damage_dice": "1d4",
+        "damage_bonus": 0
+      },
+      "item_room_key": {
+        "item_id": "item_room_key",
+        "display_name": "room key",
+        "is_weapon": false
+      },
+      "item_ale": {
+        "item_id": "item_ale",
+        "display_name": "mug of ale",
+        "is_weapon": false
+      },
+      "item_bolt_of_cloth": {
+        "item_id": "item_bolt_of_cloth",
+        "display_name": "bolt of cloth",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_bess": {
+        "npc_id": "npc_bess",
+        "display_name": "Bess",
+        "stance": "neutral",
+        "history": []
+      },
+      "npc_stranger": {
+        "npc_id": "npc_stranger",
+        "display_name": "the cloaked stranger",
+        "stance": "unfriendly",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_missing_ledger": {
+        "quest_id": "quest_missing_ledger",
+        "display_name": "The Missing Ledger",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 2
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 7,
+      "combatant_ids": [
+        "pc_hollis",
+        "npc_drunk_01",
+        "npc_drunk_02",
+        "npc_merchant"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I shake the rain off my cloak and step into the inn",
+      "expected_call": null
+    },
+    {
+      "text": "I take the key to a room for the night from Bess the innkeeper",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_hollis",
+          "item_id": "item_room_key",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I tell Bess her stew is the best on the road",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_bess",
+          "direction": "up",
+          "justification": "Hollis praised Bess's stew in front of her regulars."
+        }
+      }
+    },
+    {
+      "text": "I offer to find the guest ledger that went missing from behind the bar",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_missing_ledger",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I look around the common room for the ledger",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_hollis",
+          "skill": "perception",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I ask the cloaked stranger in the corner whether he took it",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_stranger",
+          "direction": "down",
+          "justification": "Hollis accused the cloaked stranger of stealing the inn's ledger."
+        }
+      }
+    },
+    {
+      "text": "I order a mug of ale and take a seat by the fire",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_hollis",
+          "item_id": "item_ale",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "Two drunks lurch at me, and I cast fire bolt at the bigger one",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_hollis",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_drunk_01"
+        }
+      }
+    },
+    {
+      "text": "I cast fire bolt at the same drunk",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_hollis",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_drunk_01"
+        }
+      }
+    },
+    {
+      "text": "I duck behind a table as the other drunk swings his fist",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_hollis"
+        }
+      }
+    },
+    {
+      "text": "I hurl fire at the second drunk",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_hollis",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_drunk_02"
+        }
+      }
+    },
+    {
+      "text": "I cast fire bolt at the second drunk again",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_hollis",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_drunk_02"
+        }
+      }
+    },
+    {
+      "text": "I send a fire bolt at the first drunk if he is still up",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_hollis",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_drunk_01"
+        }
+      }
+    },
+    {
+      "text": "I cast fire bolt at the second drunk if he is still swinging",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_hollis",
+          "spell_id": "spell_fire_bolt",
+          "target_id": "npc_drunk_02"
+        }
+      }
+    },
+    {
+      "text": "I heal the merchant who was caught in the middle of the brawl",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_hollis",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "npc_merchant"
+        }
+      }
+    },
+    {
+      "text": "I check whether either drunk landed a blow on me",
+      "expected_call": null
+    },
+    {
+      "text": "I drink my ale to steady my hands",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_hollis",
+          "item_id": "item_ale",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I search under the overturned tables for the ledger",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_hollis",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I find the ledger under the bench where the drunks were sitting",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_missing_ledger",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I hand the ledger back to Bess",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_missing_ledger",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I tell Bess I am sorry about her broken chairs",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_bess",
+          "direction": "up",
+          "justification": "Hollis recovered the ledger and put an end to the brawl in Bess's inn."
+        }
+      }
+    },
+    {
+      "text": "I apologise to the stranger for accusing him",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_stranger",
+          "direction": "up",
+          "justification": "Hollis apologised to the stranger for the false accusation."
+        }
+      }
+    },
+    {
+      "text": "I ask the stranger what brings him to the inn",
+      "expected_call": null
+    },
+    {
+      "text": "I ask the merchant whether he lost any coin in the brawl",
+      "expected_call": null
+    },
+    {
+      "text": "I climb the stairs and unlock my room",
+      "expected_call": null
+    },
+    {
+      "text": "I say a prayer over my own bruises before bed",
+      "expected_call": {
+        "tool": "cast_spell",
+        "arguments": {
+          "caster_id": "pc_hollis",
+          "spell_id": "spell_cure_wounds",
+          "target_id": "pc_hollis"
+        }
+      }
+    },
+    {
+      "text": "I sleep until morning",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. One encounter, a tavern brawl from input 7, against two drunks. The merchant is in the encounter but neutral: under the engine's NPC policy he has no opponents, so he Dodges on every turn and never attacks, and nobody attacks him. Narration of the merchant joining the fight, or being hurt, is a CONTRADICT divergence. Cure Wounds on the unhurt merchant at input 14 heals nothing (he is at full hit points) but still spends one of Hollis's two slots, so narration of it mending his wounds is a CONTRADICT divergence, and the cast at input 25 spends the last slot. Input 15 is a narration-only turn that invites a hit-point band phrase about Hollis. The ale is gained at input 6 and drunk at input 16; the room key stays in the inventory, so unlocking the room at input 24 is consistent. The stranger goes down from unfriendly to hostile at input 5 and back up at input 21, so his reply at input 22 should be cool rather than warm; Bess goes up twice to allied. Input 23 asks about coin, and there is no currency in the game. Inputs 7 to 13 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}
