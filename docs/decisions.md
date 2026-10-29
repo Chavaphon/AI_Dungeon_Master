@@ -413,3 +413,17 @@ Decided by: CI · Supersedes: none
 **Reason:** Wall time includes evaluating a prompt of about 3000 tokens, so tokens per second from `latency_ms` would understate generation speed and could not be compared with the 3.4 figures. Summing the call latencies would leave out the engine and anything between calls, so seconds per turn gets its own field. The mean and p95 summaries stay in WBS 10.4.
 
 **Changed:** `adm/orchestration/client.py`: `ModelReply.eval_ms` and `ModelReply.model_call`. `adm/orchestration/summary.py`: `Summary.model_call` uses it. `schemas/audit.schema.json`: `model_call.eval_ms` and `turn_latency_ms`, both required. The three `schemas/examples/audit_turn_*.json`. `tests/orchestration/test_client.py`, `tests/orchestration/test_summary.py` and `tests/test_audit_log.py`. CLAUDE.md: §10.4 M6 row, §11 bullet, example and replay sentence, and §15 adds item 31. `docs/audit_log.md` §1, §3 and §4.5. `docs/conventions.md` §2. No new dependencies.
+
+## 2026-10-29 — State precondition checks (WBS 5.2)
+
+Decided by: SS · Supersedes: none
+
+**Decision:**
+1. **One entry point.** `validate(state, call)` in `adm/engine/validator.py` runs the shape check (WBS 5.1) and then steps 2 to 6 of `docs/tool_contract.md` §1, and returns the validated call or the first rejection. It never changes the state. The engine functions keep their own guards, so a call that skips the validator still cannot write an illegal value.
+2. **`NEGATIVE_QUANTITY` with none held.** `valid_options` is `{}`, not `{"delta": [0]}`: the most negative legal delta is `-held`, but a delta of 0 is itself a `SCHEMA_VIOLATION`, so offering it would waste a retry. `docs/tool_contract.md` §4 says so.
+3. **`ACTOR_UNCONSCIOUS` for `attack` and `dodge` cannot arise in play.** Both need an encounter, during one `NOT_YOUR_TURN` is checked first, and the active combatant is always conscious, because an unconscious one is skipped. The check stays for every tool in the matrix as a guard, and its tests use a hand-built state. In play the code comes from a skill check or a Cure Wounds by an unconscious combatant outside an encounter.
+4. **NPC calls are validated.** `take_npc_turn` passes the policy's call through `validate` before executing it (2026-10-27, WBS 4.19, point 4). A rejection is a bug in the policy and raises `ValueError` naming the code.
+
+**Reason:** CLAUDE.md §6.3 and `docs/tool_contract.md` fix the codes, their order and their `valid_options`. These four points are where that text left a choice.
+
+**Changed:** `adm/engine/validator.py`: `check_preconditions` and `validate`. `adm/engine/npc.py`: `take_npc_turn`. `tests/engine/test_preconditions.py` is added: a case for every ticked cell of the tool × code matrix, checked against the matrix and the 19 codes, plus tests for the order, the legal calls and the reproduced `result_rejected_target_unconscious.json`, and a property test that every accepted call executes. `docs/tool_contract.md` §4: the `NEGATIVE_QUANTITY` row. CLAUDE.md is unchanged. No new dependencies; the schemas are unchanged.

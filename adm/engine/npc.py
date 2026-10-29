@@ -26,8 +26,8 @@ NPC turn is an `npc_action` step, then `encounter_end` if the fight is over,
 then `initiative_advance` and `dodge_expiry` (docs/audit_log.md section 2).
 
 `take_npc_turn` is the one place an NPC call is executed. The validator (WBS
-5.2) checks it there like a player's call; the policy only proposes legal calls,
-so a rejection would be a bug in the policy and raises.
+5.2, `validate`) checks it there like a player's call; the policy only proposes
+legal calls, so a rejection would be a bug in the policy and raises.
 """
 
 from __future__ import annotations
@@ -47,6 +47,7 @@ from adm.engine.combat import (
 )
 from adm.engine.dice import DiceRoller
 from adm.engine.state import Faction, GameState
+from adm.engine.validator import Rejection, validate
 
 OPPONENTS: dict[Faction, Faction | None] = {
     "hostile": "party",
@@ -122,6 +123,12 @@ def take_npc_turn(state: GameState, roller: DiceRoller, when: When) -> NpcAction
     if state.combatants[npc_id].is_player_character:
         raise ValueError(f"{npc_id} is the player character, not an NPC")
     call = choose_action(state, npc_id)
+    checked = validate(state, call.model_dump(mode="json"))
+    if isinstance(checked, Rejection):
+        raise ValueError(
+            f"the NPC policy proposed an illegal call for {npc_id}: "
+            f"{checked.rejection_code}: {checked.message}"
+        )
     args = call.arguments
     if call.tool == "attack":
         outcome = attack(state, roller, args["attacker_id"], args["target_id"], args["weapon_id"])
