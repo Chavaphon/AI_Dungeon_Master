@@ -85,7 +85,9 @@ class EngineStep(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    step: Literal["encounter_start", "dodge_expiry", "initiative_advance", "encounter_end"]
+    step: Literal[
+        "encounter_start", "dodge_expiry", "initiative_advance", "encounter_end", "turn_increment"
+    ]
     when: When
     state_diff: list[StateChange]
     rolls: list[RollResult]
