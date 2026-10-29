@@ -43,7 +43,6 @@ SECTION_13 = {
 # area -> the WBS task that builds its rules
 NOT_YET_BUILT = {
     "relationships": "4.15",
-    "quests": "4.16",
 }
 
 # area in NOT_YET_BUILT -> the cases of the rules already built
