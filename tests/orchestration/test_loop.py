@@ -3,6 +3,9 @@ retried with a structured error and recovers within the budget, the budget of
 two retries is never exceeded, and exhausting it ends the phase in a named
 `turn_failure` (the done-when of #63, a CONTROL artefact).
 
+Exhausted-budget fallback (WBS 6.5): a failed turn is written to the audit log,
+does not advance, and is counted (the done-when of #64).
+
 No test calls a model: a fake client returns recorded replies.
 
 Run: pytest tests/orchestration/test_loop.py -v
@@ -10,6 +13,7 @@ Run: pytest tests/orchestration/test_loop.py -v
 
 import json
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -20,16 +24,22 @@ from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
 from adm.bench import context as bench
-from adm.engine.combat import attack, dodge
+from adm.engine.audit import AuditLog, InvalidRecord, apply_diff, turn_failure_counts
+from adm.engine.combat import attack, dodge, start_encounter
 from adm.engine.dice import DiceRoller
-from adm.engine.state import GameState, load_state, state_hash
+from adm.engine.npc import NpcActionStep
+from adm.engine.state import GameState, data_hash, load_state, state_hash
+from adm.engine.tools import increment_turn, open_encounter
 from adm.engine.validator import ToolCall
 from adm.orchestration import prompt
 from adm.orchestration.client import Message, ModelReply, Phase, build_options, load_model_config
 from adm.orchestration.loop import (
     MAX_TOOLCALL_ATTEMPTS,
+    REPHRASE,
     RETRY_BUDGET,
     ToolPhase,
+    TurnTimer,
+    fail_turn,
     run_tool_phase,
     turn_failure_kind,
 )
@@ -395,3 +405,147 @@ def test_any_reply_sequence_stops_within_the_budget(kinds: list[str]) -> None:
         assert n == MAX_TOOLCALL_ATTEMPTS and kinds[n - 1] == result.turn_failure
     no_tool = [m for m in client.calls[-1][0] if m["content"] == TEXTS["retry_no_tool"]]
     assert len(no_tool) <= 1
+
+
+# --- exhausted budget: the failed turn (WBS 6.5) ---
+
+FAILURE_KINDS = ["unparseable", "schema", "unknown_entity", "precondition"]
+REJECTED_EXAMPLE = json.loads((EXAMPLES / "audit_turn_rejected.json").read_text("utf-8"))
+
+
+class FakeClock:
+    """Ten seconds pass between readings."""
+
+    def __init__(self) -> None:
+        self.t = 100.0
+
+    def __call__(self) -> float:
+        self.t += 10.0
+        return self.t
+
+
+def _timer() -> TurnTimer:
+    return TurnTimer(clock=FakeClock(), now=lambda: datetime(2026, 11, 9, 14, 22, 31, tzinfo=UTC))
+
+
+def _log(tmp_path: Path, state: GameState) -> AuditLog:
+    return AuditLog(tmp_path, "D", state.scenario_id, state.seed)
+
+
+def _fail(
+    log: AuditLog,
+    state: GameState,
+    *replies: str,
+    before: Doc | None = None,
+    steps: Sequence[Any] = (),
+    input_index: int | None = 7,
+) -> Any:
+    before = state.to_dict() if before is None else before
+    phase, _, _ = _run(*replies, state=state)
+    return fail_turn(
+        log,
+        state,
+        before,
+        steps,
+        phase,
+        input_index=input_index,
+        player_input=PLAYER_INPUT,
+        timer=_timer(),
+    )
+
+
+@pytest.mark.parametrize("kind", FAILURE_KINDS)
+def test_an_exhausted_budget_is_logged_and_the_turn_does_not_advance(
+    kind: str, tmp_path: Path
+) -> None:
+    state = _state()
+    before = state.to_dict()
+    log = _log(tmp_path, state)
+    failed = _fail(log, state, *[REPLIES[kind]] * MAX_TOOLCALL_ATTEMPTS)
+
+    record = failed.record
+    assert log.records() == [record], "the failed turn must be in the audit log"
+    assert record["turn_failure"] == kind
+    assert state.to_dict() == before, "a failed turn changed the state"
+    assert record["turn_number"] == state.turn_number + 1, "the next turn repeats this number"
+    assert record["engine_steps"] == record["state_diff"] == record["rolls"] == []
+    assert [c["phase"] for c in record["model_calls"]] == ["toolcall"] * MAX_TOOLCALL_ATTEMPTS
+    assert record["narration"] == failed.message == REPHRASE
+    assert failed.carried_facts == ()
+    assert (record["timestamp"], record["turn_latency_ms"]) == ("2026-11-09T14:22:31Z", 10_000)
+
+
+def test_the_failed_record_matches_the_rejected_example(tmp_path: Path) -> None:
+    # schemas/examples/audit_turn_rejected.json: NOT_A_WEAPON, unparseable, NOT_A_WEAPON.
+    state = _state()
+    record = _fail(_log(tmp_path, state), state, PRECONDITION, UNPARSEABLE, PRECONDITION).record
+    assert record.keys() == REJECTED_EXAMPLE.keys()
+    same = [
+        "run_id",
+        "turn_number",
+        "input_index",
+        "executed_call",
+        "engine_steps",
+        "state_before_hash",
+        "state_after_hash",
+        "narration",
+        "turn_failure",
+        "narration_only",
+    ]
+    assert {k: record[k] for k in same} == {k: REJECTED_EXAMPLE[k] for k in same}
+
+
+def test_failed_scripted_turns_repeat_the_turn_number_and_are_counted(tmp_path: Path) -> None:
+    # A scripted run moves on to the next input after a failed turn (CLAUDE.md 7.1).
+    state = _state()
+    log = _log(tmp_path, state)
+    _fail(log, state, PRECONDITION, SCHEMA, PRECONDITION, input_index=7)
+    _fail(log, state, UNPARSEABLE, UNPARSEABLE, UNPARSEABLE, input_index=8)
+    records = log.records()
+    assert [r["input_index"] for r in records] == [7, 8]
+    assert [r["turn_number"] for r in records] == [state.turn_number + 1] * 2
+    assert turn_failure_counts(records) == {"precondition": 1, "unparseable": 1}
+
+
+def _seed_where_an_npc_goes_first(state: GameState) -> int:
+    for seed in range(1000):
+        trial = state.model_copy(deep=True)
+        start_encounter(trial, DiceRoller(seed), ["pc_lyra", "npc_rat_01", "npc_rat_02"])
+        if trial.active_combatant_id != "pc_lyra":
+            return seed
+    raise AssertionError("no seed found")
+
+
+def test_a_failed_turn_keeps_the_encounter_that_started_before_it(tmp_path: Path) -> None:
+    state = load_state(EXAMPLES / "state_01_exploration.json")
+    before = state.to_dict()
+    roller = DiceRoller(_seed_where_an_npc_goes_first(state))
+    steps = open_encounter(state, roller, ["pc_lyra", "npc_rat_01", "npc_rat_02"])
+    npc_facts = [s.result["narration_facts"] for s in steps if isinstance(s, NpcActionStep)]
+    assert npc_facts, "the seed should let an NPC act before the PC"
+
+    failed = _fail(_log(tmp_path, state), state, *[UNPARSEABLE] * 3, before=before, steps=steps)
+
+    record = failed.record
+    assert {s["when"] for s in record["engine_steps"]} == {"before_call"}
+    assert data_hash(apply_diff(before, record["state_diff"])) == record["state_after_hash"]
+    assert list(failed.carried_facts) == npc_facts, "NPC facts go to the next narrated turn"
+    assert state.active_combatant_id == "pc_lyra", "initiative stays with the player"
+    assert state.turn_number == before["turn_number"]
+    assert record["turn_number"] == state.turn_number + 1
+
+
+def test_only_an_exhausted_budget_is_a_failed_turn(tmp_path: Path) -> None:
+    state = _state()
+    with pytest.raises(ValueError, match="exhausted"):
+        _fail(_log(tmp_path, state), state, PRECONDITION, VALID)
+
+
+def test_a_failed_turn_cannot_run_steps_after_the_call(tmp_path: Path) -> None:
+    state = _state()
+    before = state.to_dict()
+    log = _log(tmp_path, state)
+    steps = [increment_turn(state)]
+    with pytest.raises(InvalidRecord, match="after_call"):
+        _fail(log, state, *[PRECONDITION] * 3, before=before, steps=steps)
+    assert not log.path.exists()

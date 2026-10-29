@@ -36,6 +36,7 @@ from adm.engine.audit import (
     read_log,
     record_errors,
     schema_errors,
+    turn_failure_counts,
 )
 from adm.engine.combat import EngineStep, StateChange, start_encounter
 from adm.engine.dice import DiceRoller
@@ -87,12 +88,15 @@ def exploring() -> GameState:
 def play_turn(state: GameState, roller: DiceRoller, call: Doc) -> tuple[Doc, Doc, list[Any]]:
     """Dispatch one call as the loop would on its only attempt, and run the
     engine steps after it. Returns the turn's start state, the validation entry
-    and the steps. A rejected or null call changes nothing (CLAUDE.md 7.1)."""
+    and the steps. A rejected call changes nothing (CLAUDE.md 7.1); a null call
+    is a narration-only turn, which still advances (WBS 6.5)."""
     before = state.to_dict()
     entry = dispatch(state, roller, call)
     steps: list[Any] = []
     if entry["ok"] and entry["tool"] is not None:
-        steps = after_call(state, roller, entry["tool"]) + [increment_turn(state)]
+        steps = after_call(state, roller, entry["tool"])
+    if entry["ok"]:
+        steps.append(increment_turn(state))
     return before, entry, steps
 
 
@@ -487,6 +491,41 @@ def test_a_rejected_turn_records_no_change(mid_combat: GameState) -> None:
     assert_writable(record)
     assert record["turn_failure"] == "precondition"
     assert record["state_diff"] == [] and record["state_before_hash"] == record["state_after_hash"]
+
+
+def test_a_narration_only_turn_advances(mid_combat: GameState) -> None:
+    call = {"tool": None}
+    before, entry, steps = play_turn(mid_combat, DiceRoller(7), call)
+    record = build_record(before, call, entry, steps, mid_combat)
+    assert_writable(record)
+    assert record["narration_only"] is True
+    assert [s["step"] for s in record["engine_steps"]] == ["turn_increment"]
+    assert mid_combat.turn_number == before["turn_number"] + 1
+
+
+def test_a_failed_turn_keeps_the_encounter_that_started_before_it(exploring: GameState) -> None:
+    # WBS 6.5: the encounter and the NPC turns ahead of the PC stay; nothing after the call runs.
+    roller = DiceRoller(_seed_where_an_npc_goes_first(exploring))
+    before = exploring.to_dict()
+    steps: list[Any] = open_encounter(exploring, roller, ENCOUNTER)
+    call = {"tool": "dodge", "arguments": {"actor_id": "npc_rat_01"}}
+    entry = dispatch(exploring, roller, call)
+    record = build_record(before, call, entry, steps, exploring)
+    assert_writable(record)
+    assert record["turn_failure"] == "precondition"
+    assert record["turn_number"] == exploring.turn_number + 1, "the failed turn advanced"
+    assert data_hash(apply_diff(before, record["state_diff"])) == record["state_after_hash"]
+
+    steps.append(increment_turn(exploring))
+    advanced = build_record(before, call, entry, steps, exploring)
+    assert "a failed turn has after_call steps" in record_errors(advanced)
+
+
+def test_turn_failures_are_counted_by_kind() -> None:
+    rejected = _example("rejected")
+    records = [rejected, _example("valid"), {**rejected, "turn_failure": "schema"}, rejected]
+    assert turn_failure_counts(records) == {"precondition": 2, "schema": 1}
+    assert turn_failure_counts([]) == {}
 
 
 def test_engine_fields_refuse_steps_out_of_order(mid_combat: GameState) -> None:

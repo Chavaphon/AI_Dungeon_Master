@@ -22,7 +22,8 @@ or the rules the schema cannot express (`record_errors`, docs/audit_log.md secti
 3), or that belongs to another run, and then writes nothing. Each line is flushed
 and synced before `append` returns, so a run that dies keeps every turn it wrote.
 The record is written as given, in compact JSON; the timings in it come from
-orchestration (docs/conventions.md section 2).
+orchestration (docs/conventions.md section 2). `turn_failure_counts` counts a
+log's failed turns by kind (WBS 6.5).
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+from collections import Counter
 from collections.abc import Sequence
 from functools import cache
 from pathlib import Path
@@ -230,10 +232,14 @@ def record_errors(record: Doc) -> list[str]:
             errors.append("turn_failure without an exhausted retry budget")
         elif failure != _failure_kind(last):
             errors.append(f"turn_failure {failure} does not match the last attempt")
-        if record["state_diff"] or record["engine_steps"]:
-            errors.append("a failed turn changed state")
+        if any(s["when"] == "after_call" for s in record["engine_steps"]):
+            errors.append("a failed turn has after_call steps")
     elif last is not None and not last["ok"]:
         errors.append("last attempt failed but turn_failure is null")
+
+    increments = [i for i, s in enumerate(record["engine_steps"]) if s["step"] == "turn_increment"]
+    if condition == "D" and failure is None and increments != [len(record["engine_steps"]) - 1]:
+        errors.append("a turn that did not fail must end with one turn_increment")
 
     is_null_turn = last is not None and last["ok"] and last.get("tool") is None
     if record["narration_only"] != (condition == "D" and failure is None and is_null_turn):
@@ -319,3 +325,9 @@ def read_log(path: Path) -> list[Doc]:
     """The records of a JSONL audit log, in order."""
     with path.open(encoding="utf-8") as log:
         return [json.loads(line) for line in log]
+
+
+def turn_failure_counts(records: Sequence[Doc]) -> Counter[str]:
+    """How many turns failed, by `turn_failure` kind (CLAUDE.md section 7.1:
+    turn failures are a reported metric)."""
+    return Counter(r["turn_failure"] for r in records if r["turn_failure"] is not None)

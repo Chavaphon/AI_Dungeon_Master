@@ -63,7 +63,8 @@ The top-level `state_diff` is the `before_call` steps, then the executed result'
 - Toolcall attempts are numbered 1, 2, 3, at most `1 + retry budget`, and are aligned one-to-one with `proposed_calls` and `validation`. A `null` proposed call is a parse failure, and a `{"tool": null}` call is validated as `no_tool`.
 - The loop stops at the first success. Only the last attempt can be a successful call. At most one `{"tool": null}` reply is followed by a re-prompt (§7.1).
 - `executed_call` is the last proposed call if and only if that attempt succeeded.
-- `turn_failure` is set if and only if all three attempts failed. Its kind follows the last attempt (`SCHEMA_VIOLATION` → `schema`, `UNKNOWN_ENTITY` → `unknown_entity`, unparseable → `unparseable`, any other code → `precondition`). A failed turn changes no state and has no narration call.
+- `turn_failure` is set if and only if all three attempts failed. Its kind follows the last attempt (`SCHEMA_VIOLATION` → `schema`, `UNKNOWN_ENTITY` → `unknown_entity`, unparseable → `unparseable`, any other code → `precondition`). A failed turn has no narration call and no `after_call` step, so it does not advance. Its only state changes are the `before_call` steps of an encounter that started before it (WBS 6.5).
+- A condition D turn that does not fail, narration-only turns included, ends with exactly one `turn_increment` step (WBS 6.5).
 - `narration_only` is true exactly when a condition D turn ends on `{"tool": null}`.
 - `state_diff` and `rolls` are the steps and the result in order (§2). The hashes are equal exactly when `state_diff` is empty.
 - One narration call per turn, none on a failed turn. `summary_regenerated` matches the summary call and the `summary` field.
