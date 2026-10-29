@@ -30,7 +30,7 @@ Decided by SS on 2026-10-01; see `docs/decisions.md`.
 
 ## 3. Rules JSON Schema cannot express
 
-These rules involve comparing two values, so JSON Schema can't express them. `cross_field_errors` in the test file checks them for the examples. The runtime check belongs to WBS 5.4, the post-write invariant assertion.
+These rules involve comparing two values, so JSON Schema can't express them. `cross_field_errors` in `adm/engine/state.py` checks them. Every load and save checks them, and the post-write invariant assertion (`check_state`, WBS 5.4) checks them after every engine write.
 
 - `current_hp <= max_hp` (invariant 5).
 - Each map key equals the entity's own id field.
@@ -40,7 +40,7 @@ These rules involve comparing two values, so JSON Schema can't express them. `cr
 - Inventory owners are combatants; inventory items are in `item_definitions`.
 - Relationship history is a chain of one-step changes ending at the current `stance` (§5.2).
 - `stage <= max_stage`.
-- `victory` means every hostile is unconscious; `defeat` means the player character is (§4.8).
+- `victory` means the player character is conscious; `defeat` means it is unconscious (§4.8). Whether every hostile *in the encounter* is unconscious is decided when the encounter ends (`encounter_outcome` in `adm/engine/combat.py`). The state no longer records who was in an encounter after it ends, and a scenario may keep hostiles for a later encounter (`s08_old_mine`), so "every hostile in the state" is not a rule (`docs/decisions.md`, WBS 5.4).
 
 ## 4. Open points for the 2.6 review
 

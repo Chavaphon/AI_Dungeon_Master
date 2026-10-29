@@ -1,10 +1,16 @@
 """Core state types and state load/save (WBS 4.1).
 
 `GameState` is the typed form of schemas/state.schema.json (CLAUDE.md section 5).
-The JSON Schema is the authority on what a legal state is: every load and save
-validates against it, and the pydantic models add types and attribute access on
-top. The rules JSON Schema cannot express are checked by the post-write
-invariant assertion, WBS 5.4.
+A legal state passes the JSON Schema and the rules it cannot express
+(`cross_field_errors`, docs/state_schema.md section 3). Every load and save
+checks both, and the pydantic models add types and attribute access on top.
+
+The post-write invariant assertion (WBS 5.4) is `check_state`: the engine's one
+write path (adm/engine/tools.py) runs it after every write, so an illegal state
+raises `IllegalState` rather than persisting. The rule on `encounter_outcome` is
+the one the state can still show once an encounter is over: `victory` with a
+conscious player character, `defeat` with an unconscious one. Which hostiles
+were in the encounter is not kept once it ends (docs/decisions.md, WBS 5.4).
 
 `to_dict` gives back exactly the JSON the state was loaded from, so a state file
 round-trips without loss and `state_hash` matches docs/conventions.md section 2.
@@ -16,7 +22,7 @@ import hashlib
 import json
 from functools import cache
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 from jsonschema import Draft202012Validator
 from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer
@@ -34,6 +40,10 @@ EncounterOutcome = Literal["victory", "defeat"]
 
 class StateValidationError(ValueError):
     """A state that does not match schemas/state.schema.json."""
+
+
+class IllegalState(StateValidationError):
+    """A state that breaks a rule of docs/state_schema.md, found after a write."""
 
 
 class _Model(BaseModel):
@@ -125,8 +135,10 @@ class GameState(_Model):
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> GameState:
-        """Validate `data` against the state schema, then build the typed state."""
+        """Check `data` against the state schema and its cross-field rules, then
+        build the typed state."""
         _check_schema(data)
+        _check_cross_field(data)
         try:
             return cls.model_validate(data)
         except PydanticValidationError as exc:
@@ -150,6 +162,92 @@ def _check_schema(data: Any) -> None:
         raise StateValidationError("state does not match the schema:\n" + "\n".join(lines))
 
 
+STANCES: tuple[str, ...] = get_args(Stance)  # the ladder, hostile to allied
+
+
+def cross_field_errors(data: dict[str, Any]) -> list[str]:
+    """Where a state that passes the schema breaks the rules of docs/state_schema.md
+    section 3, which JSON Schema cannot express."""
+    errors: list[str] = []
+    combatants = data["combatants"]
+
+    keyed = (
+        ("combatants", "combatant_id"),
+        ("item_definitions", "item_id"),
+        ("npc_relationships", "npc_id"),
+        ("quests", "quest_id"),
+    )
+    for section, id_field in keyed:
+        for key, entity in data[section].items():
+            if entity[id_field] != key:
+                errors.append(f"{section}.{key}: {id_field} is {entity[id_field]!r}")
+
+    pcs = [cid for cid, c in combatants.items() if c["is_player_character"]]
+    if len(pcs) != 1:
+        errors.append(f"expected exactly one player character, found {pcs}")
+
+    for cid, c in combatants.items():
+        if not 0 <= c["current_hp"] <= c["max_hp"]:
+            errors.append(f"{cid}: current_hp {c['current_hp']} outside [0, {c['max_hp']}]")
+
+    for cid in data["initiative_order"]:
+        if cid not in combatants:
+            errors.append(f"initiative_order: unknown combatant {cid}")
+    active = data["active_combatant_id"]
+    if active is not None and active not in data["initiative_order"]:
+        errors.append(f"active_combatant_id {active} is not in initiative_order")
+
+    for owner, items in data["inventory"].items():
+        if owner not in combatants:
+            errors.append(f"inventory: unknown combatant {owner}")
+        for item_id in items:
+            if item_id not in data["item_definitions"]:
+                errors.append(f"inventory.{owner}: undefined item {item_id}")
+
+    for npc_id, rel in data["npc_relationships"].items():
+        if npc_id in combatants and combatants[npc_id]["display_name"] != rel["display_name"]:
+            errors.append(f"{npc_id}: display_name differs between combatants and relationships")
+        stance = rel["history"][0]["from"] if rel["history"] else rel["stance"]
+        for entry in rel["history"]:
+            if entry["from"] != stance:
+                errors.append(f"{npc_id}: history breaks at turn {entry['turn']}")
+            if abs(STANCES.index(entry["to"]) - STANCES.index(entry["from"])) != 1:
+                errors.append(f"{npc_id}: turn {entry['turn']} is not a one-step change")
+            stance = entry["to"]
+        if stance != rel["stance"]:
+            errors.append(f"{npc_id}: stance {rel['stance']} does not match history")
+
+    for qid, quest in data["quests"].items():
+        if quest["stage"] > quest["max_stage"]:
+            errors.append(f"{qid}: stage {quest['stage']} beyond max_stage")
+
+    outcome = data["encounter_outcome"]
+    conscious_pcs = [pc for pc in pcs if combatants[pc]["status"] == "active"]
+    if outcome == "victory" and len(conscious_pcs) != len(pcs):
+        errors.append("victory with an unconscious player character")
+    if outcome == "defeat" and conscious_pcs:
+        errors.append("defeat with an active player character")
+
+    return errors
+
+
+def _check_cross_field(data: dict[str, Any]) -> None:
+    errors = cross_field_errors(data)
+    if errors:
+        raise StateValidationError("state breaks a cross-field rule:\n" + "\n".join(errors))
+
+
+def check_state(state: GameState) -> None:
+    """The post-write invariant assertion: raise `IllegalState` unless `state`
+    passes the schema and every cross-field rule."""
+    data = state.to_dict()
+    try:
+        _check_schema(data)
+        _check_cross_field(data)
+    except StateValidationError as exc:
+        raise IllegalState(f"illegal state after a write: {exc}") from exc
+
+
 def canonical_json(state: GameState) -> str:
     """The serialisation used for hashing (docs/conventions.md section 2)."""
     return _canonical(state.to_dict())
@@ -169,13 +267,15 @@ def data_hash(data: dict[str, Any]) -> str:
 
 
 def load_state(path: Path) -> GameState:
-    """Read a state file and validate it against the schema."""
+    """Read a state file and check it against the schema and its cross-field rules."""
     return GameState.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
 
 def save_state(state: GameState, path: Path) -> None:
-    """Validate `state` against the schema and write it; nothing is written if it is invalid."""
+    """Check `state` against the schema and its cross-field rules and write it;
+    nothing is written if it is illegal."""
     data = state.to_dict()
     _check_schema(data)
+    _check_cross_field(data)
     text = json.dumps(data, sort_keys=True, indent=2, ensure_ascii=False) + "\n"
     path.write_text(text, encoding="utf-8")
