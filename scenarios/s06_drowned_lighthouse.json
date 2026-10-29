@@ -1,0 +1,402 @@
+{
+  "schema_version": "1.0",
+  "scenario_id": "s06_drowned_lighthouse",
+  "display_name": "The Drowned Lighthouse",
+  "opening_narration": "The lighthouse on Gull Rock has been dark for two nights, and the fishing fleet is due home on tonight's tide. Waves break over the jetty as you climb toward the door. You brought a flask for lamp oil, though you emptied it on the road.",
+  "locations": [
+    "Gull Rock",
+    "the jetty",
+    "the lighthouse",
+    "the storeroom",
+    "the spiral stair",
+    "the lamp room",
+    "the gallery",
+    "the sea"
+  ],
+  "initial_state": {
+    "combatants": {
+      "pc_vesna": {
+        "combatant_id": "pc_vesna",
+        "display_name": "Vesna",
+        "is_player_character": true,
+        "faction": "party",
+        "abilities": {
+          "str": 14,
+          "dex": 14,
+          "con": 13,
+          "int": 10,
+          "wis": 12,
+          "cha": 11
+        },
+        "proficient_skills": [
+          "perception",
+          "strength"
+        ],
+        "armour_class": 14,
+        "max_hp": 22,
+        "current_hp": 22,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      },
+      "npc_giant_crab": {
+        "combatant_id": "npc_giant_crab",
+        "display_name": "giant crab",
+        "is_player_character": false,
+        "faction": "hostile",
+        "abilities": {
+          "str": 13,
+          "dex": 15,
+          "con": 11,
+          "int": 1,
+          "wis": 9,
+          "cha": 3
+        },
+        "proficient_skills": [],
+        "armour_class": 13,
+        "max_hp": 11,
+        "current_hp": 11,
+        "status": "active",
+        "dodging": false,
+        "spell_attack_bonus": null,
+        "spellcasting_modifier": null,
+        "spell_slots_1": null
+      }
+    },
+    "inventory": {
+      "pc_vesna": {
+        "item_spear": 1,
+        "item_lamp_oil": 0
+      },
+      "npc_giant_crab": {
+        "item_crab_claw": 1
+      }
+    },
+    "item_definitions": {
+      "item_spear": {
+        "item_id": "item_spear",
+        "display_name": "spear",
+        "is_weapon": true,
+        "attack_bonus": 4,
+        "damage_dice": "1d6",
+        "damage_bonus": 2
+      },
+      "item_crab_claw": {
+        "item_id": "item_crab_claw",
+        "display_name": "claw",
+        "is_weapon": true,
+        "attack_bonus": 3,
+        "damage_dice": "1d6",
+        "damage_bonus": 1
+      },
+      "item_lamp_oil": {
+        "item_id": "item_lamp_oil",
+        "display_name": "flask of lamp oil",
+        "is_weapon": false
+      },
+      "item_spyglass": {
+        "item_id": "item_spyglass",
+        "display_name": "spyglass",
+        "is_weapon": false
+      }
+    },
+    "npc_relationships": {
+      "npc_keeper": {
+        "npc_id": "npc_keeper",
+        "display_name": "the keeper",
+        "stance": "unfriendly",
+        "history": []
+      },
+      "npc_ilse": {
+        "npc_id": "npc_ilse",
+        "display_name": "Ilse",
+        "stance": "allied",
+        "history": []
+      }
+    },
+    "quests": {
+      "quest_relight_lamp": {
+        "quest_id": "quest_relight_lamp",
+        "display_name": "Relight the Lamp",
+        "state": "not_started",
+        "stage": 0,
+        "max_stage": 3
+      }
+    }
+  },
+  "encounters": [
+    {
+      "before_input": 15,
+      "combatant_ids": [
+        "pc_vesna",
+        "npc_giant_crab"
+      ]
+    }
+  ],
+  "scripted_inputs": [
+    {
+      "text": "I climb the slippery steps from the jetty to the lighthouse door",
+      "expected_call": null
+    },
+    {
+      "text": "I ask the keeper why the light has gone dark",
+      "expected_call": null
+    },
+    {
+      "text": "I tell the keeper I will get the light burning before the fishing fleet comes home",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_relight_lamp",
+          "transition": "start"
+        }
+      }
+    },
+    {
+      "text": "I shake my flask of lamp oil to see how much is in it",
+      "expected_call": null
+    },
+    {
+      "text": "I remind the keeper I brought his daughter home safe from the fair last summer",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_keeper",
+          "direction": "up",
+          "justification": "Vesna reminded the keeper she once brought his daughter safely home."
+        }
+      }
+    },
+    {
+      "text": "I search the storeroom for oil",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_vesna",
+          "skill": "perception",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I fill my flask from the cask in the storeroom",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_vesna",
+          "item_id": "item_lamp_oil",
+          "delta": 2
+        }
+      }
+    },
+    {
+      "text": "I tell the keeper there is enough oil for the great lamp",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_relight_lamp",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I borrow the keeper's spyglass to watch for the fleet",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_vesna",
+          "item_id": "item_spyglass",
+          "delta": 1
+        }
+      }
+    },
+    {
+      "text": "I tease Ilse that her father worries too much",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_ilse",
+          "direction": "down",
+          "justification": "Vesna mocked Ilse's father in front of her."
+        }
+      }
+    },
+    {
+      "text": "I climb the long spiral stair toward the lamp room",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_vesna",
+          "skill": "strength",
+          "dc": 13
+        }
+      }
+    },
+    {
+      "text": "I look out through the spyglass at the dark sea",
+      "expected_call": null
+    },
+    {
+      "text": "I hear scraping on the gallery outside and creep toward it",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_vesna",
+          "skill": "stealth",
+          "dc": 12
+        }
+      }
+    },
+    {
+      "text": "I brace myself against the iron rail and edge out onto the wet gallery",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_vesna",
+          "skill": "strength",
+          "dc": 12
+        }
+      },
+      "check_advantage": "advantage"
+    },
+    {
+      "text": "I peer into the spray for whatever is making the scraping",
+      "expected_call": {
+        "tool": "skill_check",
+        "arguments": {
+          "actor_id": "pc_vesna",
+          "skill": "perception",
+          "dc": 11
+        }
+      }
+    },
+    {
+      "text": "I stab at the giant crab with my spear",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_vesna",
+          "target_id": "npc_giant_crab",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I thrust at the crab's soft underside",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_vesna",
+          "target_id": "npc_giant_crab",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I jump back as its claw snaps at me",
+      "expected_call": {
+        "tool": "dodge",
+        "arguments": {
+          "actor_id": "pc_vesna"
+        }
+      }
+    },
+    {
+      "text": "I drive my spear at the crab again",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_vesna",
+          "target_id": "npc_giant_crab",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I stab at the crab until it stops moving",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_vesna",
+          "target_id": "npc_giant_crab",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I strike at the crab one last time if it still moves",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_vesna",
+          "target_id": "npc_giant_crab",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I jab the crab again if it is still on the gallery",
+      "expected_call": {
+        "tool": "attack",
+        "arguments": {
+          "attacker_id": "pc_vesna",
+          "target_id": "npc_giant_crab",
+          "weapon_id": "item_spear"
+        }
+      }
+    },
+    {
+      "text": "I pour oil into the great lamp and light it",
+      "expected_call": {
+        "tool": "modify_inventory",
+        "arguments": {
+          "actor_id": "pc_vesna",
+          "item_id": "item_lamp_oil",
+          "delta": -1
+        }
+      }
+    },
+    {
+      "text": "I watch the beam sweep out over the water",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_relight_lamp",
+          "transition": "advance"
+        }
+      }
+    },
+    {
+      "text": "I tell Ilse I am sorry for teasing her",
+      "expected_call": {
+        "tool": "update_npc_relationship",
+        "arguments": {
+          "npc_id": "npc_ilse",
+          "direction": "up",
+          "justification": "Vesna apologised to Ilse and relit the lighthouse lamp."
+        }
+      }
+    },
+    {
+      "text": "I watch through the spyglass as the fleet's sails come in",
+      "expected_call": {
+        "tool": "update_quest",
+        "arguments": {
+          "quest_id": "quest_relight_lamp",
+          "transition": "complete"
+        }
+      }
+    },
+    {
+      "text": "I check how badly the crab's claws cut me",
+      "expected_call": null
+    },
+    {
+      "text": "I shake my flask to see how much oil is left",
+      "expected_call": null
+    }
+  ],
+  "notes_for_annotators": "Inputs are numbered from 0. One encounter, from input 15, against a single giant crab, after a long build-up of checks. Vesna starts with lamp oil at quantity 0: the flask is in the inventory but empty, so input 3, a narration-only turn, should not find oil in it. Narration of oil sloshing in the flask there is a RESOURCE divergence. Oil goes 0, 2, 1 at inputs 6 and 22, and input 27 asks again, so one measure should be left. The spyglass is borrowed at input 8 and kept. Ilse starts at the top of the ladder, allied, goes down to friendly at input 9 and back up at input 24; the keeper goes up once from unfriendly to neutral. The single quest runs start, advance, advance, complete and ends at stage 3 of 3. Input 13 grants advantage because Vesna braces against the rail. Vesna is not a spellcaster and has no way to heal: input 26 invites a hit-point band phrase about her. Inputs 15 to 21 give more attacks than the fight usually needs; extra ones are rejected and do not advance the game."
+}
