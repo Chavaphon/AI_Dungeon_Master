@@ -192,6 +192,24 @@ def _drop_engine_step(index: int) -> Callable[[Record], None]:
     return mutate
 
 
+def _turn_increment() -> Record:
+    step = copy.deepcopy(_valid()["engine_steps"][-1])
+    assert step["step"] == "turn_increment"
+    return step
+
+
+def _drop_turn_increment(record: Record) -> None:
+    step = record["engine_steps"].pop()
+    del record["state_diff"][-len(step["state_diff"]) :]
+
+
+def _add_turn_increment(record: Record) -> None:
+    step = _turn_increment()
+    record["engine_steps"].append(step)
+    record["state_diff"] += step["state_diff"]
+    record["state_after_hash"] = _valid()["state_after_hash"]
+
+
 def _as_condition_b(record: Record) -> None:
     record["condition"] = "B"
     record["run_id"] = "B_s01_cellar_12345"
@@ -207,6 +225,7 @@ VALID_CROSS_FIELD_REJECTS = {
     "roll_missing": lambda r: r["rolls"].pop(),
     "hashes_equal_with_diff": lambda r: r.update(state_after_hash=r["state_before_hash"]),
     "failure_on_a_good_turn": _set("turn_failure", "precondition"),
+    "good_turn_without_turn_increment": _drop_turn_increment,
     "narration_only_on_a_tool_turn": _set("narration_only", True),
     "two_narration_calls": lambda r: r["model_calls"].append(copy.deepcopy(r["model_calls"][1])),
     "summary_flag_without_text": _set("summary_regenerated", True),
@@ -219,6 +238,7 @@ REJECTED_CROSS_FIELD_REJECTS = {
     "no_failure_after_budget": _set("turn_failure", None),
     "executed_after_rejection": _set("executed_call", _valid()["executed_call"]),
     "parse_failure_with_a_call": _set("proposed_calls.1", _valid()["executed_call"]),
+    "failed_turn_advances": _add_turn_increment,
     "narration_on_failed_turn": lambda r: r["model_calls"].append(
         {**_valid()["model_calls"][1], "attempt": 1}
     ),
@@ -264,19 +284,38 @@ def test_npc_actions_may_run_before_the_call() -> None:
 
 
 def test_narration_only_turn_is_consistent() -> None:
+    # A narration-only turn is played and narrated, so it advances (WBS 6.5).
     record = _valid()
     null_call = {"tool": None}
+    increment = _turn_increment()
     record.update(
         player_input="I wave at the rats",
         proposed_calls=[null_call],
         validation=[{"ok": True, "tool": None}],
         executed_call=None,
-        engine_steps=[],
+        engine_steps=[increment],
         rolls=[],
-        state_diff=[],
-        state_after_hash=record["state_before_hash"],
+        state_diff=increment["state_diff"],
+        state_after_hash=state_hash(apply_diff(_load(STATE_BEFORE), increment["state_diff"])),
         narration_only=True,
     )
     record["model_calls"][0]["raw_output"] = json.dumps(null_call)
+    assert _schema_errors(record) == []
+    assert record_errors(record) == []
+
+
+def test_a_failed_turn_may_keep_before_call_steps() -> None:
+    # An encounter that starts before a turn that then fails stays in its record (WBS 6.5).
+    record = _rejected()
+    valid = _valid()
+    npc_step = copy.deepcopy(valid["engine_steps"][2])
+    assert npc_step["step"] == "npc_action"
+    npc_step["when"] = "before_call"
+    record.update(
+        engine_steps=[npc_step],
+        state_diff=step_part(npc_step, "state_diff"),
+        rolls=step_part(npc_step, "rolls"),
+        state_after_hash=valid["state_after_hash"],  # differs from before, as the diff does
+    )
     assert _schema_errors(record) == []
     assert record_errors(record) == []
