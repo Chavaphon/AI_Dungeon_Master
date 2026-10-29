@@ -427,3 +427,23 @@ Decided by: SS · Supersedes: none
 **Reason:** CLAUDE.md §6.3 and `docs/tool_contract.md` fix the codes, their order and their `valid_options`. These four points are where that text left a choice.
 
 **Changed:** `adm/engine/validator.py`: `check_preconditions` and `validate`. `adm/engine/npc.py`: `take_npc_turn`. `tests/engine/test_preconditions.py` is added: a case for every ticked cell of the tool × code matrix, checked against the matrix and the 19 codes, plus tests for the order, the legal calls and the reproduced `result_rejected_target_unconscious.json`, and a property test that every accepted call executes. `docs/tool_contract.md` §4: the `NEGATIVE_QUANTITY` row. CLAUDE.md is unchanged. No new dependencies; the schemas are unchanged.
+
+## 2026-10-29 — State diff writer and audit-log append (WBS 5.3)
+
+Decided by: SS · Supersedes: none
+
+**Decision:**
+1. **The write path.** `dispatch(state, roller, call, *, check_advantage)` in the new `adm/engine/tools.py` validates a call (WBS 5.1, 5.2), runs the engine function for its tool from the dispatch table, and returns the turn record's validation entry: the rejection, `{"ok": true, "tool": null}`, or the full `result_ok`. It does not append the audit record, as `docs/conventions.md` §1 said it would. A turn record also holds the model calls, the narration and the timings, which only the turn loop has. The loop builds the record and appends it (point 4). `docs/conventions.md` §1 is updated.
+2. **Every write is checked against its diff.** `check_write` replays a write's diff on the state from before it and requires the state after it. It runs on every tool call in `dispatch`, on the engine's own writes (`open_encounter`, `after_call` and `increment_turn`), and once more over the whole turn in `engine_fields`. A change with no diff entry, or an entry that does not match a change, raises `UnrecordedWrite`. That is a broken invariant, not a rejection (`docs/conventions.md` §2). This is how "every write produces a diff record" is enforced at run time, not only in tests.
+3. **`turn_increment` is built** as `increment_turn`, an `EngineStep` with `step: "turn_increment"` (`docs/audit_log.md` §2).
+4. **The writer refuses bad records.** `record_errors`, the §3 rules of `docs/audit_log.md`, moves from `tests/test_audit_log.py` to `adm/engine/audit.py`. `AuditLog.append` writes nothing for a record that fails the schema, fails `record_errors` or belongs to another run, and raises `InvalidRecord`. Each record is one compact JSON line, flushed and synced to disk before `append` returns, so a run that dies keeps every turn it wrote.
+5. **`skill_check` advantage** comes from the scenario (§4.7, decision 20), so `dispatch` takes it as the keyword `check_advantage`, not as a call argument.
+
+**Reason:** (1, 4) The audit log is the dataset (CLAUDE.md §11), so an incomplete record should fail when it is written, not when the run is scored. (2) Invariant 2 needs every mutation to be in the log. Checking each write against its own diff catches an engine function that forgets an entry at the write that caused it.
+
+**Open for WBS 6.4 (not decided here):**
+- **Narration-only turns.** Does a turn whose reply is `{"tool": null}` advance `turn_number`? The narration-only case in `tests/test_audit_log.py` records no state change, so it does not.
+- **Encounter start on a failed turn.** An encounter starts before its scripted input (§12). If that input's turn then fails, its record has `encounter_start` steps, but §3 says a failed turn changes no state.
+- **Scenario DC.** For a scripted skill check, does the loop substitute the scenario's `dc` before validation (decision 20)?
+
+**Changed:** `adm/engine/tools.py` and `adm/engine/audit.py` are added. `adm/engine/combat.py`: `EngineStep` allows `turn_increment`. `adm/engine/state.py`: `data_hash`. `tests/engine/test_audit.py` is added. `tests/test_audit_log.py` imports `record_errors`, `apply_diff` and `step_part` from the engine. `tests/engine/test_preconditions.py`: its property test runs through `dispatch`. `docs/conventions.md` §1 and `docs/audit_log.md`. CLAUDE.md is unchanged: §3 already lists `tools.py` and `audit.py`. No new dependencies; the schemas are unchanged.
