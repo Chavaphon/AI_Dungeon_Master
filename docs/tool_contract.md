@@ -138,7 +138,7 @@ Every rejection is `{ok: false, tool, rejection_code, message, valid_options, re
 | `NO_SPELL_SLOT` | `{"spell_id": ["spell_fire_bolt"]}` |
 | `NOT_A_WEAPON`, `WEAPON_NOT_IN_INVENTORY` | `{"weapon_id": [weapons the attacker holds]}` |
 | `TARGET_UNCONSCIOUS` | `{"target_id": [conscious combatants of another faction than the attacker]}` |
-| `NEGATIVE_QUANTITY` | `{"delta": [-held]}`, the most negative legal delta |
+| `NEGATIVE_QUANTITY` | `{"delta": [-held]}`, the most negative legal delta; `{}` when none is held, since a delta of 0 is a `SCHEMA_VIOLATION` (WBS 5.2) |
 | `RELATIONSHIP_STEP_TOO_LARGE` | `{"direction": [the other direction]}` |
 | `ILLEGAL_QUEST_TRANSITION` | `{"transition": [transitions legal from the current state]}` |
 
