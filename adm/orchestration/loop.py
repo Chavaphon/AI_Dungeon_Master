@@ -22,21 +22,32 @@ loop cannot run on (CLAUDE.md section 1.2, CONTROL). A retry sends the first
 call's prompt unchanged, then every earlier reply as an `assistant` message
 and its error as a `user` message. When all three attempts fail, the phase ends
 with a `turn_failure` named after the last attempt: `unparseable`, `schema`,
-`unknown_entity` or `precondition` (docs/audit_log.md section 3). What a failed
-turn does next, and writing its record, belong to the turn loop (WBS 6.5).
+`unknown_entity` or `precondition` (docs/audit_log.md section 3).
 
 The phase reads the state and never writes it: only `execute`, called at most
 once and only for a validated call, reaches the engine (invariants 1 and 6).
 A `ModelUnavailable` from the client is not a turn failure and propagates.
+
+`fail_turn` ends a turn whose budget ran out (WBS 6.5). There is no narration
+call, no step after the call and no `turn_increment`, so neither `turn_number`
+nor initiative advances; the record is still appended, and the player sees
+`REPHRASE`. The before-call steps of an encounter that started before the turn
+stay in its record, and the facts of their NPC actions are carried to the next
+narrated turn (docs/decisions.md, WBS 6.5). Interactive play asks for new input
+and a scripted run takes its next input, so both simply play the next turn.
 """
 
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Literal
 
+from adm.engine.audit import AuditLog, Step, engine_fields, run_id
+from adm.engine.npc import NpcActionStep
 from adm.engine.state import GameState
 from adm.engine.validator import Rejection, ToolCall, validate
 from adm.orchestration.client import Message, ModelClient, ModelConfig
@@ -46,6 +57,7 @@ from adm.orchestration.prompt import Doc, HistoryTurn, assemble, prompt_budget, 
 TEMPLATE = "d_toolcall"
 RETRY_BUDGET = 2
 MAX_TOOLCALL_ATTEMPTS = 1 + RETRY_BUDGET
+REPHRASE = "I couldn't turn that into an action. Could you rephrase it?"
 
 TurnFailure = Literal["unparseable", "schema", "unknown_entity", "precondition"]
 # Every other rejection code is a state precondition.
@@ -172,3 +184,130 @@ def run_tool_phase(
         ]
 
     return phase(failure=turn_failure_kind(validation[-1]))
+
+
+# --- the turn record and the failed turn (WBS 6.5) ---------------------------
+
+CONDITION = "D"
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+@dataclass
+class TurnTimer:
+    """A turn's `timestamp` and `turn_latency_ms`, from receiving the player's
+    input to writing the record (docs/audit_log.md section 1). Start one when the
+    input arrives; timings are taken only in orchestration (docs/conventions.md
+    section 2)."""
+
+    clock: Callable[[], float] = time.perf_counter
+    now: Callable[[], datetime] = _utc_now
+    started: float = field(init=False)
+    timestamp: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.started = self.clock()
+        self.timestamp = self.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def elapsed_ms(self) -> int:
+        return round((self.clock() - self.started) * 1000)
+
+
+def turn_record(
+    state: GameState,
+    before: Doc,
+    steps: Sequence[Step],
+    phase: ToolPhase,
+    *,
+    input_index: int | None,
+    player_input: str,
+    narration: str,
+    narration_filtered: bool,
+    later_calls: Sequence[Doc] = (),
+    summary: Doc | None = None,
+    timer: TurnTimer,
+) -> Doc:
+    """The condition D turn record of a turn that started from `before`
+    (`state.to_dict()` when the input arrived) and ended in `state`. `steps` are
+    the turn's engine steps, and `later_calls` its model calls after the tool
+    phase, in order."""
+    return {
+        "run_id": run_id(CONDITION, state.scenario_id, state.seed),
+        "condition": CONDITION,
+        "scenario_id": state.scenario_id,
+        "seed": state.seed,
+        "turn_number": before["turn_number"] + 1,
+        "input_index": input_index,
+        "timestamp": timer.timestamp,
+        "player_input": player_input,
+        "model_calls": [*phase.model_calls, *later_calls],
+        "proposed_calls": list(phase.proposed_calls),
+        "validation": list(phase.validation),
+        "executed_call": (
+            phase.executed_call.model_dump(mode="json") if phase.executed_call else None
+        ),
+        **engine_fields(before, steps, phase.result, state),
+        "narration": narration,
+        "narration_filtered": narration_filtered,
+        "turn_failure": phase.turn_failure,
+        "narration_only": phase.narration_only,
+        "k_used": phase.k_used,
+        "summary_regenerated": summary is not None,
+        "summary": summary,
+        "turn_latency_ms": timer.elapsed_ms(),
+    }
+
+
+@dataclass(frozen=True)
+class FailedTurn:
+    """A turn that exhausted its retry budget, as written to the audit log.
+
+    `carried_facts` are the `narration_facts` of the NPC actions among its
+    before-call steps, in order. No narration call saw them, so the next
+    narrated turn puts them first in its `{narration_facts_json}`.
+    """
+
+    record: Doc
+    carried_facts: tuple[Doc, ...]
+
+    @property
+    def message(self) -> str:
+        """What the player is shown in place of narration."""
+        return str(self.record["narration"])
+
+
+def fail_turn(
+    log: AuditLog,
+    state: GameState,
+    before: Doc,
+    steps: Sequence[Step],
+    phase: ToolPhase,
+    *,
+    input_index: int | None,
+    player_input: str,
+    timer: TurnTimer,
+) -> FailedTurn:
+    """Log a turn whose tool phase exhausted the retry budget (CLAUDE.md 7.1).
+
+    `steps` may only be the before-call steps of an encounter that started
+    before this turn: the loop runs nothing after a failed call, so the turn
+    does not advance. `log.append` refuses the record otherwise.
+    """
+    if phase.turn_failure is None:
+        raise ValueError("fail_turn needs a tool phase that exhausted its retry budget")
+    record = turn_record(
+        state,
+        before,
+        steps,
+        phase,
+        input_index=input_index,
+        player_input=player_input,
+        narration=REPHRASE,
+        narration_filtered=False,
+        timer=timer,
+    )
+    log.append(record)
+    carried = tuple(s.result["narration_facts"] for s in steps if isinstance(s, NpcActionStep))
+    return FailedTurn(record, carried)

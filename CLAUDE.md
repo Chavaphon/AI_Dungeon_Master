@@ -532,7 +532,7 @@ Retry budget is **2** attempts after the first, so 3 model calls maximum for the
 
 A retry sends the first call's prompt unchanged, then each earlier reply as an `assistant` message and its error, from a `config/prompts/retry_*.txt` template, as a `user` message. Every rejection is returned as its full envelope. The loop cannot tell input that clearly needs a tool from conversation, so the first `{"tool": null}` of a turn is always re-prompted; a second one, or one on the third attempt, ends the turn narration-only. The retry budget covers all three rows, and `turn_failure` is named after the last attempt (`adm/orchestration/loop.py`).
 
-A turn that fails does **not** increment `turn_number` and does **not** advance initiative. It is still written to the audit log. Turn failures are a reported metric, not an embarrassment to hide.
+A turn that fails does **not** increment `turn_number` and does **not** advance initiative. It is still written to the audit log, with no narration call; the player is asked to rephrase (`fail_turn` in `adm/orchestration/loop.py`). Turn failures are a reported metric, not an embarrassment to hide (`turn_failure_counts` in `adm/engine/audit.py`). If an encounter started before the failed turn, its record keeps those `before_call` steps, and the facts of the NPC actions among them are carried to the next narrated turn. A narration-only turn is a played turn and does increment `turn_number`.
 
 A scripted run cannot ask the player to rephrase, so after a failed turn it moves on to the next scripted input. The failed record keeps its `input_index`; the next record has `input_index + 1` and the same `turn_number`. Scripted inputs are never changed when an encounter runs longer or shorter than the script: rejections such as `TARGET_UNCONSCIOUS` or `ENCOUNTER_OVER` are logged and count as data.
 
@@ -648,7 +648,7 @@ listed, and do not contradict any value here.
 
 Note that D's narration call does **not** receive the full state, only the facts. This is the architecture, not an oversight.
 
-`{narration_facts_json}` is a JSON array: the `narration_facts` of the player's executed call and of each `npc_action` engine step in the turn, in the order they happened: NPC actions before the call (when an encounter starts with NPCs ahead of the PC), then the player's call, then the NPC actions after it. NPC actions are narrated; the template text is unchanged.
+`{narration_facts_json}` is a JSON array: the `narration_facts` of the player's executed call and of each `npc_action` engine step in the turn, in the order they happened: NPC actions before the call (when an encounter starts with NPCs ahead of the PC), then the player's call, then the NPC actions after it. Facts carried from a failed turn before it come first (section 7.1). NPC actions are narrated; the template text is unchanged.
 
 ---
 
@@ -919,6 +919,11 @@ Added at WBS 6.8 (reasons in `docs/decisions.md`):
 Added at WBS 6.4 (reasons in `docs/decisions.md`):
 
 32. A tool-call retry is an extra chat turn: the model's reply as an `assistant` message and its structured error as a `user` message. The first `{"tool": null}` of a turn is always re-prompted once.
+
+Added at WBS 6.5 (reasons in `docs/decisions.md`):
+
+33. A failed turn's record keeps the `before_call` steps of an encounter that started before it, and their NPC facts are narrated in the next narrated turn. Nothing runs after a failed call.
+34. A narration-only turn advances `turn_number`; only a failed turn repeats its number.
 
 ## 16. Open questions for the team
 
