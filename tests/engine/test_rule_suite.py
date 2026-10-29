@@ -41,9 +41,7 @@ SECTION_13 = {
 }
 
 # area -> the WBS task that builds its rules
-NOT_YET_BUILT = {
-    "quests": "4.16",
-}
+NOT_YET_BUILT: dict[str, str] = {}
 
 # area in NOT_YET_BUILT -> the cases of the rules already built
 PARTLY_BUILT: dict[str, int] = {}
