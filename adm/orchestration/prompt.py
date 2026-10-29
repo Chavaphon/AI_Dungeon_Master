@@ -1,11 +1,14 @@
 """Context assembly (WBS 6.2, CLAUDE.md sections 8 and 9.1).
 
 Every model call's prompt is built here from a template in `config/prompts/`.
-The prompt is two messages and never more: a system message holding every
-block, and a user message holding the current player input. The last K turns
-are written into the system message as a `Player:` / `DM:` transcript, never
-sent as `assistant` messages: with chat turns, every candidate model stopped
-calling tools from K = 8 (docs/context_budget.md section 5).
+A first call's prompt is two messages and never more: a system message holding
+every block, and a user message holding the current player input. The last K
+turns are written into the system message as a `Player:` / `DM:` transcript,
+never sent as `assistant` messages: with chat turns, every candidate model
+stopped calling tools from K = 8 (docs/context_budget.md section 5). The one
+exception is a tool-call retry (WBS 6.4): it sends the first call's two messages
+unchanged, then each earlier reply as an `assistant` message and its structured
+error, from a `retry_*` template, as a `user` message (`followups`).
 
 Order (section 8): the template's fixed blocks (preamble, state, tools or
 facts), then the rolling summary, then the last K turns, then the condition's
@@ -28,6 +31,9 @@ section 9). If a prompt would not fit, the oldest turns are dropped one at a
 time (section 8), and the turn record's `k_used` logs the reduction. The turn
 loop assembles the turn's largest prompt first (the D tool call, or the single
 A-C call) and passes its `k_used` to the turn's other calls, so a turn has one K.
+A tool-call retry is larger than the first call, so it is assembled from the
+previous attempt's `k_used` and may reduce it again; the tool phase's last K is
+the turn's.
 """
 
 from __future__ import annotations
@@ -65,6 +71,12 @@ TEMPLATES: dict[str, frozenset[str]] = {
 BLOCKS: dict[str, frozenset[str]] = {
     "summary_block": frozenset({"summary_text"}),
     "history_block": frozenset({"transcript"}),
+}
+# The tool-call retry messages of the failure pipeline (CLAUDE.md section 7.1, WBS 6.4).
+RETRIES: dict[str, frozenset[str]] = {
+    "retry_unparseable": frozenset({"pc_id"}),
+    "retry_rejected": frozenset({"rejection_json"}),
+    "retry_no_tool": frozenset(),
 }
 
 # Placeholders that fill a whole paragraph, dropped when empty.
@@ -113,7 +125,7 @@ def placeholders(text: str) -> set[str]:
 def load_templates(directory: Path = PROMPTS_DIR) -> dict[str, str]:
     """Every template and block, each checked to hold exactly its placeholders."""
     texts = {}
-    for name, expected in {**TEMPLATES, **BLOCKS}.items():
+    for name, expected in {**TEMPLATES, **BLOCKS, **RETRIES}.items():
         text = (directory / f"{name}.txt").read_text(encoding="utf-8").removesuffix("\n")
         if (found := placeholders(text)) != expected:
             raise ValueError(f"{name}.txt has placeholders {sorted(found)}, not {sorted(expected)}")
@@ -155,6 +167,14 @@ def history_transcript(turns: Sequence[HistoryTurn]) -> str:
     return "\n\n".join(f"Player: {t.player_input}\nDM: {t.narration}" for t in turns)
 
 
+def retry_feedback(texts: Mapping[str, str], template: str, values: Mapping[str, str]) -> str:
+    """A tool-call retry's structured error, from its `retry_*` template."""
+    text = texts[template]
+    for name in placeholders(text):
+        text = text.replace(f"{{{name}}}", values[name])
+    return text
+
+
 # --- tokens ------------------------------------------------------------------
 
 
@@ -194,12 +214,14 @@ def assemble(
     budget: int,
     state: GameState | None = None,
     facts: Sequence[Doc] | None = None,
+    followups: Sequence[Message] = (),
     count: TokenCounter = estimate_tokens,
 ) -> AssembledPrompt:
     """The prompt with the largest K' <= k whose estimate fits `budget`.
 
     `history` is every verbatim turn the loop holds, oldest first; the last K'
     are used, so a reduction drops the oldest and never cuts the middle.
+    `followups` are a retry's messages, sent after the player input and counted.
     """
     if k < 0:
         raise ValueError(f"k must be >= 0, got {k}")
@@ -228,6 +250,7 @@ def assemble(
         messages = (
             {"role": "system", "content": _render(texts[template], values)},
             {"role": "user", "content": player_input},
+            *followups,
         )
         tokens = count(messages)
         if tokens <= budget:

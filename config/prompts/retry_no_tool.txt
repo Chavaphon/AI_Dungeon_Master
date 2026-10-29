@@ -1,0 +1,5 @@
+You replied {"tool": null}. Read the player's input again and select the tool
+for the game action it describes. Reply with one JSON object and nothing else:
+{"tool": "<tool name>", "arguments": { ... }}
+Reply with exactly {"tool": null} again only if the input has no mechanical
+effect at all.

@@ -1,0 +1,5 @@
+Your reply could not be read as a tool call.
+Expected one JSON object of the form {"tool": ..., "arguments": {...}}.
+For example:
+{"tool": "skill_check", "arguments": {"actor_id": "{pc_id}", "skill": "perception", "dc": 12}}
+Reply with one JSON object for the player's input and nothing else.

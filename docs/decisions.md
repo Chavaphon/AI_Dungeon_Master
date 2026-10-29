@@ -428,6 +428,21 @@ Decided by: SS · Supersedes: none
 
 **Changed:** `adm/engine/validator.py`: `check_preconditions` and `validate`. `adm/engine/npc.py`: `take_npc_turn`. `tests/engine/test_preconditions.py` is added: a case for every ticked cell of the tool × code matrix, checked against the matrix and the 19 codes, plus tests for the order, the legal calls and the reproduced `result_rejected_target_unconscious.json`, and a property test that every accepted call executes. `docs/tool_contract.md` §4: the `NEGATIVE_QUANTITY` row. CLAUDE.md is unchanged. No new dependencies; the schemas are unchanged.
 
+## 2026-10-29 — Failure pipeline: retry messages and the null re-prompt (WBS 6.4)
+
+Decided by: CI · Supersedes: none
+
+**Decision:**
+1. **Every first `{"tool": null}` is re-prompted.** CLAUDE.md §7.1 re-prompts "when the input clearly needs" a tool, but the loop cannot tell such input from conversation without reading the script, and `expected_call` is not used to drive or grade the model (§12). So the first null reply of a turn is always re-prompted once, if an attempt is left. A second null, or a null on the third attempt, ends the tool phase as `narration_only`, never as a `turn_failure`. A pure-conversation turn therefore costs one extra call; any tool it is pushed into is visible to M3.
+2. **A retry is an extra chat turn.** The first call's two messages are sent unchanged, then each earlier reply as an `assistant` message and its structured error as a `user` message, so the third attempt sees both earlier exchanges. This is the only prompt with more than two messages. The `context_budget.md` §5 finding, that models stopped calling tools when history came as chat turns, concerned the K verbatim turns, which stay a transcript in the system message.
+3. **Three retry templates** in `config/prompts/`, loaded and checked like the others: `retry_unparseable.txt` gives the parser's expected format and one example, a perception check by the state's player character, so the example never names an unknown id; `retry_rejected.txt` carries the full rejection envelope, whose `message` names the field and type or the state values behind the rejection and whose `valid_options` lists what would pass, so one template serves `SCHEMA_VIOLATION`, `UNKNOWN_ENTITY` and every precondition code; `retry_no_tool.txt` asks the model to select the tool for the input, and to reply null again only if the input has no mechanical effect.
+4. **A retry may reduce K.** It is assembled from the previous attempt's `k_used` with its extra messages counted, so a retry that would overflow drops the oldest verbatim turns. The tool phase's last `k_used` is the turn's, and the narration call reuses it.
+5. **`turn_failure` follows the last attempt**, as `docs/audit_log.md` §3 says: unparseable, `SCHEMA_VIOLATION`, `UNKNOWN_ENTITY`, or any other code as `precondition`.
+6. **Execution is a callback.** There is no seven-tool dispatch in the engine yet, so `run_tool_phase` takes `execute`, called at most once and only with a validated call; its `result_ok` is the last `validation` entry. What a failed turn does next, and writing the record, are WBS 6.5.
+
+**Reason:** CLAUDE.md §7.1 fixes the modes and the budget, but not what the retry says, where it goes in the prompt, or when a null reply "clearly needs" a tool. Points 1 and 2 were chosen with the owner; the rest follow from them and from the audit-log rules.
+
+**Changed:** `adm/orchestration/loop.py` is added: `run_tool_phase`, `ToolPhase`, `RETRY_BUDGET`. `adm/orchestration/prompt.py`: `RETRIES`, `retry_feedback`, and `assemble(followups=...)`. `config/prompts/retry_unparseable.txt`, `retry_rejected.txt`, `retry_no_tool.txt`. `tests/orchestration/test_loop.py` is added, with a recovery and an exhaustion test for each §7.1 mode and a property test that any reply sequence stops within three calls; `tests/orchestration/test_prompt.py` covers `followups` and the retry templates. CLAUDE.md: §3 lists the retry templates, §7.1 and §8 say how a retry is sent, §15 adds item 32. No new dependencies; the schemas are unchanged.
 ## 2026-10-29 — State diff writer and audit-log append (WBS 5.3)
 
 Decided by: SS · Supersedes: none
