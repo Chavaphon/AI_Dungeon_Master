@@ -16,6 +16,7 @@ from typing import Any
 
 import httpx
 import pytest
+from jsonschema import Draft202012Validator
 
 from adm.orchestration import client as cl
 
@@ -60,6 +61,7 @@ def _chat_reply(content: str = '{"tool": null}', **extra: Any) -> httpx.Response
         "done_reason": "stop",
         "prompt_eval_count": 1500,
         "eval_count": 40,
+        "eval_duration": 630_400_000,
         **extra,
     }
     return httpx.Response(200, json=body)
@@ -213,6 +215,7 @@ def test_reply_fields() -> None:
         prompt_tokens=1500,
         completion_tokens=40,
         latency_ms=1234,
+        eval_ms=630,
         done_reason="stop",
         transport_retries=0,
     )
@@ -224,6 +227,24 @@ def test_missing_token_counts_are_zero() -> None:
     with _client(handler) as client:
         reply = client.chat(MESSAGES, phase="narration", seed=0)
     assert (reply.prompt_tokens, reply.completion_tokens, reply.done_reason) == (0, 0, None)
+    assert reply.eval_ms == 0
+
+
+def test_model_call_is_the_audit_entry() -> None:
+    # M6 (CLAUDE.md section 10.4): tokens per second is completion_tokens / eval_ms.
+    reply = cl.ModelReply('{"tool": null}', 3120, 41, 2210, 650, "stop", 1)
+    call = reply.model_call("toolcall", 2)
+    schema = json.loads((cl.ROOT / "schemas" / "audit.schema.json").read_text(encoding="utf-8"))
+    Draft202012Validator(schema["$defs"]["model_call"]).validate(call)
+    assert call == {
+        "phase": "toolcall",
+        "attempt": 2,
+        "prompt_tokens": 3120,
+        "completion_tokens": 41,
+        "latency_ms": 2210,
+        "eval_ms": 650,
+        "raw_output": '{"tool": null}',
+    }
 
 
 def test_length_cap_is_reported() -> None:

@@ -14,7 +14,7 @@ A run's log is `runs/{condition}/{scenario_id}/{seed}.jsonl`, one record per lin
 
 ## 1. Fields
 
-Everything from §11 is kept with the same name and meaning. Three fields are added (marked **new**), and `validation` holds more than the §11 example shows.
+Everything from §11 is kept with the same name and meaning. Three fields are added (marked **new**), and `validation` holds more than the §11 example shows. WBS 6.8 added `eval_ms` and `turn_latency_ms` for M6 (`docs/decisions.md`, 2026-10-29).
 
 | Field | Holds |
 |---|---|
@@ -24,7 +24,7 @@ Everything from §11 is kept with the same name and meaning. Three fields are ad
 | `input_index` **new** | Which scripted input this turn answers, an index into the scenario's `scripted_inputs`. `null` in interactive play. This is what lines up the same stimulus across conditions, because `turn_number` stops matching after a failed turn. |
 | `timestamp` | UTC, `YYYY-MM-DDTHH:MM:SSZ` |
 | `player_input` | The raw text, unchanged (§7.2) |
-| `model_calls` | Every model call of the turn: `phase` (`toolcall`, `narration` or `summary`), `attempt`, token counts, `latency_ms` and the raw output. M6 is computed from these. |
+| `model_calls` | Every model call of the turn: `phase` (`toolcall`, `narration` or `summary`), `attempt`, token counts, `latency_ms` (wall time, prompt evaluation included), `eval_ms` (Ollama's `eval_duration`, generation alone) and the raw output. Tokens per second (M6) is `completion_tokens / eval_ms`. `ModelReply.model_call` builds each entry. |
 | `proposed_calls` | One entry per toolcall attempt: what the parser extracted, or `null` if the output could not be parsed |
 | `validation` | One entry per toolcall attempt. A rejection is the full `result_rejected` envelope with its code and `valid_options`. A success is the full `result_ok` result, so the turn's `narration_facts` are in the log (the rubric scores against them). `{"ok": true, "tool": null}` is a `{"tool": null}` reply. `{"ok": false, "failure": "unparseable", "message": ...}` is a parse failure. |
 | `executed_call` | The call that passed validation and ran, or `null` |
@@ -37,6 +37,7 @@ Everything from §11 is kept with the same name and meaning. Three fields are ad
 | `narration_only` | The §7.1 fallback in condition D: the final reply was `{"tool": null}` |
 | `k_used` | The number of verbatim turns in the prompt, after any reduction (§8) |
 | `summary_regenerated`, `summary` **new** | Whether the rolling summary was regenerated this turn, and if so `{text, truncated}` (§8.1) |
+| `turn_latency_ms` **new** | Wall time of the whole turn, from receiving the player input to writing the record: every model call, retries included, and the engine. Seconds per turn (M6) is this over 1000. |
 
 ## 2. Engine steps
 
@@ -66,6 +67,7 @@ The top-level `state_diff` is the `before_call` steps, then the executed result'
 - `narration_only` is true exactly when a condition D turn ends on `{"tool": null}`.
 - `state_diff` and `rolls` are the steps and the result in order (§2). The hashes are equal exactly when `state_diff` is empty.
 - One narration call per turn, none on a failed turn. `summary_regenerated` matches the summary call and the `summary` field.
+- `turn_latency_ms` is at least the sum of the model calls' `latency_ms`, and each call's `eval_ms` is at most its `latency_ms`.
 
 ## 4. Open points for the 2.6 review
 
@@ -75,4 +77,4 @@ All of these were settled by the 2026-10-03 WBS 2.6 entries in `docs/decisions.m
 2. **How NPCs choose their actions** (also 2.5 open point 3). The example's rat attacks are illustrative. The audit log can record any policy, but replay needs one fixed policy.
 3. **Scripted runs after a failed turn.** A scripted run cannot "ask the player to rephrase". Proposal: move on to the next input. The failed record keeps its `input_index`, and the next record has `input_index + 1` and the same `turn_number`.
 4. **What A–C hash.** The proposal here: `state_before_hash` and `state_after_hash` are both the ground-truth state for that input from the offline replay (§9). It's the state injected in B and C, and the one the narration is scored against.
-5. **Byte-identical replay** (`docs/conventions.md` §3, point 1). `timestamp` and `latency_ms` differ on every run. The replay test compares everything else.
+5. **Byte-identical replay** (`docs/conventions.md` §3, point 1). `timestamp` and `latency_ms` differ on every run. The replay test compares everything else. The M6 fields added at WBS 6.8, `eval_ms` and `turn_latency_ms`, are excluded the same way.

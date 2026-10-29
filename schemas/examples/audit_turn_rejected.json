@@ -14,6 +14,7 @@
       "prompt_tokens": 3120,
       "completion_tokens": 40,
       "latency_ms": 2190,
+      "eval_ms": 630,
       "raw_output": "{\"tool\": \"attack\", \"arguments\": {\"attacker_id\": \"pc_lyra\", \"target_id\": \"npc_rat_01\", \"weapon_id\": \"item_torch\"}}"
     },
     {
@@ -22,6 +23,7 @@
       "prompt_tokens": 3215,
       "completion_tokens": 12,
       "latency_ms": 1350,
+      "eval_ms": 190,
       "raw_output": "I attack the rat with the torch!"
     },
     {
@@ -30,6 +32,7 @@
       "prompt_tokens": 3290,
       "completion_tokens": 40,
       "latency_ms": 2205,
+      "eval_ms": 630,
       "raw_output": "{\"tool\": \"attack\", \"arguments\": {\"attacker_id\": \"pc_lyra\", \"target_id\": \"npc_rat_01\", \"weapon_id\": \"item_torch\"}}"
     }
   ],
@@ -95,5 +98,6 @@
   "narration_only": false,
   "k_used": 8,
   "summary_regenerated": false,
-  "summary": null
+  "summary": null,
+  "turn_latency_ms": 5790
 }

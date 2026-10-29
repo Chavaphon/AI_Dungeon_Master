@@ -29,7 +29,8 @@
     "narration_only",
     "k_used",
     "summary_regenerated",
-    "summary"
+    "summary",
+    "turn_latency_ms"
   ],
   "properties": {
     "run_id": {
@@ -105,6 +106,11 @@
     "summary_regenerated": {"type": "boolean"},
     "summary": {
       "oneOf": [{"type": "null"}, {"$ref": "#/$defs/summary"}]
+    },
+    "turn_latency_ms": {
+      "$comment": "Wall time of the whole turn, from the player input to the record, so seconds per turn (M6) is turn_latency_ms / 1000. Covers every model call and the engine. Excluded from the replay comparison (invariant 4).",
+      "type": "integer",
+      "minimum": 0
     }
   },
   "$defs": {
@@ -123,6 +129,7 @@
         "prompt_tokens",
         "completion_tokens",
         "latency_ms",
+        "eval_ms",
         "raw_output"
       ],
       "properties": {
@@ -130,7 +137,16 @@
         "attempt": {"type": "integer", "minimum": 1},
         "prompt_tokens": {"type": "integer", "minimum": 0},
         "completion_tokens": {"type": "integer", "minimum": 0},
-        "latency_ms": {"type": "integer", "minimum": 0},
+        "latency_ms": {
+          "$comment": "Wall time of the call, prompt evaluation included. Excluded from the replay comparison (invariant 4).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "eval_ms": {
+          "$comment": "Ollama's eval_duration in ms: generation time alone, so tokens per second (M6) is completion_tokens / eval_ms. Excluded from the replay comparison.",
+          "type": "integer",
+          "minimum": 0
+        },
         "raw_output": {"type": "string"}
       }
     },

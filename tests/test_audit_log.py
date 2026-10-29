@@ -173,6 +173,12 @@ def record_errors(record: Record) -> list[str]:
     if record["summary_regenerated"] != (record["summary"] is not None):
         errors.append("summary_regenerated does not match the summary field")
 
+    if record["turn_latency_ms"] < sum(c["latency_ms"] for c in record["model_calls"]):
+        errors.append("turn_latency_ms is shorter than the turn's model calls")
+    for call in record["model_calls"]:
+        if call["eval_ms"] > call["latency_ms"]:
+            errors.append(f"{call['phase']} call {call['attempt']}: eval_ms exceeds latency_ms")
+
     return errors
 
 
@@ -261,6 +267,10 @@ SCHEMA_REJECTS = {
     "unknown_phase": _set("model_calls.0.phase", "planning"),
     "attempt_0": _set("model_calls.0.attempt", 0),
     "negative_latency": _set("model_calls.0.latency_ms", -1),
+    "negative_eval_ms": _set("model_calls.0.eval_ms", -1),
+    "missing_eval_ms": _delete("model_calls.0.eval_ms"),
+    "negative_turn_latency": _set("turn_latency_ms", -1),
+    "missing_turn_latency": _delete("turn_latency_ms"),
     "proposed_call_not_object": _set("proposed_calls.0", "attack the rat"),
     "unknown_rejection_code": _set(
         "validation.0", {**_rejected()["validation"][0], "rejection_code": "TOO_FAR"}
@@ -313,6 +323,8 @@ VALID_CROSS_FIELD_REJECTS = {
     "narration_only_on_a_tool_turn": _set("narration_only", True),
     "two_narration_calls": lambda r: r["model_calls"].append(copy.deepcopy(r["model_calls"][1])),
     "summary_flag_without_text": _set("summary_regenerated", True),
+    "turn_shorter_than_calls": _set("turn_latency_ms", 1000),
+    "eval_longer_than_call": _set("model_calls.1.eval_ms", 4000),
 }
 
 REJECTED_CROSS_FIELD_REJECTS = {
