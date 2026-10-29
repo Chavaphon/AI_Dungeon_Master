@@ -145,7 +145,7 @@ def test_b_and_c_differ_only_by_the_self_check() -> None:
 
 
 def test_a_template_with_a_wrong_placeholder_is_refused(tmp_path: Path) -> None:
-    for name in [*prompt.TEMPLATES, *prompt.BLOCKS]:
+    for name in [*prompt.TEMPLATES, *prompt.BLOCKS, *prompt.RETRIES]:
         text = (prompt.PROMPTS_DIR / f"{name}.txt").read_text(encoding="utf-8")
         (tmp_path / f"{name}.txt").write_text(text, encoding="utf-8")
     (tmp_path / "a.txt").write_text(PREAMBLE + "\n\n{state_json}\n", encoding="utf-8")
@@ -154,7 +154,7 @@ def test_a_template_with_a_wrong_placeholder_is_refused(tmp_path: Path) -> None:
 
 
 def test_crlf_files_load_the_same_text(tmp_path: Path) -> None:
-    for name in [*prompt.TEMPLATES, *prompt.BLOCKS]:
+    for name in [*prompt.TEMPLATES, *prompt.BLOCKS, *prompt.RETRIES]:
         text = (prompt.PROMPTS_DIR / f"{name}.txt").read_text(encoding="utf-8")
         (tmp_path / f"{name}.txt").write_bytes(text.replace("\n", "\r\n").encode("utf-8"))
     assert prompt.load_templates(tmp_path) == TEXTS
@@ -311,6 +311,35 @@ def test_no_fit_even_at_k_zero_raises() -> None:
             budget=100,
             state=CEILING,
         )
+
+
+def test_followups_come_after_the_input_and_are_counted() -> None:
+    followups = (
+        {"role": "assistant", "content": "I attack the rat."},
+        {"role": "user", "content": TEXTS["retry_no_tool"]},
+    )
+    kwargs: Doc = {
+        "player_input": "I attack.",
+        "history": TURNS[:8],
+        "summary": None,
+        "k": 8,
+        "state": STATE,
+    }
+    plain = assemble(TEXTS, "d_toolcall", budget=10**6, **kwargs)
+    retry = assemble(TEXTS, "d_toolcall", budget=10**6, followups=followups, **kwargs)
+    assert retry.messages == (*plain.messages, *followups)
+    assert retry.estimated_tokens == prompt.estimate_tokens(retry.messages)
+    budget = plain.estimated_tokens
+    tight = assemble(TEXTS, "d_toolcall", budget=budget, followups=followups, **kwargs)
+    assert tight.k_used < plain.k_used and tight.messages[1:] == retry.messages[1:]
+
+
+def test_retry_feedback_fills_its_placeholders() -> None:
+    unparseable = prompt.retry_feedback(TEXTS, "retry_unparseable", {"pc_id": "pc_lyra"})
+    assert '"actor_id": "pc_lyra"' in unparseable and "{pc_id}" not in unparseable
+    rejected = prompt.retry_feedback(TEXTS, "retry_rejected", {"rejection_json": "{}"})
+    assert rejected.splitlines()[1] == "{}"
+    assert prompt.retry_feedback(TEXTS, "retry_no_tool", {}) == TEXTS["retry_no_tool"]
 
 
 def test_negative_k_is_refused() -> None:

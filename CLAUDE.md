@@ -148,6 +148,7 @@ config/
   prompts/            # a.txt b.txt c.txt d_toolcall.txt d_narration.txt
                       # summary_block.txt history_block.txt (shared by all five)
                       # summary.txt (the rolling summary call, section 8.1)
+                      # retry_*.txt (tool-call retry messages, section 7.1)
 scenarios/            # s01..s12 + long01..long04
 experiments/          # run manifests
 runs/                 # audit logs, gitignored
@@ -529,6 +530,8 @@ Retry budget is **2** attempts after the first, so 3 model calls maximum for the
 | Any state-precondition rejection | Return the reason, the relevant current state values, and `valid_options`; retry | As above, `turn_failure: precondition`. |
 | No tool call produced when the input clearly needs one | Re-prompt **once** with an explicit instruction to select a tool | Treat as a narration-only turn. Log `narration_only: true`. |
 
+A retry sends the first call's prompt unchanged, then each earlier reply as an `assistant` message and its error, from a `config/prompts/retry_*.txt` template, as a `user` message. Every rejection is returned as its full envelope. The loop cannot tell input that clearly needs a tool from conversation, so the first `{"tool": null}` of a turn is always re-prompted; a second one, or one on the third attempt, ends the turn narration-only. The retry budget covers all three rows, and `turn_failure` is named after the last attempt (`adm/orchestration/loop.py`).
+
 A turn that fails does **not** increment `turn_number` and does **not** advance initiative. It is still written to the audit log. Turn failures are a reported metric, not an embarrassment to hide.
 
 A scripted run cannot ask the player to rephrase, so after a failed turn it moves on to the next scripted input. The failed record keeps its `input_index`; the next record has `input_index + 1` and the same `turn_number`. Scripted inputs are never changed when an encounter runs longer or shorter than the script: rejections such as `TARGET_UNCONSCIOUS` or `ENCOUNTER_OVER` are logged and count as data.
@@ -554,7 +557,7 @@ Order matters — the stable prefix goes first so it stays identical across turn
 
 *(HARNESS artefact — this procedure is the execution guideline: it defines exactly what context the model receives and in what order.)*
 
-Items 1–5 are one system message; item 6 is the only other message. The condition's closing instruction (C's self-check, D's tool-call instruction) comes after item 5. The last K turns are a `Player:` / `DM:` transcript block, never `assistant` chat messages (`docs/context_budget.md` §5). `adm/orchestration/prompt.py` assembles every prompt.
+Items 1–5 are one system message; item 6 is the only other message, except in a tool-call retry, which adds an `assistant` and a `user` message per earlier attempt (section 7.1). The condition's closing instruction (C's self-check, D's tool-call instruction) comes after item 5. The last K turns are a `Player:` / `DM:` transcript block, never `assistant` chat messages (`docs/context_budget.md` §5). `adm/orchestration/prompt.py` assembles every prompt.
 
 `K` defaults to 8 and is frozen in `config/model.json` after benchmarking. **If the assembled prompt would exceed `context_tokens`, reduce K for that turn and log it** in the turn record's `k_used`. The reduction drops the oldest turns first. Never silently truncate from the middle. Tokens are estimated deterministically from characters (`docs/context_budget.md` §9).
 
@@ -912,6 +915,10 @@ Added at WBS 4.19 (reasons in `docs/decisions.md`):
 Added at WBS 6.8 (reasons in `docs/decisions.md`):
 
 31. M6 is logged as `eval_ms` per model call (tokens per second from server generation time, not wall time) and `turn_latency_ms` per turn. Like `timestamp` and `latency_ms`, they are left out of the replay comparison.
+
+Added at WBS 6.4 (reasons in `docs/decisions.md`):
+
+32. A tool-call retry is an extra chat turn: the model's reply as an `assistant` message and its structured error as a `user` message. The first `{"tool": null}` of a turn is always re-prompted once.
 
 ## 16. Open questions for the team
 

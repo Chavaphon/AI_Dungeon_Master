@@ -1,0 +1,4 @@
+The rules engine rejected that call:
+{rejection_json}
+Fix the call using the message and valid_options above.
+Reply with one corrected JSON object and nothing else.
