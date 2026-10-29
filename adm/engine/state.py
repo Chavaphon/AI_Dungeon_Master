@@ -152,11 +152,20 @@ def _check_schema(data: Any) -> None:
 
 def canonical_json(state: GameState) -> str:
     """The serialisation used for hashing (docs/conventions.md section 2)."""
-    return json.dumps(state.to_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return _canonical(state.to_dict())
+
+
+def _canonical(data: dict[str, Any]) -> str:
+    return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def state_hash(state: GameState) -> str:
-    return "sha256:" + hashlib.sha256(canonical_json(state).encode("utf-8")).hexdigest()
+    return data_hash(state.to_dict())
+
+
+def data_hash(data: dict[str, Any]) -> str:
+    """`state_hash` of a state already in its JSON form, as `to_dict` gives it."""
+    return "sha256:" + hashlib.sha256(_canonical(data).encode("utf-8")).hexdigest()
 
 
 def load_state(path: Path) -> GameState:

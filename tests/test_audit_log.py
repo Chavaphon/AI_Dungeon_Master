@@ -2,9 +2,10 @@
 and rejects records that break CLAUDE.md sections 7 and 11.
 
 `record_errors` covers the rules JSON Schema cannot express (see
-docs/audit_log.md). The valid example is also replayed: its state_diff, applied
-to the mid-combat example state, must reproduce state_after_hash. The runtime
-writer belongs to WBS 5.3.
+docs/audit_log.md). It lives in adm/engine/audit.py since WBS 5.3, where the
+audit-log writer refuses any record it flags. The valid example is also
+replayed: its state_diff, applied to the mid-combat example state, must
+reproduce state_after_hash.
 
 Run: pytest tests/test_audit_log.py -v
 """
@@ -21,6 +22,8 @@ from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 from test_state_schema import VALIDATOR as STATE_VALIDATOR
 from test_state_schema import cross_field_errors
+
+from adm.engine.audit import apply_diff, record_errors, step_part
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = ROOT / "schemas"
@@ -40,9 +43,6 @@ VALIDATOR = Draft202012Validator(SCHEMA, registry=REGISTRY)
 
 RECORD_EXAMPLES = sorted(EXAMPLES.glob("audit_turn_*.json"))
 STATE_BEFORE = EXAMPLES / "state_02_mid_combat.json"
-
-RETRY_BUDGET = 2  # CLAUDE.md section 7.1: 3 toolcall attempts at most
-FAILURE_KIND = {"SCHEMA_VIOLATION": "schema", "UNKNOWN_ENTITY": "unknown_entity"}
 
 Record = dict[str, Any]
 
@@ -67,119 +67,6 @@ def state_hash(state: dict[str, Any]) -> str:
     """docs/conventions.md section 2: the serialisation used for hashing."""
     text = json.dumps(state, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
-def apply_diff(state: dict[str, Any], diff: list[dict[str, Any]]) -> dict[str, Any]:
-    state = copy.deepcopy(state)
-    for entry in diff:
-        *parents, leaf = entry["path"].split(".")
-        node = state
-        for key in parents:
-            node = node[key]
-        assert node[leaf] == entry["from"], f"{entry['path']} is {node[leaf]!r}, diff says from"
-        node[leaf] = entry["to"]
-    return state
-
-
-def _failure_kind(entry: Record) -> str:
-    if entry.get("failure") == "unparseable":
-        return "unparseable"
-    return FAILURE_KIND.get(entry.get("rejection_code", ""), "precondition")
-
-
-def _step_part(step: Record, key: str) -> list[Any]:
-    return step["result"][key] if step["step"] == "npc_action" else step[key]
-
-
-def record_errors(record: Record) -> list[str]:
-    errors: list[str] = []
-    condition = record["condition"]
-    phases = [call["phase"] for call in record["model_calls"]]
-    attempts = [c["attempt"] for c in record["model_calls"] if c["phase"] == "toolcall"]
-    proposed, validation = record["proposed_calls"], record["validation"]
-    executed, failure = record["executed_call"], record["turn_failure"]
-
-    expected_id = f"{condition}_{record['scenario_id']}_{record['seed']}"
-    if record["run_id"] != expected_id:
-        errors.append(f"run_id {record['run_id']} should be {expected_id}")
-
-    if condition != "D":
-        if attempts or proposed or validation or executed or record["engine_steps"]:
-            errors.append(f"condition {condition} has a tool phase")
-        if record["state_diff"] or failure or record["narration_only"]:
-            errors.append(f"condition {condition} changed state or failed a turn")
-
-    if attempts != list(range(1, len(attempts) + 1)):
-        errors.append(f"toolcall attempts are numbered {attempts}")
-    if len(attempts) > RETRY_BUDGET + 1:
-        errors.append(f"{len(attempts)} toolcall attempts exceed the retry budget")
-    if not len(attempts) == len(proposed) == len(validation):
-        errors.append("model_calls, proposed_calls and validation are not aligned")
-
-    for i, (call, entry) in enumerate(zip(proposed, validation, strict=False)):
-        if (call is None) != (entry.get("failure") == "unparseable"):
-            errors.append(f"attempt {i + 1}: parse result and validation disagree")
-        if call is not None and (call["tool"] is None) != (entry.get("tool", "") is None):
-            errors.append(f"attempt {i + 1}: a null tool must be validated as no_tool")
-        if entry["ok"] and entry.get("tool") is not None and i != len(validation) - 1:
-            errors.append(f"attempt {i + 1} succeeded but the loop kept retrying")
-    if sum(1 for e in validation[:-1] if e["ok"]) > 1:
-        errors.append("more than one re-prompt after a null tool call")
-
-    last = validation[-1] if validation else None
-    ran = last is not None and last["ok"] and last.get("tool") is not None
-    if ran and executed != proposed[-1]:
-        errors.append("executed_call is not the last proposed call")
-    if not ran and executed is not None:
-        errors.append("executed_call is set but no attempt succeeded")
-
-    if failure is not None:
-        if last is None or last["ok"] or len(validation) != RETRY_BUDGET + 1:
-            errors.append("turn_failure without an exhausted retry budget")
-        elif failure != _failure_kind(last):
-            errors.append(f"turn_failure {failure} does not match the last attempt")
-        if record["state_diff"] or record["engine_steps"]:
-            errors.append("a failed turn changed state")
-    elif last is not None and not last["ok"]:
-        errors.append("last attempt failed but turn_failure is null")
-
-    is_null_turn = last is not None and last["ok"] and last.get("tool") is None
-    if record["narration_only"] != (condition == "D" and failure is None and is_null_turn):
-        errors.append("narration_only does not match the toolcall outcome")
-
-    steps = record["engine_steps"]
-    whens = [s["when"] for s in steps]
-    if whens != sorted(whens, key=lambda w: w != "before_call"):
-        errors.append("a before_call step comes after an after_call step")
-    tool_part = last if ran else {"state_diff": [], "rolls": []}
-    for key in ("state_diff", "rolls"):
-        expected = (
-            [x for s in steps if s["when"] == "before_call" for x in _step_part(s, key)]
-            + tool_part[key]
-            + [x for s in steps if s["when"] == "after_call" for x in _step_part(s, key)]
-        )
-        if record[key] != expected:
-            errors.append(f"{key} is not the steps and the tool result in order")
-
-    if (record["state_before_hash"] == record["state_after_hash"]) != (not record["state_diff"]):
-        errors.append("state hashes do not match whether state_diff is empty")
-
-    narration_calls = phases.count("narration")
-    if narration_calls != (0 if failure else 1):
-        errors.append(f"{narration_calls} narration calls for this turn")
-    summary_calls = phases.count("summary")
-    if not (summary_calls <= 1 and record["summary_regenerated"] == bool(summary_calls)):
-        errors.append("summary_regenerated does not match the summary calls")
-    if record["summary_regenerated"] != (record["summary"] is not None):
-        errors.append("summary_regenerated does not match the summary field")
-
-    if record["turn_latency_ms"] < sum(c["latency_ms"] for c in record["model_calls"]):
-        errors.append("turn_latency_ms is shorter than the turn's model calls")
-    for call in record["model_calls"]:
-        if call["eval_ms"] > call["latency_ms"]:
-            errors.append(f"{call['phase']} call {call['attempt']}: eval_ms exceeds latency_ms")
-
-    return errors
 
 
 def test_schema_is_valid_draft_2020_12() -> None:
@@ -368,9 +255,9 @@ def test_npc_actions_may_run_before_the_call() -> None:
     result = record["validation"][-1]
     for key in ("state_diff", "rolls"):
         record[key] = (
-            [x for s in steps[:-1] for x in _step_part(s, key)]
+            [x for s in steps[:-1] for x in step_part(s, key)]
             + result[key]
-            + _step_part(steps[-1], key)
+            + step_part(steps[-1], key)
         )
     assert _schema_errors(record) == []
     assert record_errors(record) == []

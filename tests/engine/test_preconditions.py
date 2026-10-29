@@ -5,7 +5,7 @@ docs/tool_contract.md section 3, and the coverage tests hold it to the matrix an
 to the 19 codes of the schema: every rejection code is reachable by a test. The
 order tests check the fixed validation order of section 1, the accept tests the
 calls the rules allow, and a property test that every call the validator accepts
-executes without the engine's own guards raising.
+executes through the dispatch table without the engine's own guards raising.
 
 The states are the three examples in schemas/examples/, some changed in one place.
 
@@ -24,15 +24,10 @@ from hypothesis import strategies as st
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
-from adm.engine.checks import skill_check
-from adm.engine.combat import attack, dodge
 from adm.engine.dice import DiceRoller
-from adm.engine.inventory import modify_inventory
 from adm.engine.npc import NpcCall, take_npc_turn
-from adm.engine.quests import update_quest
-from adm.engine.relationships import update_npc_relationship
-from adm.engine.spells import cure_wounds, fire_bolt
 from adm.engine.state import GameState, load_state, state_hash
+from adm.engine.tools import dispatch
 from adm.engine.validator import (
     NO_ENCOUNTER_TOOLS,
     Rejection,
@@ -76,7 +71,7 @@ COMBATANTS = ["npc_rat_01", "npc_rat_02", "pc_lyra"]
 ITEMS = ["item_rat_bite", "item_short_sword", "item_torch"]
 
 
-def _state(name: str, *edits: Edit) -> GameState:
+def example_state(name: str, *edits: Edit) -> GameState:
     state = load_state(EXAMPLES / STATES[name])
     for edit in edits:
         edit(state)
@@ -489,7 +484,7 @@ def _accepted(state: GameState, call: Any) -> ToolCall:
 def test_each_precondition_is_rejected_with_its_code(
     code: str, name: str, edits: tuple[Edit, ...], call: dict[str, Any], valid_options: Any
 ) -> None:
-    rejection = _rejected(_state(name, *edits), call)
+    rejection = _rejected(example_state(name, *edits), call)
     assert rejection.rejection_code == code, rejection.message
     assert rejection.tool == call["tool"]
     assert rejection.valid_options == valid_options
@@ -528,7 +523,7 @@ def test_every_matrix_cell_is_reachable() -> None:
 
 
 def test_the_example_rejection_is_reproduced() -> None:
-    state = _state("mid_combat", knocked_out("npc_rat_01"))
+    state = example_state("mid_combat", knocked_out("npc_rat_01"))
     expected = json.loads(
         (EXAMPLES / "result_rejected_target_unconscious.json").read_text(encoding="utf-8")
     )
@@ -559,7 +554,7 @@ MESSAGES = {
 @pytest.mark.parametrize("case,message", MESSAGES.items(), ids=MESSAGES)
 def test_messages_name_the_state_values(case: str, message: str) -> None:
     _, name, edits, call, _ = REJECTS[case]
-    assert _rejected(_state(name, *edits), call).message == message
+    assert _rejected(example_state(name, *edits), call).message == message
 
 
 # --- the validation order ----------------------------------------------------
@@ -568,45 +563,47 @@ def test_messages_name_the_state_values(case: str, message: str) -> None:
 def test_the_shape_is_checked_before_the_state() -> None:
     call = atk(target="npc_rat_03")
     call["arguments"]["weapon_id"] = 5
-    assert _rejected(_state("exploring"), call).rejection_code == "SCHEMA_VIOLATION"
+    assert _rejected(example_state("exploring"), call).rejection_code == "SCHEMA_VIOLATION"
 
 
 def test_existence_comes_before_the_turn() -> None:
     call = atk("npc_rat_02", "npc_rat_03", "item_rat_bite")
-    rejection = _rejected(_state("mid_combat"), call)
+    rejection = _rejected(example_state("mid_combat"), call)
     assert rejection.rejection_code == "UNKNOWN_ENTITY"
     assert "target_id" in rejection.valid_options
 
 
 def test_arguments_in_a_step_go_in_signature_order() -> None:
-    rejection = _rejected(_state("mid_combat"), cast("pc_bob", "spell_fireball", "npc_ghost"))
+    state = example_state("mid_combat")
+    rejection = _rejected(state, cast("pc_bob", "spell_fireball", "npc_ghost"))
     assert rejection.valid_options == {"caster_id": COMBATANTS}
-    rejection = _rejected(_state("mid_combat"), cast("pc_lyra", "spell_fireball", "npc_ghost"))
+    rejection = _rejected(state, cast("pc_lyra", "spell_fireball", "npc_ghost"))
     assert rejection.rejection_code == "SPELL_NOT_SUPPORTED"
 
 
 def test_argument_values_come_before_the_turn() -> None:
-    rejection = _rejected(_state("mid_combat"), check("npc_rat_02", "athletics", 40))
+    rejection = _rejected(example_state("mid_combat"), check("npc_rat_02", "athletics", 40))
     assert rejection.rejection_code == "SKILL_NOT_SUPPORTED"
-    rejection = _rejected(_state("mid_combat"), check("npc_rat_02", "stealth", 40))
+    rejection = _rejected(example_state("mid_combat"), check("npc_rat_02", "stealth", 40))
     assert rejection.rejection_code == "DC_OUT_OF_RANGE"
 
 
 def test_the_encounter_comes_before_the_actor_and_target() -> None:
-    state = _state("after_victory")
+    state = example_state("after_victory")
     rejection = _rejected(state, atk("npc_rat_01", "npc_rat_02", "item_torch"))
     assert rejection.rejection_code == "ENCOUNTER_OVER"
 
 
 def test_the_turn_comes_before_the_actor() -> None:
-    rejection = _rejected(_state("mid_combat", knocked_out("npc_rat_02")), dodge_call("npc_rat_02"))
+    state = example_state("mid_combat", knocked_out("npc_rat_02"))
+    rejection = _rejected(state, dodge_call("npc_rat_02"))
     assert rejection.rejection_code == "NOT_YOUR_TURN"
 
 
 def test_the_actor_comes_before_the_target() -> None:
-    state = _state("mid_combat", knocked_out("npc_rat_01"))
+    state = example_state("mid_combat", knocked_out("npc_rat_01"))
     assert _rejected(state, atk(weapon="item_torch")).rejection_code == "NOT_A_WEAPON"
-    state = _state("mid_combat", knocked_out("npc_rat_01"))
+    state = example_state("mid_combat", knocked_out("npc_rat_01"))
     state.combatants["pc_lyra"].spell_attack_bonus = None
     state.combatants["pc_lyra"].spellcasting_modifier = None
     state.combatants["pc_lyra"].spell_slots_1 = None
@@ -614,7 +611,7 @@ def test_the_actor_comes_before_the_target() -> None:
 
 
 def test_a_non_weapon_is_named_before_it_is_looked_for() -> None:
-    state = _state("mid_combat", holding("pc_lyra", "item_torch", 0))
+    state = example_state("mid_combat", holding("pc_lyra", "item_torch", 0))
     assert _rejected(state, atk(weapon="item_torch")).rejection_code == "NOT_A_WEAPON"
 
 
@@ -624,11 +621,12 @@ def test_a_non_weapon_is_named_before_it_is_looked_for() -> None:
 @pytest.mark.parametrize("tool", tool_names())
 def test_the_example_calls_pass_mid_combat(tool: str) -> None:
     call = json.loads((EXAMPLES / f"toolcall_{tool}.json").read_text(encoding="utf-8"))
-    assert _accepted(_state("mid_combat"), call) == ToolCall(**call)
+    assert _accepted(example_state("mid_combat"), call) == ToolCall(**call)
 
 
 def test_the_null_tool_passes() -> None:
-    assert _accepted(_state("mid_combat"), {"tool": None}) == ToolCall(tool=None, arguments={})
+    accepted = _accepted(example_state("mid_combat"), {"tool": None})
+    assert accepted == ToolCall(tool=None, arguments={})
 
 
 @pytest.mark.parametrize(
@@ -655,17 +653,17 @@ def test_the_null_tool_passes() -> None:
     ],
 )
 def test_legal_calls_pass(name: str, edits: tuple[Edit, ...], call: dict[str, Any]) -> None:
-    _accepted(_state(name, *edits), call)
+    _accepted(example_state(name, *edits), call)
 
 
 def test_an_ally_can_be_attacked() -> None:
-    state = _state("mid_combat")
+    state = example_state("mid_combat")
     state.combatants["npc_rat_02"].faction = "party"
     _accepted(state, atk(target="npc_rat_02"))
 
 
 def test_relationship_and_quest_changes_ignore_the_turn() -> None:
-    state = _state("mid_combat")
+    state = example_state("mid_combat")
     state.active_combatant_id = "npc_rat_02"
     _accepted(state, rel())
     _accepted(state, quest())
@@ -676,7 +674,7 @@ def test_relationship_and_quest_changes_ignore_the_turn() -> None:
 
 
 def test_an_illegal_npc_call_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    state = _state("mid_combat", knocked_out("pc_lyra"))
+    state = example_state("mid_combat", knocked_out("pc_lyra"))
     state.active_combatant_id = "npc_rat_02"
     bad = NpcCall(
         tool="attack",
@@ -705,28 +703,6 @@ VARIANTS: list[tuple[str, tuple[Edit, ...]]] = [
     ("mid_combat", (holding("pc_lyra", "item_short_sword", 0),)),
     ("after_victory", ()),
 ]
-
-
-def execute(state: GameState, call: ToolCall) -> None:
-    """Run a validated call through the engine function for its tool."""
-    a = call.arguments
-    roller = DiceRoller(state.seed)
-    if call.tool == "attack":
-        attack(state, roller, a["attacker_id"], a["target_id"], a["weapon_id"])
-    elif call.tool == "cast_spell":
-        spell = fire_bolt if a["spell_id"] == "spell_fire_bolt" else cure_wounds
-        spell(state, roller, a["caster_id"], a["target_id"])
-    elif call.tool == "dodge":
-        dodge(state, a["actor_id"])
-    elif call.tool == "skill_check":
-        skill_check(roller, state.combatants[a["actor_id"]], a["skill"], a["dc"])
-    elif call.tool == "modify_inventory":
-        modify_inventory(state, a["actor_id"], a["item_id"], a["delta"])
-    elif call.tool == "update_npc_relationship":
-        update_npc_relationship(state, a["npc_id"], a["direction"], a["justification"])
-    else:
-        assert call.tool == "update_quest"
-        update_quest(state, a["quest_id"], a["transition"])
 
 
 _ids = st.sampled_from([*COMBATANTS, "npc_ghost"])
@@ -759,7 +735,7 @@ _arguments = {
         "transition": st.sampled_from(["start", "advance", "complete", "fail"]),
     },
 }
-_calls = st.sampled_from(sorted(_arguments)).flatmap(
+any_call = st.sampled_from(sorted(_arguments)).flatmap(
     lambda tool: st.fixed_dictionaries(
         {"tool": st.just(tool), "arguments": st.fixed_dictionaries(_arguments[tool])}
     )
@@ -767,18 +743,20 @@ _calls = st.sampled_from(sorted(_arguments)).flatmap(
 
 
 @settings(max_examples=600, deadline=None)
-@given(variant=st.sampled_from(VARIANTS), call=_calls)
+@given(variant=st.sampled_from(VARIANTS), call=any_call)
 def test_every_accepted_call_executes(
     variant: tuple[str, tuple[Edit, ...]], call: dict[str, Any]
 ) -> None:
     """A call the validator accepts never trips the engine's own guards, and
-    leaves a state the schema accepts with HP in range (invariant 5)."""
-    state = _state(variant[0], *variant[1])
+    leaves a state the schema accepts with HP in range (invariant 5). It runs
+    through the dispatch table of adm/engine/tools.py."""
+    state = example_state(variant[0], *variant[1])
     result = validate(state, call)
     if isinstance(result, Rejection):
         RESULT_VALIDATOR.validate(result.to_dict())
         return
-    execute(state, result)
+    entry = dispatch(state, DiceRoller(state.seed), call)
+    assert entry["ok"] and entry["tool"] == call["tool"]
     GameState.from_dict(state.to_dict())
     for c in state.combatants.values():
         assert 0 <= c.current_hp <= c.max_hp

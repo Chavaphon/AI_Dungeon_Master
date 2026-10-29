@@ -15,7 +15,7 @@ Dependencies point one way: `cli → orchestration → engine`, and `eval → en
 
 The rules behind this table:
 
-- **One write path.** The only path to change state is `engine.tools.dispatch(state, proposed_call)`. It validates, executes, appends the audit record and returns the result envelope. Orchestration gets back a result, never a mutable state. (Invariants 1, 2, 6.)
+- **One write path.** The only path to change state is `engine.tools.dispatch(state, roller, proposed_call)`. It validates, executes, checks that the result's diff accounts for every change, and returns the validation entry: the rejection or the result envelope. The engine's own writes (`open_encounter`, `after_call`, `increment_turn`) are checked the same way. The turn loop builds the turn record around them with `engine.audit.engine_fields` and appends it with `engine.audit.AuditLog`, which refuses an invalid record. Orchestration never assigns to a state field. (Invariants 1, 2, 6; WBS 5.3.)
 - **One RNG.** `random` is imported only in `engine/dice.py`, and the `DiceRoller` is created once per run from the seed and passed in explicitly. There are no module-level RNGs. (Invariant 3.)
 - **One model name.** It is read from `config/model.json` by a single loader in `orchestration/client.py` and appears nowhere else. (§2.2.)
 - **One band threshold.** `hp_band(current, maximum)` is defined once in `engine` so the engine can put it in `narration_facts`. `eval/bands.py` imports it and adds only the phrase lexicon, so the engine and the checker cannot disagree. (§10.2.)

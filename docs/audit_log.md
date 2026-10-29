@@ -10,7 +10,7 @@ The schema is `schemas/audit.schema.json` (JSON Schema draft 2020-12). It formal
 | `audit_turn_rejected.json` | Condition D. "I bash the rat with my torch": `NOT_A_WEAPON`, then unparseable output, then `NOT_A_WEAPON` again. The budget is exhausted, so `turn_failure: "precondition"`, and the state is unchanged. |
 | `audit_turn_condition_b.json` | Condition B. One narration call, no tool phase, no state change. The narration diverges from the state on purpose (a rat "collapses" at 11 HP), as material for the rubric. |
 
-A run's log is `runs/{condition}/{scenario_id}/{seed}.jsonl`, one record per line, in the order the turns were played. Upload it to shared storage when the run ends (README).
+A run's log is `runs/{condition}/{scenario_id}/{seed}.jsonl`, one record per line, in the order the turns were played. `AuditLog` in `adm/engine/audit.py` writes it: it checks each record against the schema and §3, appends it as one compact JSON line, and syncs it to disk before returning. Upload it to shared storage when the run ends (README).
 
 ## 1. Fields
 
@@ -56,7 +56,7 @@ The top-level `state_diff` is the `before_call` steps, then the executed result'
 
 ## 3. Rules JSON Schema cannot express
 
-`record_errors` in the test file checks these.
+`record_errors` in `adm/engine/audit.py` checks these, and `AuditLog.append` refuses a record that breaks any of them (WBS 5.3).
 
 - `run_id` equals `{condition}_{scenario_id}_{seed}`.
 - Conditions A–C have no tool phase: no toolcall calls, empty `proposed_calls`, `validation` and `engine_steps`, no `executed_call`, no state change, no `turn_failure`.
