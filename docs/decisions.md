@@ -463,6 +463,20 @@ Decided by: SS · Supersedes: none
 
 **Changed:** `adm/engine/tools.py` and `adm/engine/audit.py` are added. `adm/engine/combat.py`: `EngineStep` allows `turn_increment`. `adm/engine/state.py`: `data_hash`. `tests/engine/test_audit.py` is added. `tests/test_audit_log.py` imports `record_errors`, `apply_diff` and `step_part` from the engine. `tests/engine/test_preconditions.py`: its property test runs through `dispatch`. `docs/conventions.md` §1 and `docs/audit_log.md`. CLAUDE.md is unchanged: §3 already lists `tools.py` and `audit.py`. No new dependencies; the schemas are unchanged.
 
+## 2026-10-29 — Post-write invariant assertion (WBS 5.4)
+
+Decided by: SS · Supersedes: none
+
+**Decision:**
+1. **One check, after every write.** `check_state` in `adm/engine/state.py` checks the state schema and the cross-field rules of `docs/state_schema.md` §3, and raises `IllegalState` (a `StateValidationError`). The write path in `adm/engine/tools.py` runs it after every write: `dispatch`, `open_encounter`, `after_call` and `increment_turn`. It runs after the diff check of WBS 5.3. CLAUDE.md §5's "validate after every write" now holds at run time, and so does invariant 5 (`0 <= current_hp <= max_hp`).
+2. **A failed write is undone.** If the diff check or the state check fails, or the engine function itself raises, the state is put back as it was before the write, and the exception propagates. So an illegal state raises rather than persists, and the caller's state is left legal. It is a bug, not a rejection: the dice roller has moved on, so the run stops.
+3. **Load and save check the cross-field rules too.** `cross_field_errors` moves from `tests/test_state_schema.py` to `adm/engine/state.py`. `GameState.from_dict` (so `load_state`) and `save_state` run it after the schema, so an illegal state file neither loads nor is written.
+4. **The `encounter_outcome` rule is narrowed.** `docs/state_schema.md` §3 said "`victory` means every hostile is unconscious". The engine decides victory over the hostiles in the encounter's initiative order (WBS 4.8), and `s08_old_mine` keeps a giant spider for its second encounter. So after the first victory the state is `victory` with an active hostile, which is legal. Once an encounter ends, the state no longer records who was in it. The rule is now what the state can show: `victory` needs a conscious player character and `defeat` an unconscious one. Victory over the encounter's hostiles is decided, and tested, where the encounter ends (`encounter_outcome`).
+
+**Reason:** (2) "An illegal state raises rather than persists" (WBS 5.4). Raising after the in-place write would leave the caller holding the illegal state. (4) Enforcing the rule as written would stop s08 on a legal state. Scoping it to the encounter needs data the state does not keep. Agreed with SS on 2026-10-29.
+
+**Changed:** `adm/engine/state.py`: `cross_field_errors`, `check_state` and `IllegalState`; `from_dict` and `save_state` run the cross-field rules. `adm/engine/tools.py`: every write goes through `_write`, which checks and undoes. `tests/engine/test_invariants.py` is added. `tests/test_state_schema.py` imports `cross_field_errors` from the engine and tests the narrowed outcome rule. `docs/state_schema.md` §3 and `docs/conventions.md` §1. CLAUDE.md is unchanged. No new dependencies; the schemas are unchanged.
+
 ## 2026-10-30 — Exhausted-budget fallback and failed-turn records (WBS 6.5)
 
 Decided by: CI · Supersedes: none

@@ -2,9 +2,8 @@
 
 `dispatch(state, roller, call)` is how a proposed tool call reaches the state.
 It validates the call (WBS 5.1, 5.2), runs the engine function for its tool
-from the dispatch table, checks that the result's diff accounts for every change
-(`check_write`, invariant 2) and returns the validation entry of the turn
-record (docs/audit_log.md section 1):
+from the dispatch table and returns the validation entry of the turn record
+(docs/audit_log.md section 1):
 
 - a rejection: the `result_rejected` envelope, with the state unchanged;
 - `{"tool": null}`: `{"ok": true, "tool": null}`, with the state unchanged;
@@ -20,6 +19,15 @@ The engine's own writes around the call go through the same check:
   Wounds outside an encounter, have no steps.
 - `increment_turn`: the `turn_increment` step.
 
+Every write, the call's and each of these, is checked twice before it returns:
+its diff must account for every change (`check_write`, invariant 2, WBS 5.3),
+and the state after it must be legal (`check_state`, the post-write invariant
+assertion, WBS 5.4): the state schema and its cross-field rules, which include
+`0 <= current_hp <= max_hp` (invariant 5). If either check fails, or the engine
+function itself raises, the state is put back as it was before the write and
+the exception propagates, so an illegal state raises rather than persists. It is
+a bug, not a rejection: the roller has moved on, so the run cannot go on.
+
 Which of these a turn runs, and when, is the turn loop's (WBS 6.4). It collects
 the steps and the executed result into `engine_fields` (adm/engine/audit.py),
 which checks the whole turn's diff once more.
@@ -32,7 +40,7 @@ other tools.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, TypeVar
 
 from adm.engine.audit import Step, check_write, step_part
 from adm.engine.checks import skill_check
@@ -43,11 +51,12 @@ from adm.engine.npc import after_player_action, run_npc_turns
 from adm.engine.quests import update_quest
 from adm.engine.relationships import update_npc_relationship
 from adm.engine.spells import FIRE_BOLT, cure_wounds, fire_bolt
-from adm.engine.state import GameState
+from adm.engine.state import GameState, check_state
 from adm.engine.validator import Rejection, validate
 
 Doc = dict[str, Any]
 Executor = Callable[[GameState, DiceRoller, Doc, AdvantageMode], Doc]
+T = TypeVar("T")
 
 # CLAUDE.md section 4.5: the tools that use the turn's action.
 ACTION_TOOLS = ("attack", "cast_spell", "dodge")
@@ -98,6 +107,31 @@ DISPATCH: dict[str, Executor] = {
 }
 
 
+def _restore(state: GameState, data: Doc) -> None:
+    """Put `state` back as `data`, its JSON form from before a write."""
+    restored = GameState.model_validate(data)
+    for name in GameState.model_fields:
+        setattr(state, name, getattr(restored, name))
+
+
+def _write(state: GameState, write: Callable[[], T], diff_of: Callable[[T], list[Doc]]) -> T:
+    """Run one write and check it: its diff, then the state after it. On any
+    failure the state is put back as it was and the exception propagates."""
+    before = state.to_dict()
+    try:
+        result = write()
+        check_write(before, diff_of(result), state)
+        check_state(state)
+    except Exception:
+        _restore(state, before)
+        raise
+    return result
+
+
+def _steps_diff(steps: Sequence[Step]) -> list[Doc]:
+    return [x for s in steps for x in step_part(s.to_dict(), "state_diff")]
+
+
 def dispatch(
     state: GameState,
     roller: DiceRoller,
@@ -111,41 +145,40 @@ def dispatch(
         return checked.to_dict()
     if checked.tool is None:
         return {"ok": True, "tool": None}
-    before = state.to_dict()
-    outcome = DISPATCH[checked.tool](state, roller, checked.arguments, check_advantage)
-    check_write(before, outcome["state_diff"], state)
+    execute = DISPATCH[checked.tool]
+    outcome = _write(
+        state,
+        lambda: execute(state, roller, checked.arguments, check_advantage),
+        lambda outcome: outcome["state_diff"],
+    )
     return {"ok": True, "tool": checked.tool, **outcome}
-
-
-def _checked_steps(state: GameState, before: Doc, steps: Sequence[Step]) -> list[Step]:
-    docs = [s.to_dict() for s in steps]
-    check_write(before, [x for d in docs for x in step_part(d, "state_diff")], state)
-    return list(steps)
 
 
 def open_encounter(
     state: GameState, roller: DiceRoller, combatant_ids: Sequence[str]
 ) -> list[Step]:
     """Start an encounter and play the NPCs who come before the player character."""
-    before = state.to_dict()
-    steps: list[Step] = [start_encounter(state, roller, combatant_ids)]
-    steps += run_npc_turns(state, roller, "before_call")
-    return _checked_steps(state, before, steps)
+
+    def write() -> list[Step]:
+        steps: list[Step] = [start_encounter(state, roller, combatant_ids)]
+        return steps + run_npc_turns(state, roller, "before_call")
+
+    return _write(state, write, _steps_diff)
 
 
 def after_call(state: GameState, roller: DiceRoller, tool: str) -> list[Step]:
     """The engine steps after an executed call of `tool`."""
     if tool not in ACTION_TOOLS or not state.encounter_active:
         return []
-    before = state.to_dict()
-    return _checked_steps(state, before, after_player_action(state, roller))
+    return _write(state, lambda: list(after_player_action(state, roller)), _steps_diff)
 
 
 def increment_turn(state: GameState) -> EngineStep:
     """The `turn_increment` step: the turn just played is counted."""
-    before = state.to_dict()
-    change = StateChange(path="turn_number", from_=state.turn_number, to=state.turn_number + 1)
-    state.turn_number += 1
-    step = EngineStep(step="turn_increment", when="after_call", state_diff=[change], rolls=[])
-    _checked_steps(state, before, [step])
-    return step
+
+    def write() -> EngineStep:
+        change = StateChange(path="turn_number", from_=state.turn_number, to=state.turn_number + 1)
+        state.turn_number += 1
+        return EngineStep(step="turn_increment", when="after_call", state_diff=[change], rolls=[])
+
+    return _write(state, write, lambda step: _steps_diff([step]))

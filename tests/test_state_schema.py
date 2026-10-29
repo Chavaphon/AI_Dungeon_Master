@@ -2,8 +2,8 @@
 and rejects states that break the rules in CLAUDE.md sections 4 and 5.
 
 `cross_field_errors` covers the rules JSON Schema cannot express (see
-docs/state_schema.md). The runtime version of these checks belongs to the
-post-write invariant assertion, WBS 5.4.
+docs/state_schema.md). It lives in adm/engine/state.py since WBS 5.4, where the
+post-write invariant assertion (`check_state`) runs it after every write.
 
 Run: pytest tests/test_state_schema.py -v
 """
@@ -17,12 +17,12 @@ from typing import Any
 import pytest
 from jsonschema import Draft202012Validator
 
+from adm.engine.state import cross_field_errors
+
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = json.loads((ROOT / "schemas" / "state.schema.json").read_text(encoding="utf-8"))
 EXAMPLES = sorted((ROOT / "schemas" / "examples").glob("state_*.json"))
 VALIDATOR = Draft202012Validator(SCHEMA)
-
-STANCES = ["hostile", "unfriendly", "neutral", "friendly", "allied"]
 
 State = dict[str, Any]
 
@@ -37,71 +37,6 @@ def _mid_combat() -> State:
 
 def _schema_errors(state: State) -> list[str]:
     return [e.message for e in VALIDATOR.iter_errors(state)]
-
-
-def cross_field_errors(state: State) -> list[str]:
-    errors: list[str] = []
-    combatants = state["combatants"]
-
-    keyed = (
-        ("combatants", "combatant_id"),
-        ("item_definitions", "item_id"),
-        ("npc_relationships", "npc_id"),
-        ("quests", "quest_id"),
-    )
-    for section, id_field in keyed:
-        for key, entity in state[section].items():
-            if entity[id_field] != key:
-                errors.append(f"{section}.{key}: {id_field} is {entity[id_field]!r}")
-
-    pcs = [cid for cid, c in combatants.items() if c["is_player_character"]]
-    if len(pcs) != 1:
-        errors.append(f"expected exactly one player character, found {pcs}")
-
-    for cid, c in combatants.items():
-        if not 0 <= c["current_hp"] <= c["max_hp"]:
-            errors.append(f"{cid}: current_hp {c['current_hp']} outside [0, {c['max_hp']}]")
-
-    for cid in state["initiative_order"]:
-        if cid not in combatants:
-            errors.append(f"initiative_order: unknown combatant {cid}")
-    active = state["active_combatant_id"]
-    if active is not None and active not in state["initiative_order"]:
-        errors.append(f"active_combatant_id {active} is not in initiative_order")
-
-    for owner, items in state["inventory"].items():
-        if owner not in combatants:
-            errors.append(f"inventory: unknown combatant {owner}")
-        for item_id in items:
-            if item_id not in state["item_definitions"]:
-                errors.append(f"inventory.{owner}: undefined item {item_id}")
-
-    for npc_id, rel in state["npc_relationships"].items():
-        if npc_id in combatants and combatants[npc_id]["display_name"] != rel["display_name"]:
-            errors.append(f"{npc_id}: display_name differs between combatants and relationships")
-        stance = rel["history"][0]["from"] if rel["history"] else rel["stance"]
-        for entry in rel["history"]:
-            if entry["from"] != stance:
-                errors.append(f"{npc_id}: history breaks at turn {entry['turn']}")
-            if abs(STANCES.index(entry["to"]) - STANCES.index(entry["from"])) != 1:
-                errors.append(f"{npc_id}: turn {entry['turn']} is not a one-step change")
-            stance = entry["to"]
-        if stance != rel["stance"]:
-            errors.append(f"{npc_id}: stance {rel['stance']} does not match history")
-
-    for qid, quest in state["quests"].items():
-        if quest["stage"] > quest["max_stage"]:
-            errors.append(f"{qid}: stage {quest['stage']} beyond max_stage")
-
-    outcome = state["encounter_outcome"]
-    if outcome == "victory" and any(
-        c["status"] == "active" for c in combatants.values() if c["faction"] == "hostile"
-    ):
-        errors.append("victory with an active hostile")
-    if outcome == "defeat" and any(combatants[pc]["status"] == "active" for pc in pcs):
-        errors.append("defeat with an active player character")
-
-    return errors
 
 
 def test_schema_is_valid_draft_2020_12() -> None:
@@ -234,8 +169,24 @@ def test_cross_field_rejects(mutate: Callable[[State], None]) -> None:
     assert cross_field_errors(state)
 
 
-def test_encounter_outcome_matches_statuses() -> None:
+def test_victory_needs_a_conscious_player_character() -> None:
+    state = _load(ROOT / "schemas" / "examples" / "state_03_after_victory.json")
+    state["combatants"]["pc_lyra"].update(current_hp=0, status="unconscious")
+    assert _schema_errors(state) == []
+    assert cross_field_errors(state) == ["victory with an unconscious player character"]
+
+
+def test_defeat_needs_an_unconscious_player_character() -> None:
+    state = _load(ROOT / "schemas" / "examples" / "state_03_after_victory.json")
+    state["encounter_outcome"] = "defeat"
+    assert _schema_errors(state) == []
+    assert cross_field_errors(state) == ["defeat with an active player character"]
+
+
+def test_victory_allows_a_hostile_kept_for_a_later_encounter() -> None:
+    # s08_old_mine: the spider is still active after the kobolds are beaten.
+    # Who was in the encounter is not kept once it ends (docs/decisions.md, WBS 5.4).
     state = _load(ROOT / "schemas" / "examples" / "state_03_after_victory.json")
     state["combatants"]["npc_rat_02"].update(current_hp=3, status="active")
     assert _schema_errors(state) == []
-    assert cross_field_errors(state) == ["victory with an active hostile"]
+    assert cross_field_errors(state) == []
