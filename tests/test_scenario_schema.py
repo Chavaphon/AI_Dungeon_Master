@@ -3,8 +3,8 @@ every file in scenarios/, and rejects scenarios that break CLAUDE.md section 12.
 
 `scenario_errors` covers the rules JSON Schema cannot express (see
 docs/scenario_format.md). `initial_game_state` is the reference for how the
-loader turns a scenario into a turn-0 state; the runtime loader belongs to
-WBS 4.1.
+loader turns a scenario into a turn-0 state; the runtime loader is
+`adm/engine/scenario.py` (WBS 6.10).
 
 Run: pytest tests/test_scenario_schema.py -v
 """
