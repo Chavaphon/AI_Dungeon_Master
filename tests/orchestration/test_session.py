@@ -23,7 +23,7 @@ from adm.engine.scenario import initial_state, load_scenario
 from adm.orchestration import prompt
 from adm.orchestration.client import Message, ModelReply, Phase, load_model_config
 from adm.orchestration.loop import REPHRASE, FailedTurn, NarratedTurn
-from adm.orchestration.session import RunExists, Session, new_run_log
+from adm.orchestration.session import RunExists, Session, new_run_log, run_script
 
 ROOT = Path(__file__).resolve().parents[2]
 SCENARIO = load_scenario(ROOT / "scenarios" / "s01_cellar.json")
@@ -191,3 +191,93 @@ def test_a_run_that_already_has_a_log_is_refused(tmp_path: Path) -> None:
     with pytest.raises(RunExists):
         new_run_log(tmp_path, SCENARIO.scenario_id, SEED)
     assert len(read_log(session.log.path)) == 1
+
+
+# --- scripted runs (WBS 6.11) ------------------------------------------------
+
+SHRINE = load_scenario(ROOT / "scenarios" / "s03_forest_shrine.json")
+# Input 6: perception at DC 11 with advantage, before the encounter at input 7.
+SHRINE_CHECK = SHRINE.scripted_inputs[6]
+
+
+def _shrine_session(tmp_path: Path, client: ScriptedClient) -> Session:
+    log = new_run_log(tmp_path, SHRINE.scenario_id, SEED)
+    return Session.start(client, CONFIG, TEXTS, SHRINE, log, seed=SEED)
+
+
+def _shrine_look(dc: int) -> str:
+    arguments = {**SHRINE_CHECK.expected_call["arguments"], "dc": dc}
+    return json.dumps({"tool": "skill_check", "arguments": arguments})
+
+
+def test_a_scripted_skill_check_uses_the_scenarios_dc_and_advantage(tmp_path: Path) -> None:
+    assert SHRINE_CHECK.check_advantage == "advantage"
+    session = _shrine_session(tmp_path, ScriptedClient(_shrine_look(20)))
+    turn = session.play(SHRINE_CHECK.text, input_index=6, scripted=SHRINE_CHECK)
+
+    record = read_log(session.log.path)[0]
+    assert record == turn.record and record["input_index"] == 6
+    # The model's dc is what was proposed and is the logged executed call.
+    assert record["proposed_calls"][0]["arguments"]["dc"] == 20
+    assert record["executed_call"]["arguments"]["dc"] == 20
+    # The engine rolled against the scenario's DC, with its advantage.
+    facts = record["validation"][-1]["narration_facts"]
+    assert facts["dc"] == SHRINE_CHECK.expected_call["arguments"]["dc"] == 11
+    assert facts["advantage_mode"] == "advantage"
+    assert facts["success"] == (facts["check_total"] >= 11)
+    (roll,) = record["rolls"]
+    assert roll["advantage_mode"] == "advantage" and len(roll["individual_dice"]) == 2
+
+
+def test_a_scripted_skill_check_still_validates_the_models_dc(tmp_path: Path) -> None:
+    session = _shrine_session(tmp_path, ScriptedClient(_shrine_look(30), _shrine_look(12)))
+    turn = session.play(SHRINE_CHECK.text, input_index=6, scripted=SHRINE_CHECK)
+
+    validation = turn.record["validation"]
+    assert validation[0]["rejection_code"] == "DC_OUT_OF_RANGE"
+    assert validation[1]["narration_facts"]["dc"] == 11
+
+
+def test_a_skill_check_the_script_did_not_expect_keeps_the_models_dc(tmp_path: Path) -> None:
+    looking = SCENARIO.scripted_inputs[0]  # "I look around the cellar": expected_call null
+    assert looking.expected_call is None
+    look = json.loads(LOOK)
+    look["arguments"]["dc"] = 17
+    session = _session(tmp_path, ScriptedClient(json.dumps(look)))
+    turn = session.play(looking.text, input_index=0, scripted=looking)
+
+    facts = turn.record["validation"][-1]["narration_facts"]
+    assert facts["dc"] == 17 and facts["advantage_mode"] == "normal"
+
+
+def test_a_failed_scripted_turn_keeps_its_input_index(tmp_path: Path) -> None:
+    session = _session(tmp_path, ScriptedClient(GARBLED, GARBLED, GARBLED))
+    scripted = SCENARIO.scripted_inputs[0]
+    failed = session.play(scripted.text, input_index=0, scripted=scripted)
+    assert isinstance(failed, FailedTurn)
+    assert failed.record["input_index"] == 0
+
+
+class LoopingClient(ScriptedClient):
+    """Fails the first turn's three attempts, then always looks around."""
+
+    def chat(self, messages: Sequence[Message], *, phase: Phase, seed: int) -> ModelReply:
+        if phase == "toolcall" and not self.toolcalls:
+            self.toolcalls.append(LOOK)
+        return super().chat(messages, phase=phase, seed=seed)
+
+
+def test_run_script_plays_every_input_and_moves_on_after_a_failed_turn(tmp_path: Path) -> None:
+    session = _session(tmp_path, LoopingClient(GARBLED, GARBLED, GARBLED))
+    seen: list[int] = []
+    turns = run_script(session, on_turn=lambda index, turn: seen.append(index))
+
+    inputs = SCENARIO.scripted_inputs
+    records = read_log(session.log.path)
+    assert len(turns) == len(records) == len(inputs) == len(seen)
+    assert [r["input_index"] for r in records] == list(range(len(inputs))) == seen
+    assert [r["player_input"] for r in records] == [i.text for i in inputs]
+    assert records[0]["turn_failure"] == "unparseable"
+    # The failed input 0 repeats turn 1; the encounter still opens before input 3.
+    assert [r["turn_number"] for r in records[:2]] == [1, 1]
+    assert records[3]["engine_steps"][0]["step"] == "encounter_start"

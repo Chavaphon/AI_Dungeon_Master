@@ -1,0 +1,46 @@
+{
+  "description": "WBS 6.11 smoke runs: ten scripted condition D runs over the four long scenarios (Milestone 1, gate G2). Nine of ten must complete.",
+  "condition": "D",
+  "runs": [
+    {
+      "scenario": "scenarios/long01_border_road.json",
+      "seed": 1001
+    },
+    {
+      "scenario": "scenarios/long01_border_road.json",
+      "seed": 1002
+    },
+    {
+      "scenario": "scenarios/long01_border_road.json",
+      "seed": 1003
+    },
+    {
+      "scenario": "scenarios/long02_hollow_manor.json",
+      "seed": 1004
+    },
+    {
+      "scenario": "scenarios/long02_hollow_manor.json",
+      "seed": 1005
+    },
+    {
+      "scenario": "scenarios/long02_hollow_manor.json",
+      "seed": 1006
+    },
+    {
+      "scenario": "scenarios/long03_river_market.json",
+      "seed": 1007
+    },
+    {
+      "scenario": "scenarios/long03_river_market.json",
+      "seed": 1008
+    },
+    {
+      "scenario": "scenarios/long04_mountain_monastery.json",
+      "seed": 1009
+    },
+    {
+      "scenario": "scenarios/long04_mountain_monastery.json",
+      "seed": 1010
+    }
+  ]
+}
