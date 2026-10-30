@@ -28,7 +28,13 @@ from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
 from adm.bench import context as bench
-from adm.engine.audit import AuditLog, InvalidRecord, apply_diff, turn_failure_counts
+from adm.engine.audit import (
+    AuditLog,
+    InvalidRecord,
+    apply_diff,
+    filtered_turn_count,
+    turn_failure_counts,
+)
 from adm.engine.combat import attack, dodge, start_encounter
 from adm.engine.dice import DiceRoller
 from adm.engine.npc import NpcActionStep
@@ -52,6 +58,7 @@ from adm.orchestration.loop import (
 )
 from adm.orchestration.parser import EXPECTED_FORMAT
 from adm.orchestration.prompt import HistoryTurn
+from adm.orchestration.safety import FALLBACK
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMAS = ROOT / "schemas"
@@ -574,6 +581,7 @@ def _play(
     carried: Sequence[Doc] = (),
     fold: Sequence[HistoryTurn] | None = None,
     config: Any = CONFIG,
+    narration: str = NARRATION,
 ) -> tuple[Any, FakeClient, ToolPhase]:
     """Play the tool phase on `replies`, the engine steps after it, and the
     narrated turn; `steps` are the before-call steps of an encounter."""
@@ -583,7 +591,7 @@ def _play(
     if phase.executed_call is not None:
         steps += after_call(state, engine.roller, phase.executed_call.tool)
     steps.append(increment_turn(state))
-    client = FakeClient(NARRATION, SUMMARY_REPLY)
+    client = FakeClient(narration, SUMMARY_REPLY)
     turn = narrate_turn(
         log,
         client,
@@ -771,6 +779,49 @@ def test_a_due_summary_folds_in_this_turns_narration(tmp_path: Path) -> None:
     assert record["summary_regenerated"] is True
     assert record["summary"] == {"text": SUMMARY_REPLY, "truncated": False}
     assert turn.summary is not None and turn.summary.text == SUMMARY_REPLY
+
+
+# --- the safety filter (WBS 6.9) ---
+
+UNSAFE = "The rat shrieks. A voice whispers of suicide in the dark. You stand firm."
+
+
+def test_a_filtered_turn_is_logged_flagged_and_counted(tmp_path: Path) -> None:
+    state = _state()
+    log = _log(tmp_path, state)
+    turn, _, _ = _play(log, state, VALID, narration=UNSAFE)
+
+    record = turn.record
+    assert record["narration"] == turn.message == "The rat shrieks. You stand firm."
+    assert record["narration_filtered"] is True
+    assert record["model_calls"][-1]["raw_output"] == UNSAFE, "the reply is kept unfiltered"
+    assert log.records() == [record], "a filtered turn is still logged"
+    assert record["turn_number"] == state.turn_number, "and still played"
+    assert filtered_turn_count(log.records()) == 1
+
+
+def test_a_reply_with_nothing_safe_left_shows_the_fallback(tmp_path: Path) -> None:
+    state = _state()
+    turn, _, _ = _play(_log(tmp_path, state), state, VALID, narration="Talk of suicide.")
+    assert turn.message == turn.record["narration"] == FALLBACK
+    assert turn.record["narration_filtered"] is True
+
+
+def test_the_summary_folds_in_the_filtered_narration(tmp_path: Path) -> None:
+    state = _state()
+    turn, client, _ = _play(
+        _log(tmp_path, state), state, VALID, fold=TURNS[: K - 1], narration=UNSAFE
+    )
+    summary_system = client.calls[1][0][0]["content"]
+    assert f"DM: {turn.message}" in summary_system
+    assert "suicide" not in summary_system
+
+
+def test_an_unfiltered_turn_is_not_counted(tmp_path: Path) -> None:
+    state = _state()
+    log = _log(tmp_path, state)
+    _play(log, state, VALID)
+    assert filtered_turn_count(log.records()) == 0
 
 
 def test_a_failed_tool_phase_is_not_narrated(tmp_path: Path) -> None:
