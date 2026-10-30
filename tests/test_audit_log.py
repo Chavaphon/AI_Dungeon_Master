@@ -231,6 +231,8 @@ VALID_CROSS_FIELD_REJECTS = {
     "summary_flag_without_text": _set("summary_regenerated", True),
     "turn_shorter_than_calls": _set("turn_latency_ms", 1000),
     "eval_longer_than_call": _set("model_calls.1.eval_ms", 4000),
+    "filtered_flag_on_the_reply": _set("narration_filtered", True),
+    "changed_narration_not_flagged": _set("narration", "The rat flees."),
 }
 
 REJECTED_CROSS_FIELD_REJECTS = {
@@ -242,7 +244,17 @@ REJECTED_CROSS_FIELD_REJECTS = {
     "narration_on_failed_turn": lambda r: r["model_calls"].append(
         {**_valid()["model_calls"][1], "attempt": 1}
     ),
+    "failed_turn_flagged_filtered": _set("narration_filtered", True),
 }
+
+
+def test_a_filtered_turn_is_consistent() -> None:
+    # The safety filter changed the reply (WBS 6.9): narration differs from the
+    # narration call's raw_output, and the flag says so.
+    record = _valid()
+    record.update(narration="The moment passes, and the scene moves on.", narration_filtered=True)
+    assert _schema_errors(record) == []
+    assert record_errors(record) == []
 
 
 @pytest.mark.parametrize(

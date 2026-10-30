@@ -47,6 +47,11 @@ than the tool-call one, so one that would need K reduced is a bug and raises.
 The caller runs the engine steps after the call, `turn_increment` included,
 before narrating, and passes `fold` when the rolling summary is due: it is then
 regenerated from this turn's narration before the record is appended.
+
+The reply passes the safety filter (WBS 6.9, `safety.filter_narration`) before
+anything else uses it. The player, the record's `narration`, the verbatim
+history and the rolling summary all get the filtered text; `narration_filtered`
+says whether it differs from the reply, which stays in the call's `raw_output`.
 """
 
 from __future__ import annotations
@@ -72,6 +77,7 @@ from adm.orchestration.prompt import (
     prompt_budget,
     retry_feedback,
 )
+from adm.orchestration.safety import SafetyResult, filter_narration
 from adm.orchestration.summary import Summary, regenerate
 
 TEMPLATE = "d_toolcall"
@@ -400,12 +406,13 @@ class NarratedTurn:
 
     record: Doc
     narration: Narration
+    safety: SafetyResult
     summary: Summary | None
 
     @property
     def message(self) -> str:
-        """What the player is shown."""
-        return self.narration.text
+        """What the player is shown: the narration after the safety filter."""
+        return self.safety.text
 
 
 def narrate_turn(
@@ -447,10 +454,11 @@ def narrate_turn(
         k=phase.k_used,
         seed=seed,
     )
+    safety = filter_narration(narration.text)
     later_calls = [narration.model_call()]
     regenerated = None
     if fold is not None:
-        turns = [*fold, HistoryTurn(player_input, narration.text)]
+        turns = [*fold, HistoryTurn(player_input, safety.text)]
         regenerated = regenerate(client, config, texts, previous=summary, turns=turns, seed=seed)
         later_calls.append(regenerated.model_call())
     record = turn_record(
@@ -460,11 +468,11 @@ def narrate_turn(
         phase,
         input_index=input_index,
         player_input=player_input,
-        narration=narration.text,
-        narration_filtered=False,
+        narration=safety.text,
+        narration_filtered=safety.filtered,
         later_calls=later_calls,
         summary=regenerated.record() if regenerated else None,
         timer=timer,
     )
     log.append(record)
-    return NarratedTurn(record, narration, regenerated)
+    return NarratedTurn(record, narration, safety, regenerated)
