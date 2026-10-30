@@ -505,3 +505,19 @@ Decided by: CI · Supersedes: none
 **Reason:** CLAUDE.md §9.1 fixes the template and the facts order but not what a narration-only turn sends, which K the second call uses, or where the summary call goes in the turn. The scope (narration and record here, the driver in 6.10) was chosen with the owner. "The model describes the numbers" is checked by tests that every value of the facts reaches the prompt; no test calls the model (§13), so how well it describes them is measured by the smoke runs (6.11) and the checker.
 
 **Changed:** `adm/orchestration/loop.py`: `turn_facts`, `Narration`, `narrate`, `NarratedTurn`, `narrate_turn`; `fail_turn` shares the NPC-facts helper. `tests/orchestration/test_loop.py`: the facts and every number in the prompt with no state, the record, the facts order around an NPC-first encounter, carried facts, a narration-only turn, the turn's K, the K overflow, the summary fold, and the refused failed phase. CLAUDE.md: §15 item 35. No new dependencies; the schemas and templates are unchanged.
+
+## 2026-10-30 — Text command-line client and the encounter schedule (WBS 6.10)
+
+Decided by: CI · Supersedes: none
+
+**Decision:**
+1. **When an encounter starts in interactive play.** `before_input` indexes `scripted_inputs`, and interactive play has no `input_index`. The encounter with `before_input: n` starts just before the player's n-th input of the session, counted from 0, failed turns included, as a scripted run counts them (a failed turn still uses up its input, 2.6 decision 3). `input_index` stays `null` in the record.
+2. **An encounter that is due while one is active waits.** Encounters start in scenario order, one at a time. One whose input has come while the encounter before it is still running starts before the first input after that one ends, so no encounter is skipped. Only `s08_old_mine` has two, and whether the first is over by input 15 depends on the seed. `due_encounter` in the new `adm/engine/scenario.py` holds this rule, in the engine, so the scripted runner and the A–C replay can apply the same one.
+3. **The scenario loader.** `load_scenario` checks a scenario against `schemas/scenario.schema.json`, and `initial_state` builds the turn-0 state of docs/scenario_format.md §2 (the reference `initial_game_state` in `tests/test_scenario_schema.py`), checked by `GameState.from_dict`.
+4. **The session driver.** `Session` in `adm/orchestration/session.py` plays one turn per input: the due encounter, the tool phase with `tools.dispatch` as `execute`, then `fail_turn`, or `after_call`, `turn_increment` and `narrate_turn`. It keeps the verbatim history (narrated turns only), the rolling summary and the facts carried from failed turns.
+5. **One log per run.** A session whose `runs/D/<scenario_id>/<seed>.jsonl` already exists is refused before the model loads, so two sessions never append under one `run_id`.
+6. **The client.** `python -m adm.cli play --scenario … --seed … [--runs runs]` checks the model against `config/model.json` and loads it fresh (docs/model_selection.md §4), shows the scenario's title and opening narration, and then one narration, or the request to rephrase, per input. `/quit`, `/exit`, end of input or Ctrl+C ends the session. A Ctrl+C during a turn ends the session without logging that turn.
+
+**Reason:** CLAUDE.md §12 ties encounters to scripted inputs only, and nothing said what happens when one is due while another runs; `start_encounter` raises then. Points 1 and 2 were chosen with the owner. Counting inputs rather than narrated turns keeps interactive play and scripted runs on one rule.
+
+**Changed:** `adm/engine/scenario.py`, `adm/orchestration/session.py` and `adm/cli.py` are added, with `tests/engine/test_scenario.py`, `tests/orchestration/test_session.py` and `tests/test_cli.py`. CLAUDE.md: §12 and §15 items 36–37. No new dependencies; the schemas and templates are unchanged.

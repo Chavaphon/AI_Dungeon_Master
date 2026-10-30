@@ -19,9 +19,11 @@ The schema is `schemas/scenario.schema.json` (JSON Schema draft 2020-12). It for
 
 ## 2. Starting state and encounters
 
-`initial_state` does not carry run-level fields. When a run starts, the loader adds them: `seed` from the run, `turn_number: 0`, `round_number: 0`, `encounter_active: false`, `initiative_order: []`, `active_combatant_id: null`, `encounter_outcome: null`. The result must be a valid state. `initial_game_state` in the test file is the reference version; the runtime loader belongs to WBS 4.1.
+`initial_state` does not carry run-level fields. When a run starts, the loader adds them: `seed` from the run, `turn_number: 0`, `round_number: 0`, `encounter_active: false`, `initiative_order: []`, `active_combatant_id: null`, `encounter_outcome: null`. The result must be a valid state. `initial_game_state` in the test file is the reference version; the runtime loader is `initial_state` in `adm/engine/scenario.py` (WBS 6.10).
 
 An encounter is `{"before_input": n, "combatant_ids": [...]}`. Initiative (§4.4) is rolled for those combatants just before `scripted_inputs[n]` is processed. There is no tool that starts an encounter, so the scenario has to say when one begins.
+
+Interactive play has no input index, so it counts the player's inputs from 0, failed turns included. Encounters start in order, one at a time; one that is due while another is active starts before the first input after that one ends (`due_encounter`, `docs/decisions.md` WBS 6.10).
 
 ## 3. Scripted inputs and DCs
 

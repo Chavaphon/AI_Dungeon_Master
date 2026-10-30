@@ -803,7 +803,7 @@ One JSON file per scenario, at `scenarios/<scenario_id>.json`. Twelve short scen
 ```
 
 - `initial_state` holds only the five entity maps. The loader adds `seed` from the run, `turn_number` and `round_number` 0, and no active encounter.
-- `encounters` says before which scripted input each encounter starts and which combatants are in it, since no tool starts one.
+- `encounters` says before which scripted input each encounter starts and which combatants are in it, since no tool starts one. Interactive play counts the player's inputs from 0, failed turns included. Encounters start in order, one at a time: one that is due while another is active starts before the first input after that one ends (`due_encounter` in `adm/engine/scenario.py`).
 - `locations` lists the places narration may name without a `PHANTOM` divergence; the state has no locations.
 - Each scripted input is `{text, expected_call, check_advantage?}`. `expected_call` is the full tool call, or `null`, so that A–C ground truth can be replayed. A skill check's DC is its `dc` argument; `check_advantage` is allowed only on a skill check.
 
@@ -928,6 +928,11 @@ Added at WBS 6.5 (reasons in `docs/decisions.md`):
 Added at WBS 6.6 (reasons in `docs/decisions.md`):
 
 35. The narration call reuses the tool phase's K. A narration-only turn's facts are only its NPC and carried facts, `[]` if there are none.
+
+Added at WBS 6.10 (reasons in `docs/decisions.md`):
+
+36. In interactive play, an encounter starts before the player's `before_input`-th input, counted from 0 with failed turns included.
+37. An encounter that is due while another is active waits until that one ends; none is skipped.
 
 ## 16. Open questions for the team
 
