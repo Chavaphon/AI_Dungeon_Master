@@ -73,6 +73,16 @@ def _schema_valid(entry: Doc) -> bool:
     )
 
 
+def _k_reduced(records: Sequence[Doc], k: int) -> int:
+    """Turns whose K was cut to fit the context (CLAUDE.md section 8): fewer
+    verbatim turns than both K and the narrated turns before it."""
+    reduced = narrated = 0
+    for r in records:
+        reduced += r["k_used"] < min(k, narrated)
+        narrated += r["turn_failure"] is None
+    return reduced
+
+
 def summarise_run(records: Sequence[Doc], inputs: int, k: int, error: str | None) -> Doc:
     """The figures of one run, from its audit log."""
     indices = [r["input_index"] for r in records]
@@ -96,7 +106,7 @@ def summarise_run(records: Sequence[Doc], inputs: int, k: int, error: str | None
         "rejected_turns": len(rejected),
         "recovered_turns": sum(1 for r in rejected if r["turn_failure"] is None),
         "summaries": sum(1 for r in records if r["summary_regenerated"]),
-        "k_reduced": sum(1 for r in records if r["k_used"] < k),
+        "k_reduced": _k_reduced(records, k),
         "encounters": sum(
             1 for r in records for s in r["engine_steps"] if s["step"] == "encounter_start"
         ),

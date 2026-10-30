@@ -130,6 +130,7 @@ def test_a_run_with_failed_turns_is_still_complete(tmp_path: Path) -> None:
     assert (run["rejected_turns"], run["recovered_turns"]) == (2, 1)
     assert run["summaries"] == (inputs - 1) // K
     assert run["encounters"] == 1
+    assert run["k_reduced"] == 0, "a short history is not a reduced K"
     assert run["tokens_per_s_mean"] is None, "no call reports a generation time"
 
 
@@ -189,6 +190,16 @@ def test_tokens_per_second_is_completion_tokens_over_eval_time() -> None:
     assert run["complete"]
     assert run["tokens_per_s_mean"] == pytest.approx(80.0), "a call with no eval time is left out"
     assert run["latency_mean_s"] == 2.0
+
+
+def test_k_reduced_counts_only_turns_cut_below_the_history() -> None:
+    def record(k_used: int, failure: str | None = None) -> Doc:
+        return {"k_used": k_used, "turn_failure": failure}
+
+    # Histories 0, 1, 2, 2 (after a failure), 3: only the last turn was cut.
+    records = [record(0), record(1), record(2, "schema"), record(2), record(1)]
+    assert smoke._k_reduced(records, k=8) == 1
+    assert smoke._k_reduced([record(8)] * 3, k=2) == 0
 
 
 # --- the verdicts ------------------------------------------------------------
