@@ -6,6 +6,10 @@ two retries is never exceeded, and exhausting it ends the phase in a named
 Exhausted-budget fallback (WBS 6.5): a failed turn is written to the audit log,
 does not advance, and is counted (the done-when of #64).
 
+Narration call (WBS 6.6): the narration prompt carries the turn's
+`narration_facts`, every number in them, in the order things happened, and no
+state; the narrated turn is written to the audit log (the done-when of #65).
+
 No test calls a model: a fake client returns recorded replies.
 
 Run: pytest tests/orchestration/test_loop.py -v
@@ -29,7 +33,7 @@ from adm.engine.combat import attack, dodge, start_encounter
 from adm.engine.dice import DiceRoller
 from adm.engine.npc import NpcActionStep
 from adm.engine.state import GameState, data_hash, load_state, state_hash
-from adm.engine.tools import increment_turn, open_encounter
+from adm.engine.tools import after_call, increment_turn, open_encounter
 from adm.engine.validator import ToolCall
 from adm.orchestration import prompt
 from adm.orchestration.client import Message, ModelReply, Phase, build_options, load_model_config
@@ -40,7 +44,10 @@ from adm.orchestration.loop import (
     ToolPhase,
     TurnTimer,
     fail_turn,
+    narrate,
+    narrate_turn,
     run_tool_phase,
+    turn_facts,
     turn_failure_kind,
 )
 from adm.orchestration.parser import EXPECTED_FORMAT
@@ -549,3 +556,243 @@ def test_a_failed_turn_cannot_run_steps_after_the_call(tmp_path: Path) -> None:
     with pytest.raises(InvalidRecord, match="after_call"):
         _fail(log, state, *[PRECONDITION] * 3, before=before, steps=steps)
     assert not log.path.exists()
+
+
+# --- the narrated turn (WBS 6.6) ---
+
+NARRATION = "\nYour blade bites into the rat's flank, and it shrieks and drags itself back.\n"
+SUMMARY_REPLY = "Lyra fought the rats in the flooded cellar. The ledger is still missing."
+VALID_EXAMPLE = json.loads((EXAMPLES / "audit_turn_valid.json").read_text("utf-8"))
+
+
+def _play(
+    log: AuditLog,
+    state: GameState,
+    *replies: str,
+    before: Doc | None = None,
+    steps: Sequence[Any] = (),
+    carried: Sequence[Doc] = (),
+    fold: Sequence[HistoryTurn] | None = None,
+    config: Any = CONFIG,
+) -> tuple[Any, FakeClient, ToolPhase]:
+    """Play the tool phase on `replies`, the engine steps after it, and the
+    narrated turn; `steps` are the before-call steps of an encounter."""
+    before = state.to_dict() if before is None else before
+    phase, _, engine = _run(*replies, state=state, config=config)
+    steps = list(steps)
+    if phase.executed_call is not None:
+        steps += after_call(state, engine.roller, phase.executed_call.tool)
+    steps.append(increment_turn(state))
+    client = FakeClient(NARRATION, SUMMARY_REPLY)
+    turn = narrate_turn(
+        log,
+        client,
+        config,
+        TEXTS,
+        state,
+        before,
+        steps,
+        phase,
+        carried_facts=carried,
+        input_index=7,
+        player_input=PLAYER_INPUT,
+        history=TURNS[:K],
+        summary=SUMMARY,
+        seed=SEED,
+        timer=_timer(),
+        fold=fold,
+    )
+    return turn, client, phase
+
+
+def _facts_in(system: str) -> list[Doc]:
+    """The array a narration prompt's `<facts>` block holds."""
+    return json.loads(system.split("<facts>\n")[1].split("\n</facts>")[0])
+
+
+def _npc_facts(steps: Sequence[Doc], when: str) -> list[Doc]:
+    """The facts of a record's `npc_action` steps at `when`."""
+    return [
+        s["result"]["narration_facts"]
+        for s in steps
+        if s["step"] == "npc_action" and s["when"] == when
+    ]
+
+
+def test_the_narration_call_receives_the_numbers_and_no_state(tmp_path: Path) -> None:
+    state = _state()
+    turn, client, phase = _play(_log(tmp_path, state), state, VALID)
+    (messages, call_phase, seed), *_ = client.calls
+    system = messages[0]["content"]
+
+    assert (call_phase, seed) == ("narration", SEED)
+    assert build_options(CONFIG, call_phase, seed)["temperature"] == CONFIG.temperature
+    assert [m["role"] for m in messages] == ["system", "user"]
+    assert messages[1]["content"] == PLAYER_INPUT
+    assert "<state>" not in system and '"combatants"' not in system
+    facts = _facts_in(system)
+    assert facts == list(turn.narration.facts)
+    player = facts[0]
+    assert player == phase.result["narration_facts"]
+    for key in ("attack_roll", "damage", "target_hp_before", "target_hp_after", "target_hp_band"):
+        assert f'"{key}": {json.dumps(player[key])}' in system, f"{key} is not in the prompt"
+
+
+def test_the_narrated_turn_is_logged_and_advances(tmp_path: Path) -> None:
+    state = _state()
+    before = state.to_dict()
+    log = _log(tmp_path, state)
+    turn, _, _ = _play(log, state, VALID)
+
+    record = turn.record
+    assert log.records() == [record]
+    assert record.keys() == VALID_EXAMPLE.keys()
+    assert [c["phase"] for c in record["model_calls"]] == ["toolcall", "narration"]
+    assert record["model_calls"][-1]["raw_output"] == NARRATION
+    assert record["narration"] == turn.message == NARRATION.strip()
+    assert (record["narration_filtered"], record["narration_only"]) == (False, False)
+    assert record["turn_failure"] is None
+    assert record["turn_number"] == before["turn_number"] + 1 == state.turn_number
+    assert (record["summary_regenerated"], record["summary"]) == (False, None)
+
+
+def _open(state: GameState) -> list[Any]:
+    """Start the rat encounter with a seed where an NPC acts before the PC."""
+    roller = DiceRoller(_seed_where_an_npc_goes_first(state))
+    return open_encounter(state, roller, ["pc_lyra", "npc_rat_01", "npc_rat_02"])
+
+
+def test_the_facts_follow_the_order_of_the_turn(tmp_path: Path) -> None:
+    state = load_state(EXAMPLES / "state_01_exploration.json")
+    before = state.to_dict()
+    opening = _open(state)
+    turn, client, phase = _play(_log(tmp_path, state), state, VALID, before=before, steps=opening)
+
+    steps = turn.record["engine_steps"]
+    first, after = _npc_facts(steps, "before_call"), _npc_facts(steps, "after_call")
+    assert first and after, "NPCs should act both before and after the player"
+    expected = [*first, phase.result["narration_facts"], *after]
+    assert _facts_in(client.calls[0][0][0]["content"]) == expected
+
+
+def test_facts_carried_from_a_failed_turn_come_first(tmp_path: Path) -> None:
+    state = load_state(EXAMPLES / "state_01_exploration.json")
+    log = _log(tmp_path, state)
+    before = state.to_dict()
+    opening = _open(state)
+    failed = _fail(log, state, *[UNPARSEABLE] * 3, before=before, steps=opening)
+    assert failed.carried_facts
+
+    turn, client, phase = _play(log, state, VALID, carried=failed.carried_facts)
+    carried = list(failed.carried_facts)
+    facts = _facts_in(client.calls[0][0][0]["content"])
+    assert facts[: len(carried)] == carried
+    assert facts[len(carried)] == phase.result["narration_facts"]
+    numbers = [r["turn_number"] for r in log.records()]
+    assert numbers == [before["turn_number"] + 1] * 2, "the failed turn's number repeats"
+
+
+def test_a_narration_only_turn_is_narrated_with_no_facts(tmp_path: Path) -> None:
+    state = _state()
+    log = _log(tmp_path, state)
+    turn, client, phase = _play(log, state, NULL, NULL)
+
+    assert phase.narration_only and phase.result is None
+    assert "<facts>\n[]\n</facts>" in client.calls[0][0][0]["content"]
+    assert turn.narration.facts == ()
+    assert log.records() == [turn.record] and turn.record["narration_only"] is True
+
+
+def test_turn_facts_without_a_call_or_steps_are_empty() -> None:
+    assert turn_facts([], None) == []
+
+
+def test_the_narration_call_uses_the_turns_k(tmp_path: Path) -> None:
+    first = prompt.assemble(
+        TEXTS,
+        "d_toolcall",
+        player_input=PLAYER_INPUT,
+        history=TURNS[:K],
+        summary=SUMMARY,
+        k=K,
+        budget=10**6,
+        state=_state(),
+    )
+    reply_cap = build_options(CONFIG, "toolcall", 0)["num_predict"]
+    tight = CONFIG.model_copy(update={"context_tokens": first.estimated_tokens + reply_cap})
+    state = _state()
+    turn, client, phase = _play(_log(tmp_path, state), state, PRECONDITION, VALID, config=tight)
+
+    assert 0 < phase.k_used < K and turn.record["k_used"] == phase.k_used
+    system = client.calls[0][0][0]["content"]
+    oldest = K - phase.k_used
+    assert TURNS[oldest].narration in system and TURNS[oldest - 1].narration not in system
+
+
+def test_a_narration_prompt_that_would_need_a_smaller_k_raises() -> None:
+    facts = [json.loads((EXAMPLES / "result_attack.json").read_text("utf-8"))["narration_facts"]]
+    full = prompt.assemble(
+        TEXTS,
+        "d_narration",
+        player_input=PLAYER_INPUT,
+        history=TURNS[:K],
+        summary=SUMMARY,
+        k=K,
+        budget=10**6,
+        facts=facts,
+    )
+    reply_cap = build_options(CONFIG, "narration", 0)["num_predict"]
+    tight = CONFIG.model_copy(update={"context_tokens": full.estimated_tokens - 1 + reply_cap})
+    client = FakeClient(NARRATION)
+    with pytest.raises(prompt.PromptTooLarge, match="narration"):
+        narrate(
+            client,
+            tight,
+            TEXTS,
+            facts=facts,
+            player_input=PLAYER_INPUT,
+            history=TURNS[:K],
+            summary=SUMMARY,
+            k=K,
+            seed=SEED,
+        )
+    assert client.calls == []
+
+
+def test_a_due_summary_folds_in_this_turns_narration(tmp_path: Path) -> None:
+    state = _state()
+    turn, client, _ = _play(_log(tmp_path, state), state, VALID, fold=TURNS[: K - 1])
+
+    assert [phase for _, phase, _ in client.calls] == ["narration", "summary"]
+    summary_system = client.calls[1][0][0]["content"]
+    assert f"DM: {NARRATION.strip()}" in summary_system and SUMMARY in summary_system
+    record = turn.record
+    assert [c["phase"] for c in record["model_calls"]] == ["toolcall", "narration", "summary"]
+    assert record["summary_regenerated"] is True
+    assert record["summary"] == {"text": SUMMARY_REPLY, "truncated": False}
+    assert turn.summary is not None and turn.summary.text == SUMMARY_REPLY
+
+
+def test_a_failed_tool_phase_is_not_narrated(tmp_path: Path) -> None:
+    state = _state()
+    log = _log(tmp_path, state)
+    phase, _, _ = _run(*[PRECONDITION] * 3, state=state)
+    client = FakeClient(NARRATION)
+    with pytest.raises(ValueError, match="fail_turn"):
+        narrate_turn(
+            log,
+            client,
+            CONFIG,
+            TEXTS,
+            state,
+            state.to_dict(),
+            [],
+            phase,
+            input_index=7,
+            player_input=PLAYER_INPUT,
+            history=TURNS[:K],
+            summary=SUMMARY,
+            seed=SEED,
+            timer=_timer(),
+        )
+    assert client.calls == [] and not log.path.exists()

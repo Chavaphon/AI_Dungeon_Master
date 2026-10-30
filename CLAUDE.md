@@ -925,6 +925,10 @@ Added at WBS 6.5 (reasons in `docs/decisions.md`):
 33. A failed turn's record keeps the `before_call` steps of an encounter that started before it, and their NPC facts are narrated in the next narrated turn. Nothing runs after a failed call.
 34. A narration-only turn advances `turn_number`; only a failed turn repeats its number.
 
+Added at WBS 6.6 (reasons in `docs/decisions.md`):
+
+35. The narration call reuses the tool phase's K. A narration-only turn's facts are only its NPC and carried facts, `[]` if there are none.
+
 ## 16. Open questions for the team
 
 Do not resolve these alone.
