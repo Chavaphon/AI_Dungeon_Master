@@ -64,6 +64,9 @@ python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
 # run one scripted scenario under one condition
 python -m adm.cli run --scenario scenarios/s01_cellar.json --condition D --seed 12345
 
+# ten 50-turn condition D smoke runs, gate G2 (resumable)
+python -m adm.cli smoke --manifest experiments/smoke_grid.json
+
 # run the full experiment grid (unattended, resumable)
 python -m adm.cli batch --manifest experiments/main_grid.json
 
@@ -261,7 +264,7 @@ Three skills only: `strength`, `perception`, `stealth`. Anything else is rejecte
 - Roll `d20 + ability_modifier + (proficiency_bonus if the combatant is proficient in that skill else 0)`.
 - Success if `total >= dc`. `dc` must be in 5..25 or the call is rejected with `DC_OUT_OF_RANGE`.
 - Skill checks do not consume the turn action and may be called outside combat.
-- For a scripted input, the DC and any advantage or disadvantage come from the scenario (`expected_call.arguments.dc` and `check_advantage`, section 12). In condition D the engine uses those values and logs the `dc` the model proposed.
+- For a scripted input, the DC and any advantage or disadvantage come from the scenario (`expected_call.arguments.dc` and `check_advantage`, section 12). In condition D the model's call is validated as proposed, then executed with those values; `proposed_calls` and `executed_call` keep the model's `dc`, and the result's `narration_facts` carry the scenario's.
 
 ### 4.8 Zero hit points, unconsciousness, encounter end
 
@@ -933,6 +936,11 @@ Added at WBS 6.10 (reasons in `docs/decisions.md`):
 
 36. In interactive play, an encounter starts before the player's `before_input`-th input, counted from 0 with failed turns included.
 37. An encounter that is due while another is active waits until that one ends; none is skipped.
+
+Added at WBS 6.11 (reasons in `docs/decisions.md`):
+
+38. A scripted skill check is validated with the model's `dc` and executed with the scenario's `dc` and `check_advantage`, only when the input's `expected_call` is also a skill check.
+39. A smoke run is complete when nothing raised and its log holds one record per scripted input; failed turns do not make it incomplete.
 
 ## 16. Open questions for the team
 
