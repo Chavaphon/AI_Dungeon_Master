@@ -35,6 +35,18 @@ nor initiative advances; the record is still appended, and the player sees
 stay in its record, and the facts of their NPC actions are carried to the next
 narrated turn (docs/decisions.md, WBS 6.5). Interactive play asks for new input
 and a scripted run takes its next input, so both simply play the next turn.
+
+`narrate_turn` ends every other turn (WBS 6.6, CLAUDE.md section 9.1). Model
+call 2 runs at temperature 0.7 on `d_narration`, which holds no state: only the
+turn's `narration_facts`, as one array in the order things happened (`turn_facts`):
+facts carried from a failed turn, the NPC actions before the call, the player's
+executed call, then the NPC actions after it. A narration-only turn has no call,
+so its array holds only NPC facts, and is often empty. The narration call reuses
+the tool phase's `k_used`, so a turn has one K; a narration prompt is far smaller
+than the tool-call one, so one that would need K reduced is a bug and raises.
+The caller runs the engine steps after the call, `turn_increment` included,
+before narrating, and passes `fold` when the rolling summary is due: it is then
+regenerated from this turn's narration before the record is appended.
 """
 
 from __future__ import annotations
@@ -50,9 +62,17 @@ from adm.engine.audit import AuditLog, Step, engine_fields, run_id
 from adm.engine.npc import NpcActionStep
 from adm.engine.state import GameState
 from adm.engine.validator import Rejection, ToolCall, validate
-from adm.orchestration.client import Message, ModelClient, ModelConfig
+from adm.orchestration.client import Message, ModelClient, ModelConfig, ModelReply
 from adm.orchestration.parser import ParseFailure, parse_tool_call
-from adm.orchestration.prompt import Doc, HistoryTurn, assemble, prompt_budget, retry_feedback
+from adm.orchestration.prompt import (
+    Doc,
+    HistoryTurn,
+    PromptTooLarge,
+    assemble,
+    prompt_budget,
+    retry_feedback,
+)
+from adm.orchestration.summary import Summary, regenerate
 
 TEMPLATE = "d_toolcall"
 RETRY_BUDGET = 2
@@ -309,5 +329,142 @@ def fail_turn(
         timer=timer,
     )
     log.append(record)
-    carried = tuple(s.result["narration_facts"] for s in steps if isinstance(s, NpcActionStep))
-    return FailedTurn(record, carried)
+    return FailedTurn(record, tuple(_npc_facts(steps, "before_call")))
+
+
+# --- the narrated turn (WBS 6.6) ---------------------------------------------
+
+NARRATION_TEMPLATE = "d_narration"
+
+
+def _npc_facts(steps: Sequence[Step], when: str) -> list[Doc]:
+    return [
+        s.result["narration_facts"]
+        for s in steps
+        if isinstance(s, NpcActionStep) and s.when == when
+    ]
+
+
+def turn_facts(steps: Sequence[Step], result: Doc | None, carried: Sequence[Doc] = ()) -> list[Doc]:
+    """The `{narration_facts_json}` array of a turn, in the order things happened:
+    `carried` from a failed turn, the NPC actions before the call, the executed
+    call's facts (`result` is its `result_ok`, None if no call ran), then the NPC
+    actions after it (CLAUDE.md section 9.1)."""
+    player = [result["narration_facts"]] if result is not None else []
+    return [*carried, *_npc_facts(steps, "before_call"), *player, *_npc_facts(steps, "after_call")]
+
+
+@dataclass(frozen=True)
+class Narration:
+    text: str
+    facts: tuple[Doc, ...]
+    reply: ModelReply
+
+    def model_call(self) -> Doc:
+        """The turn record's `model_calls` entry for the narration call."""
+        return self.reply.model_call("narration", 1)
+
+
+def narrate(
+    client: ModelClient,
+    config: ModelConfig,
+    texts: Mapping[str, str],
+    *,
+    facts: Sequence[Doc],
+    player_input: str,
+    history: Sequence[HistoryTurn],
+    summary: str | None,
+    k: int,
+    seed: int,
+) -> Narration:
+    """Model call 2: narrate `facts`, with the turn's K."""
+    assembled = assemble(
+        texts,
+        NARRATION_TEMPLATE,
+        player_input=player_input,
+        history=history,
+        summary=summary,
+        k=k,
+        budget=prompt_budget(config, "narration"),
+        facts=facts,
+    )
+    if assembled.k_reduced:
+        raise PromptTooLarge(f"the narration prompt fits only {assembled.k_used} of {k} turns")
+    reply = client.chat(assembled.messages, phase="narration", seed=seed)
+    return Narration(reply.raw_output.strip(), tuple(facts), reply)
+
+
+@dataclass(frozen=True)
+class NarratedTurn:
+    """A narrated turn as written to the audit log, with the summary it regenerated."""
+
+    record: Doc
+    narration: Narration
+    summary: Summary | None
+
+    @property
+    def message(self) -> str:
+        """What the player is shown."""
+        return self.narration.text
+
+
+def narrate_turn(
+    log: AuditLog,
+    client: ModelClient,
+    config: ModelConfig,
+    texts: Mapping[str, str],
+    state: GameState,
+    before: Doc,
+    steps: Sequence[Step],
+    phase: ToolPhase,
+    *,
+    carried_facts: Sequence[Doc] = (),
+    input_index: int | None,
+    player_input: str,
+    history: Sequence[HistoryTurn],
+    summary: str | None,
+    seed: int,
+    timer: TurnTimer,
+    fold: Sequence[HistoryTurn] | None = None,
+) -> NarratedTurn:
+    """Narrate a turn whose tool phase did not fail, and log it.
+
+    `steps` are all the turn's engine steps, ending with `turn_increment`;
+    `log.append` refuses the record otherwise. `carried_facts` come from the
+    failed turn before this one, if any. `fold` is given when the rolling summary
+    is due: the narrated turns since its last regeneration, without this one.
+    """
+    if phase.turn_failure is not None:
+        raise ValueError("narrate_turn needs a tool phase that did not fail; use fail_turn")
+    narration = narrate(
+        client,
+        config,
+        texts,
+        facts=turn_facts(steps, phase.result, carried_facts),
+        player_input=player_input,
+        history=history,
+        summary=summary,
+        k=phase.k_used,
+        seed=seed,
+    )
+    later_calls = [narration.model_call()]
+    regenerated = None
+    if fold is not None:
+        turns = [*fold, HistoryTurn(player_input, narration.text)]
+        regenerated = regenerate(client, config, texts, previous=summary, turns=turns, seed=seed)
+        later_calls.append(regenerated.model_call())
+    record = turn_record(
+        state,
+        before,
+        steps,
+        phase,
+        input_index=input_index,
+        player_input=player_input,
+        narration=narration.text,
+        narration_filtered=False,
+        later_calls=later_calls,
+        summary=regenerated.record() if regenerated else None,
+        timer=timer,
+    )
+    log.append(record)
+    return NarratedTurn(record, narration, regenerated)
