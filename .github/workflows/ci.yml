@@ -39,5 +39,9 @@ jobs:
       - name: Format
         run: ruff format --check .
 
+      # WBS 4.17 — the CLAUDE.md §13 rule suite on its own, the D3 / Objective 1 evidence (docs/rule_suite.md).
+      - name: Rule suite
+        run: pytest -m rule_suite -q
+
       - name: Test
         run: pytest -q
