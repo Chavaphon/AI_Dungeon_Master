@@ -537,3 +537,11 @@ Decided by: CI · Supersedes: none
 **Reason:** (1) Validating the model's own `dc` keeps D's rejection data honest, and substituting after validation needs no change to the audit-log rules; the state still follows the scenario's ground truth, as decision 20 requires. Chosen with the owner. (3, 4) TASK_CHECKLIST.md defines G2 as "ten smoke runs attempted, at least nine complete without unrecoverable failure" but not what complete means; §7.1 makes turn failures a reported metric, not a crash. The grid was chosen with the owner. (2, 3) The smoke driver lives in the CLI because `adm/bench` may not import orchestration (docs/conventions.md §1); `adm/bench/smoke.py` only schedules runs and reads logs.
 
 **Changed:** `adm/orchestration/session.py`: `Session.play(…, input_index=, scripted=)`, the DC substitution, `run_script`. `adm/cli.py`: `run` and `smoke`, sharing `open_session` with `play`. `adm/bench/smoke.py` and `experiments/smoke_grid.json` are added, with `tests/bench/test_smoke.py`; `tests/orchestration/test_session.py` and `tests/test_cli.py` gain the scripted cases. `docs/smoke_runs.md` holds the results. CLAUDE.md: §2 the `smoke` command, §4.7, §15 items 38–39. No new dependencies; the schemas and templates are unchanged.
+
+## 2026-11-01 — No approving review required to merge into main (WBS 1.1)
+
+Decided by: CI · Supersedes: 2026-09-30 — CI pipeline and required status check on main (the "one approval" rule only)
+
+**Decision:** Pull requests into `main` no longer need an approving review to merge. Branch protection still requires a pull request, the `test` status check with the branch up to date with `main`, and resolved conversations, and administrators are not exempt.
+**Reason:** Requested by the repository owner, so that a pull request can merge as soon as `test` passes.
+**Changed:** Branch protection on `main`: `required_approving_review_count` from 1 to 0. No files other than this log.
