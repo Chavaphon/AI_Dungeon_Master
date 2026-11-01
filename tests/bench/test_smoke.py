@@ -70,7 +70,7 @@ class FakeClient:
 
 def _runner(clients: dict[int, FakeClient]) -> smoke.Runner:
     def run(scenario: Scenario, seed: int, runs_dir: Path) -> None:
-        log = new_run_log(runs_dir, scenario.scenario_id, seed)
+        log = new_run_log(runs_dir, "D", scenario.scenario_id, seed)
         session = Session.start(clients[seed], CONFIG, TEXTS, scenario, log, seed=seed)
         run_script(session)
 

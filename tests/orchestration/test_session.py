@@ -1,8 +1,9 @@
-"""Interactive session (WBS 6.10): a session plays the turn loop end to end on
+"""Interactive session (WBS 6.10, 7.4): a session plays the turn loop end to end on
 a scenario, one input at a time. Encounters start before the player's n-th
 input, failed turns included; failed turns do not advance and their NPC facts
 reach the next narration; narrated turns build the history and the rolling
-summary; and every turn is in the audit log.
+summary; every turn is in the audit log; and `run_script` runs any
+condition's harness the same way (WBS 7.4).
 
 No test calls a model: a fake client answers each phase from a script.
 
@@ -16,10 +17,10 @@ from typing import Any
 
 import pytest
 
-from adm.engine.audit import read_log
+from adm.engine.audit import AuditLog, read_log
 from adm.engine.combat import start_encounter
 from adm.engine.dice import DiceRoller
-from adm.engine.scenario import initial_state, load_scenario
+from adm.engine.scenario import ScriptedInput, initial_state, load_scenario
 from adm.orchestration import prompt
 from adm.orchestration.client import Message, ModelReply, Phase, load_model_config
 from adm.orchestration.loop import REPHRASE, FailedTurn, NarratedTurn
@@ -74,7 +75,7 @@ class ScriptedClient:
 
 def _session(tmp_path: Path, client: ScriptedClient, seed: int = SEED) -> Session:
     client.seed = seed
-    log = new_run_log(tmp_path, SCENARIO.scenario_id, seed)
+    log = new_run_log(tmp_path, "D", SCENARIO.scenario_id, seed)
     return Session.start(client, CONFIG, TEXTS, SCENARIO, log, seed=seed)
 
 
@@ -189,7 +190,7 @@ def test_a_run_that_already_has_a_log_is_refused(tmp_path: Path) -> None:
     session = _session(tmp_path, ScriptedClient(LOOK))
     session.play("I look around")
     with pytest.raises(RunExists):
-        new_run_log(tmp_path, SCENARIO.scenario_id, SEED)
+        new_run_log(tmp_path, "D", SCENARIO.scenario_id, SEED)
     assert len(read_log(session.log.path)) == 1
 
 
@@ -201,7 +202,7 @@ SHRINE_CHECK = SHRINE.scripted_inputs[6]
 
 
 def _shrine_session(tmp_path: Path, client: ScriptedClient) -> Session:
-    log = new_run_log(tmp_path, SHRINE.scenario_id, SEED)
+    log = new_run_log(tmp_path, "D", SHRINE.scenario_id, SEED)
     return Session.start(client, CONFIG, TEXTS, SHRINE, log, seed=SEED)
 
 
@@ -281,3 +282,43 @@ def test_run_script_plays_every_input_and_moves_on_after_a_failed_turn(tmp_path:
     # The failed input 0 repeats turn 1; the encounter still opens before input 3.
     assert [r["turn_number"] for r in records[:2]] == [1, 1]
     assert records[3]["engine_steps"][0]["step"] == "encounter_start"
+
+
+# --- the common runner (WBS 7.4) ---------------------------------------------
+
+
+class RecordingHarness:
+    """A stand-in for another condition's harness: anything with a scenario, a
+    log and `play` is run by `run_script` exactly as condition D is."""
+
+    def __init__(self, log: AuditLog) -> None:
+        self.scenario = SCENARIO
+        self.log = log
+        self.played: list[tuple[str, int | None, ScriptedInput | None]] = []
+
+    def play(
+        self,
+        player_input: str,
+        *,
+        input_index: int | None = None,
+        scripted: ScriptedInput | None = None,
+    ) -> FailedTurn:
+        self.played.append((player_input, input_index, scripted))
+        return FailedTurn({"turn_failure": None, "narration": player_input}, ())
+
+
+def test_run_script_runs_any_harness_the_same_way(tmp_path: Path) -> None:
+    harness = RecordingHarness(new_run_log(tmp_path, "A", SCENARIO.scenario_id, SEED))
+    turns = run_script(harness)
+
+    inputs = SCENARIO.scripted_inputs
+    assert harness.played == [(s.text, i, s) for i, s in enumerate(inputs)]
+    assert [t.message for t in turns] == [s.text for s in inputs]
+
+
+def test_a_run_log_is_named_by_its_condition(tmp_path: Path) -> None:
+    log = new_run_log(tmp_path, "B", SCENARIO.scenario_id, SEED)
+    assert log.run_id == f"B_{SCENARIO.scenario_id}_{SEED}"
+    assert log.path == tmp_path / "B" / SCENARIO.scenario_id / f"{SEED}.jsonl"
+    # Another condition's run of the same scenario and seed is a different run.
+    new_run_log(tmp_path, "D", SCENARIO.scenario_id, SEED)
