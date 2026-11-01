@@ -23,6 +23,7 @@ The evidence for Milestone 1 / gate G2 and the Objective 2 criterion: ten script
 | Grid | `experiments/smoke_grid.json`: long01 and long02 × 3 seeds, long03 and long04 × 2, seeds 1001–1010, 52 scripted inputs each |
 | Command | `python -m adm.cli smoke --manifest experiments/smoke_grid.json` |
 | Summary | `results/bench/smoke/20261030T120009Z/summary.json` (gitignored); logs in `runs/D/<scenario_id>/<seed>.jsonl` (gitignored) |
+| Shared copy | The team Google Drive folder in `README.md` ("Shared storage"), at the same paths: `runs/D/`, `runs/aborted/D/long04_mountain_monastery/1009.jsonl` and `results/bench/smoke/`. Under the README's rules the Drive copy is the dataset, so this evidence counts once it is uploaded there. |
 
 ## 3. Per run
 
@@ -66,5 +67,6 @@ The model does not give up on an attack once the encounter is over. It swaps to 
 
 ## 5. Follow-ups
 
+- Upload the ten logs, the aborted log and `results/bench/smoke/` to the shared Drive folder (§2, "Shared copy"). Until then the gate G2 evidence exists on one laptop only.
 - The Ollama tray app is set to start at login and auto-updates. Before the Week 6 batches, turn that off or run a bare `ollama serve`. Otherwise the pinned-version check will stop the batch.
 - Nothing here blocks WBS 7.x. Condition D is ready to join the common runner (7.4).
