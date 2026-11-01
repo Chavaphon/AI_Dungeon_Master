@@ -220,3 +220,12 @@ __marimo__/
 # Experiment output (CLAUDE.md section 3)
 runs/
 results/
+
+# Course ideation form and canvas (local only)
+ideationForm/
+
+# Sponsor User play sessions: kept apart from the experiment data (runs/)
+sponsor_runs/
+
+# Files produced by Claude sessions (local only)
+Claude outputs/
