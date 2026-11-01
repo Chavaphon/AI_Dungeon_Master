@@ -14,9 +14,12 @@ rephrase. `/quit`, end of input or Ctrl+C ends the session. Every turn is in
 `runs/D/<scenario_id>/<seed>.jsonl` (CLAUDE.md section 11) as soon as it is shown.
 
 `run` plays the scenario's scripted inputs unattended (`session.run_script`),
-printing one line per input. Only condition D exists so far; A to C join the
-same command with their harnesses (WBS 7.1 to 7.4). An exception other than a
-refused run or a model error is a bug and propagates.
+printing one line per input. It is the one entry point for every condition
+(WBS 7.4): `HARNESSES` maps a condition to the `HarnessStart` that builds its
+harness, and nothing else differs. Condition D is `Session.start`; A to C are
+added to `HARNESSES` by WBS 7.1 to 7.3. A condition with no harness yet is
+refused before its log is created or the model loads. An exception other than
+a refused run or a model error is a bug and propagates.
 
 `smoke` plays every run of a smoke manifest that has no log yet, as `run` does,
 and reports gate G2 (WBS 6.11, `adm/bench/smoke.py`). An exception ends only
@@ -45,9 +48,22 @@ from adm.orchestration.client import (
     OllamaClient,
     load_model_config,
 )
-from adm.orchestration.loop import CONDITION, FailedTurn, NarratedTurn
 from adm.orchestration.prompt import load_templates
-from adm.orchestration.session import RunExists, Session, new_run_log, run_script
+from adm.orchestration.session import (
+    Harness,
+    HarnessStart,
+    PlayedTurn,
+    RunExists,
+    Session,
+    new_run_log,
+    run_script,
+)
+
+# The audit log's conditions (schemas/audit.schema.json), and the harness of
+# each one that is wired. Interactive play and the G2 smoke runs are condition D.
+CONDITIONS = ("A", "B", "C", "D")
+HARNESSES: dict[str, HarnessStart] = {"D": Session.start}
+D = "D"
 
 QUIT = {"/quit", "/exit"}
 PROMPT = "> "
@@ -82,16 +98,19 @@ RunsOption = Annotated[Path, typer.Option(help="Directory the audit log is writt
 
 
 @contextmanager
-def open_session(console: Console, scenario: Scenario, seed: int, runs: Path) -> Iterator[Session]:
-    """A new condition D session on a freshly loaded model. A run that already
+def open_session(
+    console: Console, scenario: Scenario, seed: int, runs: Path, condition: str
+) -> Iterator[Harness]:
+    """A new run of `condition` on a freshly loaded model. A run that already
     has a log is refused before the model loads."""
+    start = HARNESSES[condition]
     config = load_model_config()
     texts = load_templates()
-    log = new_run_log(runs, scenario.scenario_id, seed)
+    log = new_run_log(runs, condition, scenario.scenario_id, seed)
     with console.status(f"Loading {config.model}..."):
         client_cm = connect(config)
     with client_cm as client:
-        yield Session.start(client, config, texts, scenario, log, seed=seed)
+        yield start(client, config, texts, scenario, log, seed=seed)
 
 
 @contextmanager
@@ -111,7 +130,7 @@ def play(scenario: ScenarioOption, seed: SeedOption, runs: RunsOption = RUNS) ->
     """Play a scenario interactively under condition D."""
     console = Console(highlight=False)
     loaded = load_scenario(scenario)
-    with _exits_on_refusal(console), open_session(console, loaded, seed, runs) as session:
+    with _exits_on_refusal(console), open_session(console, loaded, seed, runs, D) as session:
         console.print(f"[bold]{loaded.display_name}[/bold]\n")
         console.print(loaded.opening_narration, markup=False)
         _loop(console, session)
@@ -121,19 +140,25 @@ def play(scenario: ScenarioOption, seed: SeedOption, runs: RunsOption = RUNS) ->
 def run(
     scenario: ScenarioOption,
     seed: SeedOption,
-    condition: Annotated[str, typer.Option(help="Experimental condition.")] = CONDITION,
+    condition: Annotated[str, typer.Option(help="Experimental condition: A, B, C or D.")] = D,
     runs: RunsOption = RUNS,
 ) -> None:
-    """Run a scenario's scripted inputs unattended."""
+    """Run a scenario's scripted inputs unattended, under any condition."""
     console = Console(highlight=False)
-    if condition != CONDITION:
-        console.print(f"[red]Condition {condition} is not wired yet (WBS 7.1 to 7.4).[/red]")
+    if condition not in CONDITIONS:
+        console.print(f"[red]Unknown condition {condition}; choose one of A, B, C, D.[/red]")
+        raise typer.Exit(2)
+    if condition not in HARNESSES:
+        console.print(f"[red]Condition {condition} is not wired yet (WBS 7.1 to 7.3).[/red]")
         raise typer.Exit(2)
     loaded = load_scenario(scenario)
-    with _exits_on_refusal(console), open_session(console, loaded, seed, runs) as session:
+    with (
+        _exits_on_refusal(console),
+        open_session(console, loaded, seed, runs, condition) as session,
+    ):
         total = len(loaded.scripted_inputs)
 
-        def report(index: int, turn: NarratedTurn | FailedTurn) -> None:
+        def report(index: int, turn: PlayedTurn) -> None:
             kind = turn.record["turn_failure"] or "ok"
             console.print(f"input {index + 1}/{total}: {kind}", markup=False)
 
@@ -156,10 +181,10 @@ def smoke(
     config = load_model_config()
 
     def runner(scenario: Scenario, seed: int, runs_dir: Path) -> None:
-        with open_session(console, scenario, seed, runs_dir) as session:
+        with open_session(console, scenario, seed, runs_dir, D) as session:
             total = len(scenario.scripted_inputs)
 
-            def report(index: int, turn: NarratedTurn | FailedTurn) -> None:
+            def report(index: int, turn: PlayedTurn) -> None:
                 kind = turn.record["turn_failure"] or "ok"
                 console.print(f"  input {index + 1}/{total}: {kind}", markup=False)
 
@@ -186,7 +211,7 @@ def smoke(
     console.print(f"Summary: {path}", markup=False)
 
 
-def _loop(console: Console, session: Session) -> None:
+def _loop(console: Console, session: Harness) -> None:
     # Ctrl+C mid-turn ends the session too: that turn is not logged.
     try:
         while True:
@@ -206,7 +231,7 @@ def _loop(console: Console, session: Session) -> None:
     _report(console, session)
 
 
-def _report(console: Console, session: Session) -> None:
+def _report(console: Console, session: Harness) -> None:
     records = session.log.records()
     failures = sum(turn_failure_counts(records).values())
     console.print(

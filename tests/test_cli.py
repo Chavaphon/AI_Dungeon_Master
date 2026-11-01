@@ -1,7 +1,8 @@
-"""Text command-line client (WBS 6.10): a person can play a session end to end
-(the done-when of #72). `play` shows the scenario's opening, takes one input
-per turn, shows the narration or the request to rephrase, and stops on `/quit`
-or end of input with every turn in the audit log.
+"""Text command-line client (WBS 6.10, 6.11, 7.4): a person can play a session
+end to end (the done-when of #72). `play` shows the scenario's opening, takes
+one input per turn, shows the narration or the request to rephrase, and stops on
+`/quit` or end of input with every turn in the audit log. `run` is the one
+entry point for every condition (the done-when of #78).
 
 No test calls a model: `connect` is replaced by a fake client.
 
@@ -11,14 +12,15 @@ Run: pytest tests/test_cli.py -v
 import json
 from collections.abc import Sequence
 from contextlib import nullcontext
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
 from adm import cli
-from adm.engine.audit import log_path, read_log
-from adm.engine.scenario import load_scenario
+from adm.engine.audit import AuditLog, log_path, read_log
+from adm.engine.scenario import Scenario, ScriptedInput, load_scenario
 from adm.orchestration.client import Message, ModelReply, ModelUnavailable, Phase
 from adm.orchestration.loop import REPHRASE
 
@@ -148,12 +150,90 @@ def test_run_plays_every_scripted_input(monkeypatch: pytest.MonkeyPatch, tmp_pat
     assert f"{total} turns" in output
 
 
+def _never_connect(config: object) -> None:
+    raise AssertionError("the model must not be loaded for a refused condition")
+
+
+@pytest.mark.parametrize("condition", ["A", "B", "C"])
 def test_run_refuses_a_condition_that_is_not_wired(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, condition: str
+) -> None:
+    monkeypatch.setattr(cli, "HARNESSES", {"D": cli.HARNESSES["D"]})
+    monkeypatch.setattr(cli, "connect", _never_connect)
+    args = ["run", "--scenario", str(SCENARIO_PATH), "--seed", str(SEED), "--runs", str(tmp_path)]
+    result = CliRunner().invoke(cli.app, [*args, "--condition", condition])
+    assert result.exit_code == 2
+    assert "not wired yet" in " ".join(result.output.split())
+    assert not any(tmp_path.iterdir()), "no log is created for a refused condition"
+
+
+def test_run_refuses_an_unknown_condition(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(cli, "connect", _never_connect)
+    args = ["run", "--scenario", str(SCENARIO_PATH), "--seed", str(SEED), "--runs", str(tmp_path)]
+    result = CliRunner().invoke(cli.app, [*args, "--condition", "E"])
+    assert result.exit_code == 2
+    assert "Unknown condition E" in " ".join(result.output.split())
+    assert not any(tmp_path.iterdir())
+
+
+# --- the common runner (WBS 7.4) ----------------------------------------------
+
+
+@dataclass(frozen=True)
+class _Turn:
+    record: dict
+    message: str
+
+
+class FakeHarness:
+    """Another condition's harness, registered as A to C will be (WBS 7.1 to
+    7.3). It logs nothing; it records what the runner gave it."""
+
+    started: list["FakeHarness"] = []
+
+    def __init__(
+        self,
+        client: object,
+        config: object,
+        texts: object,
+        scenario: Scenario,
+        log: AuditLog,
+        *,
+        seed: int,
+    ) -> None:
+        self.client, self.scenario, self.log, self.seed = client, scenario, log, seed
+        self.played: list[tuple[str, int | None, ScriptedInput | None]] = []
+        FakeHarness.started.append(self)
+
+    def play(
+        self,
+        player_input: str,
+        *,
+        input_index: int | None = None,
+        scripted: ScriptedInput | None = None,
+    ) -> _Turn:
+        self.played.append((player_input, input_index, scripted))
+        return _Turn({"turn_failure": None}, player_input)
+
+
+def test_another_condition_runs_through_the_same_entry_point(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    code, output = _run(monkeypatch, tmp_path, LookingClient(), "--condition", "A")
-    assert code == 2
-    assert "not wired yet" in output
+    """The done-when of #78: a harness registered for A is run by `run` exactly
+    as condition D is, with no other change to the CLI."""
+    FakeHarness.started.clear()
+    client = LookingClient()
+    monkeypatch.setattr(cli, "HARNESSES", {**cli.HARNESSES, "A": FakeHarness})
+    code, output = _run(monkeypatch, tmp_path, client, "--condition", "A")
+
+    assert code == 0, output
+    (harness,) = FakeHarness.started
+    assert harness.client is client and harness.seed == SEED
+    assert harness.log.path == log_path(tmp_path, "A", SCENARIO.scenario_id, SEED)
+    inputs = SCENARIO.scripted_inputs
+    assert harness.played == [(s.text, i, s) for i, s in enumerate(inputs)]
+    total = len(inputs)
+    assert f"input {total}/{total}: ok" in output
     assert not log_path(tmp_path, "D", SCENARIO.scenario_id, SEED).exists()
 
 

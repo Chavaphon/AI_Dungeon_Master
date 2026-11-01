@@ -2,7 +2,8 @@
 one player input at a time, typed by a person or taken from the scenario script.
 
 `new_run_log` opens the run's audit log, and refuses one that already exists
-for the same `(scenario_id, seed)`, so two sessions never share a run id.
+for the same `(condition, scenario_id, seed)`, so two sessions never share a
+run id.
 `Session.start` builds the turn-0 state from the scenario and the run's one
 `DiceRoller`.
 
@@ -31,6 +32,15 @@ executed with the scenario's `dc` and advantage. `proposed_calls` and
 `executed_call` keep the model's call, so its `dc` is logged, and the result's
 `narration_facts` carry the DC that was rolled against (docs/decisions.md,
 WBS 6.11).
+
+Every condition is played through the same runner (WBS 7.4). A condition's
+harness is anything that satisfies `Harness`: it holds the scenario and the
+run's audit log, and `play` takes one input, with the scripted input and its
+`input_index` passed the same way in every condition (invariant 7), and returns
+the `PlayedTurn` it logged. `HarnessStart` builds one; `Session.start` is
+condition D's. The A to C harnesses (WBS 7.1 to 7.3) implement the same pair
+and are registered in the composition root (`adm/cli.py`), so `run_script` and
+the CLI never branch on the condition (docs/conventions.md section 1).
 """
 
 from __future__ import annotations
@@ -38,6 +48,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Protocol
 
 from adm.engine.audit import AuditLog, Step
 from adm.engine.dice import DiceRoller
@@ -47,7 +58,6 @@ from adm.engine.tools import after_call, dispatch, increment_turn, open_encounte
 from adm.engine.validator import ToolCall
 from adm.orchestration.client import ModelClient, ModelConfig
 from adm.orchestration.loop import (
-    CONDITION,
     FailedTurn,
     NarratedTurn,
     TurnTimer,
@@ -63,9 +73,52 @@ class RunExists(FileExistsError):
     """A session would append to the audit log of an earlier run."""
 
 
-def new_run_log(runs_dir: Path, scenario_id: str, seed: int) -> AuditLog:
-    """The audit log of a new condition D run, which must not exist yet."""
-    log = AuditLog(runs_dir, CONDITION, scenario_id, seed)
+class PlayedTurn(Protocol):
+    """A turn as written to the audit log, and what the player is shown."""
+
+    @property
+    def record(self) -> Doc: ...
+
+    @property
+    def message(self) -> str: ...
+
+
+class Harness(Protocol):
+    """One run of one condition: plays inputs and logs every turn."""
+
+    @property
+    def scenario(self) -> Scenario: ...
+
+    @property
+    def log(self) -> AuditLog: ...
+
+    def play(
+        self,
+        player_input: str,
+        *,
+        input_index: int | None = None,
+        scripted: ScriptedInput | None = None,
+    ) -> PlayedTurn: ...
+
+
+class HarnessStart(Protocol):
+    """Builds a condition's harness for a new run on a loaded model."""
+
+    def __call__(
+        self,
+        client: ModelClient,
+        config: ModelConfig,
+        texts: Mapping[str, str],
+        scenario: Scenario,
+        log: AuditLog,
+        *,
+        seed: int,
+    ) -> Harness: ...
+
+
+def new_run_log(runs_dir: Path, condition: str, scenario_id: str, seed: int) -> AuditLog:
+    """The audit log of a new run, which must not exist yet."""
+    log = AuditLog(runs_dir, condition, scenario_id, seed)
     if log.path.exists():
         raise RunExists(f"{log.path} already exists; choose another seed or move it")
     return log
@@ -205,15 +258,15 @@ class Session:
 
 
 def run_script(
-    session: Session,
-    on_turn: Callable[[int, NarratedTurn | FailedTurn], None] | None = None,
-) -> list[NarratedTurn | FailedTurn]:
-    """Play every scripted input of the session's scenario, in order, calling
+    harness: Harness,
+    on_turn: Callable[[int, PlayedTurn], None] | None = None,
+) -> list[PlayedTurn]:
+    """Play every scripted input of the harness's scenario, in order, calling
     `on_turn` after each. A failed turn is logged and the run takes the next
     input (CLAUDE.md section 7.1)."""
-    turns: list[NarratedTurn | FailedTurn] = []
-    for index, scripted in enumerate(session.scenario.scripted_inputs):
-        turn = session.play(scripted.text, input_index=index, scripted=scripted)
+    turns: list[PlayedTurn] = []
+    for index, scripted in enumerate(harness.scenario.scripted_inputs):
+        turn = harness.play(scripted.text, input_index=index, scripted=scripted)
         turns.append(turn)
         if on_turn is not None:
             on_turn(index, turn)
