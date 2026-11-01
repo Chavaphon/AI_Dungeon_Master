@@ -1,0 +1,23 @@
+AI Dungeon Master
+Copyright (c) 2026 Chavaphon Intarasuriyawong, Shayanis Siribenjawong and Sudakarn Donloei
+Released under the MIT License (see LICENSE).
+
+System Reference Document 5.1
+-----------------------------
+This work includes material taken from the System Reference Document 5.1
+("SRD 5.1") by Wizards of the Coast LLC and available at
+https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is
+licensed under the Creative Commons Attribution 4.0 International License
+available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
+The game's rules are a small, simplified subset adapted from the SRD 5.1
+(CLAUDE.md section 4). They are not compatible with, and are not described as,
+Dungeons & Dragons 5th edition. No other Wizards of the Coast material is used.
+
+Llama 3.1
+---------
+Built with Llama. The narrator runs Meta's Llama 3.1 8B model locally through
+Ollama. Llama 3.1 is licensed under the Llama 3.1 Community License,
+Copyright (c) Meta Platforms, Inc. All Rights Reserved. The model weights are
+not included in or redistributed by this repository; each user downloads them
+with `ollama pull llama3.1:8b` under Meta's licence.

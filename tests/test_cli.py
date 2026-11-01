@@ -67,9 +67,12 @@ def test_a_session_is_played_end_to_end(monkeypatch: pytest.MonkeyPatch, tmp_pat
     code, output = _play(monkeypatch, tmp_path, client, keys)
 
     assert code == 0, output
-    assert SCENARIO.display_name in output
+    assert f"{SCENARIO.display_name} {cli.AI_LABEL}" in output, "the title carries the AI label"
     assert SCENARIO.opening_narration in output
     assert NARRATION in output, "narration is printed as written, brackets included"
+    line = cli.result_lines(_records(tmp_path)[0])[0]
+    assert line.startswith("Lyra perception check:") and "vs DC 12" in line
+    assert output.index(line) < output.index(NARRATION), "the result line comes first"
     assert REPHRASE in output
     records = _records(tmp_path)
     assert [r["player_input"] for r in records] == ["I look around the cellar", "mumble"]
@@ -266,3 +269,62 @@ def test_smoke_plays_a_manifest_and_writes_the_summary(
     assert [r["seed"] for r in summary["runs"]] == [1, 2]
     assert all(r["complete"] for r in summary["runs"])
     assert summary["model_digest"]
+
+
+# ---------------------------------------------------------------------------
+# Result lines (ideation form section 3.vi): one line per mechanical outcome,
+# read from the audit record, shown before the narration.
+# ---------------------------------------------------------------------------
+
+EXAMPLES = ROOT / "schemas" / "examples"
+
+
+def _example(name: str) -> dict:
+    return json.loads((EXAMPLES / f"{name}.json").read_text(encoding="utf-8"))
+
+
+@pytest.mark.parametrize(
+    ("example", "line"),
+    [
+        (
+            "result_attack",
+            "Lyra -> giant rat (short sword): 17 vs AC 12, hit, 7 damage; giant rat 4/11 HP",
+        ),
+        (
+            "result_cast_spell_fire_bolt",
+            "Lyra -> giant rat (Fire Bolt): 13 vs AC 12, disadvantage, hit, 7 damage; "
+            "giant rat 4/11 HP",
+        ),
+        (
+            "result_cast_spell_cure_wounds",
+            "Lyra -> Lyra (Cure Wounds): +6 HP; Lyra 20/20 HP; 1 slot(s) left",
+        ),
+        ("result_dodge", "Lyra dodges"),
+        ("result_skill_check", "Lyra perception check: 12 vs DC 12, success"),
+        ("result_modify_inventory", "Lyra -1 torch (now 1)"),
+        ("result_update_npc_relationship", "the Keeper: neutral -> friendly"),
+        ("result_update_quest", "Quest The Missing Ledger: active -> active (stage 3/3)"),
+    ],
+)
+def test_every_tool_has_a_result_line(example: str, line: str) -> None:
+    result = _example(example)
+    record = {"engine_steps": [], "validation": [result], "executed_call": {"tool": result["tool"]}}
+    assert cli.result_lines(record) == [line]
+
+
+def test_result_lines_follow_the_order_of_the_turn() -> None:
+    record = _example("audit_turn_valid")
+    lines = cli.result_lines(record)
+    assert len(lines) == 3, "the player's attack, then the two NPC attacks after it"
+    assert lines[0].startswith("Lyra -> giant rat (short sword)")
+    assert all(line.startswith("giant rat -> Lyra (bite)") for line in lines[1:])
+
+
+def test_a_failed_turn_has_no_player_result_line() -> None:
+    assert cli.result_lines(_example("audit_turn_rejected")) == []
+
+
+def test_result_lines_are_display_only(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    _play(monkeypatch, tmp_path, FakeClient(LOOK), "I look around\n")
+    line = cli.result_lines(_records(tmp_path)[0])[0]
+    assert line not in log_path(tmp_path, "D", SCENARIO.scenario_id, SEED).read_text("utf-8")

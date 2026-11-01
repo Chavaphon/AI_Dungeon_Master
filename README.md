@@ -1,5 +1,35 @@
 # AI_Dungeon_Master
 
+A text-based Dungeon Master for a small D&D-style game, played alone in a terminal. A local language model narrates; a deterministic rules engine owns the game state and resolves every roll, so the story cannot invent items or forget damage. It is for people who want to play D&D alone or do not know how to start. Built with Llama.
+
+## Playing the game
+
+You need Python 3.11, [Ollama](https://ollama.com) 0.35.1 and a GPU with about 8 GB of memory (the model is `llama3.1:8b` at Q4_K_M; `config/model.json` pins the exact version). Nothing is sent to the internet while you play.
+
+```bash
+ollama pull llama3.1:8b
+python -m venv .venv
+source .venv/bin/activate        # Windows PowerShell: .venv\Scripts\Activate.ps1
+pip install -e .
+python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
+```
+
+The title is labelled **Narrated by AI**. Type what your character does in plain English, for example `I draw my sword and attack the nearest rat`. Each turn first shows a result line for every roll the engine made (hit or miss, damage, hit points), then the narration. `/quit`, Ctrl+C or end of input ends the session. The sixteen scenarios are in `scenarios/`; any seed works, but each `(scenario, seed)` can be played once per log folder.
+
+### Sponsor User sessions
+
+Friends who try development builds play into their own folder, so their sessions never mix with the experiment data in `runs/`:
+
+```bash
+python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345 --runs sponsor_runs
+```
+
+`sponsor_runs/` is gitignored and is never uploaded or scored. This is informal feedback, not a study (CLAUDE.md §14).
+
+## Licence
+
+Code, scenarios and released data are under the MIT License (`LICENSE`). The rules are adapted from the System Reference Document 5.1 under CC-BY-4.0, and the model is used under the Llama 3.1 Community License; see `NOTICE`.
+
 ## Shared storage
 
 Run artefacts and transcripts do not go in git: `runs/` and `results/` are gitignored (CLAUDE.md §3). The team copy lives in one Google Drive folder on the KMUTT account (WBS 1.5):

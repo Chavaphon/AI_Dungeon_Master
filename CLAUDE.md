@@ -603,6 +603,7 @@ Narrate in the second person, present tense. Keep each reply to 2-4 sentences.
 Describe only what the player character could perceive.
 Do not speak or act for the player character.
 Do not use headings, lists, or dice notation in narration.
+Keep violence non-graphic and suitable for players aged 8 and up.
 ```
 
 **A — `a.txt`** — preamble only, then the conversation.
@@ -719,6 +720,21 @@ Validate the checker against 30 hand-labelled turns before using it. Record prec
 | M6 | Latency and throughput | Mean and p95 seconds per turn (`turn_latency_ms`), tokens per second (`completion_tokens / eval_ms` per model call) |
 
 Inter-rater agreement: Krippendorff's alpha on a 20% double-scored overlap. Target `>= 0.6`.
+
+### 10.5 Targets and analysis, fixed before scoring
+
+Recorded before any main run is scored (`docs/decisions.md`, 2026-11-01, ideation form). Changing them after scoring starts needs a new decision-log entry that says so.
+
+| ID | Statement | Test |
+|---|---|---|
+| H1 | Condition D has at least 50% fewer confirmed divergences per 100 turns than condition A | The D/A ratio of M1 is at most 0.5 and its 95% interval excludes 1 |
+| H2 | Condition D's narrative quality is no worse than condition A's | The 95% interval of the D minus A difference in mean M5 score, reported per item |
+| — | p95 latency under 10 s per turn in condition D | M6 on the main grid |
+
+- **Grid.** 16 scenarios × 4 conditions × 3 seeds (2001, 2002, 2003), the same seeds in every cell: 192 runs, about 6,100 turns.
+- **Intervals.** Every 95% interval is a percentile bootstrap that resamples whole runs, 10,000 resamples, stratified by condition. The bootstrap's own RNG is seeded and lives in `adm/eval`, never in `engine` or `orchestration` (invariant 3 is about game dice).
+- **RQ2.** The slope of divergences per turn against turn number, per condition, with a bootstrap interval; the long sessions carry it.
+- **RQ3.** H2's difference, per M5 item.
 
 ---
 
@@ -855,7 +871,7 @@ Building any of these is scope creep and costs someone else their week.
 - Retrieval-augmented generation over lore documents.
 - Fine-tuning, LoRA, quantisation experiments.
 - A graphical or web client, including a FastAPI page. Text CLI only.
-- Human-participant studies. The player study was withdrawn.
+- Human-participant studies. The player study was withdrawn. Sponsor Users (five friends) play development builds and give informal feedback only; their sessions are logged to `sponsor_runs/`, never to `runs/`, and are never used as data.
 
 ---
 
@@ -946,6 +962,14 @@ Added at WBS 6.9 (reasons in `docs/decisions.md`):
 
 40. The safety filter removes each narration sentence that holds a term from a fixed lexicon of out-of-genre content (sexual content, self-harm); combat violence is not filtered. If nothing is left, the player sees a fixed fallback line. It is deterministic and the same in every condition.
 41. A filtered turn is still narrated, played and logged: `narration` is the filtered text, `narration_filtered` is true exactly when it differs from the narration reply, and the reply stays in `raw_output`. Divergence is scored on `narration`.
+
+Added at the ideation-form alignment (reasons in `docs/decisions.md`, 2026-11-01):
+
+42. Interactive play labels the title "Narrated by AI" and shows one result line per mechanical outcome before the narration. The lines are read from the turn's audit record and are display only: they are never logged or sent to the model.
+43. The shared preamble (§9.1) keeps violence non-graphic and suitable for players aged 8 and up.
+44. Sponsor User sessions are played with `--runs sponsor_runs/` (gitignored) and never touch `runs/`.
+45. Code, scenarios and released data are under the MIT License (`LICENSE`); the SRD 5.1 attribution and the Llama 3.1 notice are in `NOTICE`.
+46. H1, H2, the latency target, the three seeds and the bootstrap analysis are fixed before scoring (§10.5).
 
 ## 16. Open questions for the team
 
