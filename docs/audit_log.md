@@ -68,6 +68,7 @@ The top-level `state_diff` is the `before_call` steps, then the executed result'
 - `narration_only` is true exactly when a condition D turn ends on `{"tool": null}`.
 - `state_diff` and `rolls` are the steps and the result in order (§2). The hashes are equal exactly when `state_diff` is empty.
 - One narration call per turn, none on a failed turn. `summary_regenerated` matches the summary call and the `summary` field.
+- `narration_filtered` is true exactly when `narration` differs from the narration call's `raw_output`, stripped, so a turn the safety filter changed is always flagged. It is false on a failed turn, which has no narration call (WBS 6.9).
 - `turn_latency_ms` is at least the sum of the model calls' `latency_ms`, and each call's `eval_ms` is at most its `latency_ms`.
 
 ## 4. Open points for the 2.6 review

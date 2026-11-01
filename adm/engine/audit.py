@@ -23,7 +23,8 @@ or the rules the schema cannot express (`record_errors`, docs/audit_log.md secti
 and synced before `append` returns, so a run that dies keeps every turn it wrote.
 The record is written as given, in compact JSON; the timings in it come from
 orchestration (docs/conventions.md section 2). `turn_failure_counts` counts a
-log's failed turns by kind (WBS 6.5).
+log's failed turns by kind (WBS 6.5), and `filtered_turn_count` its turns whose
+narration the safety filter changed (WBS 6.9).
 """
 
 from __future__ import annotations
@@ -265,6 +266,9 @@ def record_errors(record: Doc) -> list[str]:
     narration_calls = phases.count("narration")
     if narration_calls != (0 if failure else 1):
         errors.append(f"{narration_calls} narration calls for this turn")
+    replies = [c["raw_output"].strip() for c in record["model_calls"] if c["phase"] == "narration"]
+    if record["narration_filtered"] != (bool(replies) and record["narration"] != replies[0]):
+        errors.append("narration_filtered does not match whether narration differs from the reply")
     summary_calls = phases.count("summary")
     if not (summary_calls <= 1 and record["summary_regenerated"] == bool(summary_calls)):
         errors.append("summary_regenerated does not match the summary calls")
@@ -331,3 +335,9 @@ def turn_failure_counts(records: Sequence[Doc]) -> Counter[str]:
     """How many turns failed, by `turn_failure` kind (CLAUDE.md section 7.1:
     turn failures are a reported metric)."""
     return Counter(r["turn_failure"] for r in records if r["turn_failure"] is not None)
+
+
+def filtered_turn_count(records: Sequence[Doc]) -> int:
+    """How many turns the safety filter changed (WBS 6.9: filtered turns are
+    counted, never silently dropped)."""
+    return sum(1 for r in records if r["narration_filtered"])

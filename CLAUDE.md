@@ -942,6 +942,11 @@ Added at WBS 6.11 (reasons in `docs/decisions.md`):
 38. A scripted skill check is validated with the model's `dc` and executed with the scenario's `dc` and `check_advantage`, only when the input's `expected_call` is also a skill check.
 39. A smoke run is complete when nothing raised and its log holds one record per scripted input; failed turns do not make it incomplete.
 
+Added at WBS 6.9 (reasons in `docs/decisions.md`):
+
+40. The safety filter removes each narration sentence that holds a term from a fixed lexicon of out-of-genre content (sexual content, self-harm); combat violence is not filtered. If nothing is left, the player sees a fixed fallback line. It is deterministic and the same in every condition.
+41. A filtered turn is still narrated, played and logged: `narration` is the filtered text, `narration_filtered` is true exactly when it differs from the narration reply, and the reply stays in `raw_output`. Divergence is scored on `narration`.
+
 ## 16. Open questions for the team
 
 Do not resolve these alone.
