@@ -91,7 +91,7 @@ Each is condition D, using the long sessions and short scenarios in `scenarios/`
 
 ## 5. Recording and reporting
 
-The tool (8.15) writes one line per scored turn to `results/m3_intent.jsonl` (gitignored, §3):
+The tool (8.15, `python -m adm.eval.annotate m3 --annotator <initials>`) writes one line per scored turn to `results/m3_intent.jsonl` (gitignored, §3):
 
 ```json
 {"run_id": "D_s09_harvest_fair_12345", "input_index": 5, "annotator": "CI",

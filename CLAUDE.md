@@ -72,6 +72,10 @@ python -m adm.cli batch --manifest experiments/main_grid.json
 
 # score transcripts
 python -m adm.eval.checker --runs runs/ --out results/automated.jsonl
+
+# blind annotation: M5 ratings and the M3 intent-fidelity sample (resumable)
+python -m adm.eval.annotate m5 --rater SS
+python -m adm.eval.annotate m3 --annotator CI
 ```
 
 ### 2.1 Dependencies
@@ -970,6 +974,10 @@ Added at the ideation-form alignment (reasons in `docs/decisions.md`, 2026-11-01
 44. Sponsor User sessions are played with `--runs sponsor_runs/` (gitignored) and never touch `runs/`.
 45. Code, scenarios and released data are under the MIT License (`LICENSE`); the SRD 5.1 attribution and the Llama 3.1 notice are in `NOTICE`.
 46. H1, H2, the latency target, the three seeds and the bootstrap analysis are fixed before scoring (§10.5).
+
+Added at WBS 8.15 (reasons in `docs/decisions.md`):
+
+47. The annotation tool (`adm/eval/annotate.py`) covers M5 and M3. M3 shows the state the tool-call prompt saw, rebuilt from the log and checked against its state hashes; a re-rating replaces the earlier line and needs a note.
 
 ## 16. Open questions for the team
 

@@ -121,4 +121,4 @@ If rating falls behind, as R5 defines, both raters rate the 48 short-scenario ex
 ## 8. Open points for the Week 5 checkpoint
 
 1. **Five exchanges per excerpt and 64 excerpts** are a proposal, sized to the 4 hours of 9.8 and 9.9. A few can be timed on the 7.7 dry-run transcripts before rating starts, and the window can shrink to four exchanges if 3.5 minutes is optimistic.
-2. **The annotation tool (8.15, CI)** shows the excerpts and writes `results/m5_ratings.jsonl`. It needs §3 and §5 from this form.
+2. **The annotation tool (8.15, CI)** shows the excerpts and writes `results/m5_ratings.jsonl`. It needs §3 and §5 from this form. Done: `python -m adm.eval.annotate m5 --rater <initials>` (`docs/decisions.md`, 2026-11-02).
