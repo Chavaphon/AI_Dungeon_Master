@@ -12,7 +12,7 @@ Run: pytest tests/test_cli.py -v
 import json
 from collections.abc import Sequence
 from contextlib import nullcontext
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
@@ -348,3 +348,86 @@ def test_result_lines_are_display_only(monkeypatch: pytest.MonkeyPatch, tmp_path
     _play(monkeypatch, tmp_path, FakeClient(LOOK), "I look around\n")
     line = cli.result_lines(_records(tmp_path)[0])[0]
     assert line not in log_path(tmp_path, "D", SCENARIO.scenario_id, SEED).read_text("utf-8")
+
+
+# --- batch: the main grid, resumable (WBS 7.6) ---------------------------------
+
+
+class RetryingClient(LookingClient):
+    """A LookingClient whose first reply took one transport retry."""
+
+    retried = False
+
+    def chat(self, messages: Sequence[Message], *, phase: Phase, seed: int) -> ModelReply:
+        reply = super().chat(messages, phase=phase, seed=seed)
+        retries, self.retried = (0 if self.retried else 1), True
+        return replace(reply, transport_retries=retries)
+
+
+def _batch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, clients: Sequence[FakeClient]
+) -> tuple[int, str, list[FakeClient]]:
+    supply = iter(clients)
+    used: list[FakeClient] = []
+
+    def connect(config: object) -> nullcontext:
+        used.append(next(supply))
+        return nullcontext(used[-1])
+
+    monkeypatch.setattr(cli, "connect", connect)
+    manifest = tmp_path / "grid.json"
+    doc = {"scenarios": [str(SCENARIO_PATH)], "conditions": ["A", "D"], "seeds": [SEED]}
+    manifest.write_text(json.dumps(doc), encoding="utf-8")
+    args = ["batch", "--manifest", str(manifest), "--runs", str(tmp_path / "runs")]
+    args += ["--ledger", str(tmp_path / "attempts.jsonl")]
+    result = CliRunner().invoke(cli.app, args)
+    return result.exit_code, " ".join(result.output.split()), used
+
+
+def test_batch_plays_every_run_and_resumes_with_nothing_to_do(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    code, output, used = _batch(monkeypatch, tmp_path, [LookingClient(), LookingClient()])
+    assert code == 0, output
+    assert len(used) == 2, "one fresh load per run"
+    for condition in ("A", "D"):
+        records = read_log(log_path(tmp_path / "runs", condition, SCENARIO.scenario_id, SEED))
+        assert [r["input_index"] for r in records] == list(range(len(SCENARIO.scripted_inputs)))
+        assert {r["condition"] for r in records} == {condition}
+    assert "2/2 runs complete" in output
+
+    code, output, used = _batch(monkeypatch, tmp_path, [])
+    assert code == 0, output
+    assert used == [], "a complete run is not played again"
+    assert "0 attempts played" in output
+
+
+def test_batch_plays_a_run_again_after_a_transport_retry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    clients = [RetryingClient(), LookingClient(), LookingClient()]
+    code, output, used = _batch(monkeypatch, tmp_path, clients)
+    assert code == 0, output
+    assert len(used) == 3
+    ledger = read_log(tmp_path / "attempts.jsonl")
+    assert [e["outcome"] for e in ledger] == ["tainted", "complete", "complete"]
+    assert ledger[0]["transport_retries"] == 1
+    assert ledger[0]["model_digest"]
+
+
+def test_batch_stops_when_the_server_is_down(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def connect(config: object) -> None:
+        raise ModelUnavailable("connection refused")
+
+    monkeypatch.setattr(cli, "connect", connect)
+    manifest = tmp_path / "grid.json"
+    doc = {"scenarios": [str(SCENARIO_PATH)], "conditions": ["D"], "seeds": [SEED]}
+    manifest.write_text(json.dumps(doc), encoding="utf-8")
+    args = ["batch", "--manifest", str(manifest), "--runs", str(tmp_path / "runs")]
+    result = CliRunner().invoke(cli.app, [*args, "--ledger", str(tmp_path / "l.jsonl")])
+    output = " ".join(result.output.split())
+    assert result.exit_code == 1, output
+    assert "Stopped: ModelUnavailable: connection refused" in output
+    assert "0/1 runs complete" in output

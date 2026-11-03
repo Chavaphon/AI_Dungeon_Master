@@ -332,6 +332,12 @@ def read_log(path: Path) -> list[Doc]:
         return [json.loads(line) for line in log]
 
 
+def covers_script(records: Sequence[Doc], inputs: int) -> bool:
+    """The log of a scripted run holds exactly one record per scripted input, in
+    order (docs/decisions.md, WBS 6.11). A failed turn still covers its input."""
+    return [r["input_index"] for r in records] == list(range(inputs))
+
+
 def turn_failure_counts(records: Sequence[Doc]) -> Counter[str]:
     """How many turns failed, by `turn_failure` kind (CLAUDE.md section 7.1:
     turn failures are a reported metric)."""
