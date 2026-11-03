@@ -1,0 +1,16 @@
+{
+  "description": "WBS 7.7 dry run (gate G3): one short and one long scenario x 4 conditions x seed 3001, outside the main grid's seeds so the 8.11 rubric pilot never sees a main-grid transcript. 8 runs, 312 scripted inputs. Played into runs/dry_run/.",
+  "scenarios": [
+    "scenarios/s01_cellar.json",
+    "scenarios/long01_border_road.json"
+  ],
+  "conditions": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "seeds": [
+    3001
+  ]
+}

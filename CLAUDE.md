@@ -70,6 +70,10 @@ python -m adm.cli smoke --manifest experiments/smoke_grid.json
 # run the full experiment grid (unattended, resumable)
 python -m adm.cli batch --manifest experiments/main_grid.json
 
+# the four-condition dry run, gate G3, and validating its logs
+python -m adm.cli batch --manifest experiments/dry_run.json --runs runs/dry_run --ledger results/dry_run/attempts.jsonl
+python -m adm.eval.validate --runs runs/dry_run --manifest experiments/dry_run.json
+
 # score transcripts
 python -m adm.eval.checker --runs runs/ --out results/automated.jsonl
 
@@ -151,6 +155,7 @@ adm/
     bands.py          # HP band lexicon and classification
     metrics.py        # M1-M6 computation
     annotate.py       # blind, condition-shuffled annotation CLI
+    validate.py       # run logs: schema, script coverage, hash replay
   cli.py
 config/
   model.json
@@ -1001,6 +1006,10 @@ Added at WBS 8.6 (reasons in `docs/decisions.md`):
 Added at WBS 7.6 (reasons in `docs/decisions.md`):
 
 52. The batch runner plays a manifest's runs seed by seed, scenario by scenario, condition by condition, one at a time on a freshly loaded model. A run is written under `runs/pending/` and moved into `runs/` only when it covers every scripted input with no transport retry; anything partial or tainted is moved to `runs/aborted/` and played again from the start, at most 3 attempts per invocation. A model error on the last attempt, or a version or digest mismatch, stops the batch; running the command again resumes it.
+
+Added at WBS 7.7 (reasons in `docs/decisions.md`):
+
+53. The dry run is `s01_cellar` and `long01_border_road` under A–D at seed 3001, a seed no main or smoke run uses, logged to `runs/dry_run/`. A log is valid when every record passes the audit schema and `record_errors`, matches its path, covers its script with the scripted text, and its state hashes replay (`adm/eval/validate.py`).
 
 ## 16. Open questions for the team
 
