@@ -593,7 +593,7 @@ Four conditions. They must differ **only** as described. Any other difference is
 
 Conditions A–C produce narration only, in a single model call. There is no tool phase and no state mutation; the state file, where present, is read-only context. Condition D is the full two-call loop.
 
-For A–C, the "state" used for scoring is the state the *scenario script* says should hold at that turn, computed by replaying the scripted inputs (their `expected_call`s) through the engine offline with the same seed. This is the ground truth the narration is compared against, and both state hashes in an A–C turn record are this replayed state.
+For A–C, the "state" used for scoring is the state the *scenario script* says should hold at that turn, computed by replaying the scripted inputs (their `expected_call`s) through the engine offline with the same seed. This is the ground truth the narration is compared against, and both state hashes in an A–C turn record are this replayed state. The replay harness (`replay_script` in `adm/engine/replay.py`) computes it: each input proposes its `expected_call` and is played as a scripted condition D turn, so a rejected call is a failed turn that does not advance.
 
 ### 9.1 Prompt templates
 
@@ -978,6 +978,10 @@ Added at the ideation-form alignment (reasons in `docs/decisions.md`, 2026-11-01
 Added at WBS 8.15 (reasons in `docs/decisions.md`):
 
 47. The annotation tool (`adm/eval/annotate.py`) covers M5 and M3. M3 shows the state the tool-call prompt saw, rebuilt from the log and checked against its state hashes; a re-rating replaces the earlier line and needs a note.
+
+Added at WBS 4.18 (reasons in `docs/decisions.md`):
+
+48. The replay harness plays each scripted input's `expected_call` (`{"tool": null}` when it is null) through the engine with the run's one `DiceRoller`, as a scripted condition D turn: a rejected call is a failed turn, a null call is narration-only. It is the A–C ground truth, and two replays of one seed are byte-identical.
 
 ## 16. Open questions for the team
 

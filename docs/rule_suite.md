@@ -124,5 +124,5 @@ CLAUDE.md §13 asks for three more things "separately". They are evidenced by th
 | Requirement | Where | Status |
 |---|---|---|
 | Every rejection code in §6.3 reachable by a test | `tests/engine/test_preconditions.py::test_every_rejection_code_is_reachable` (WBS 5.2) | Passing |
-| Replay of one seed gives identical state hashes | WBS 4.18, the replay harness | Not built yet (due 3 Nov) |
+| Replay of one seed gives identical state hashes | `tests/engine/test_replay.py::test_two_replays_of_one_seed_are_byte_identical` and `tests/orchestration/test_session.py::test_two_runs_of_one_seed_are_identical_apart_from_the_timings` (WBS 4.18) | Passing |
 | Parser tested against at least 20 recorded malformed outputs | `tests/orchestration/test_parser.py::test_at_least_twenty_recorded_malformed_outputs` (WBS 6.3) | Passing |

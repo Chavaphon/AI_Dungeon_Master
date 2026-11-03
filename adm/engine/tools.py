@@ -34,7 +34,11 @@ which checks the whole turn's diff once more.
 
 A skill check's advantage comes from the scenario (`check_advantage`), not from
 a call argument, so `dispatch` takes it as a keyword. It is ignored for the
-other tools.
+other tools. `dispatch_scripted` is `dispatch` for a call made on a scripted
+input: a skill check the script also expects runs with the scenario's `dc` and
+`check_advantage` (CLAUDE.md section 4.7, decision 38). A scripted condition D
+session and the replay harness (adm/engine/replay.py) both use it, so the two
+cannot disagree about a scripted DC.
 """
 
 from __future__ import annotations
@@ -50,6 +54,7 @@ from adm.engine.inventory import modify_inventory
 from adm.engine.npc import after_player_action, run_npc_turns
 from adm.engine.quests import update_quest
 from adm.engine.relationships import update_npc_relationship
+from adm.engine.scenario import ScriptedInput
 from adm.engine.spells import FIRE_BOLT, cure_wounds, fire_bolt
 from adm.engine.state import GameState, check_state
 from adm.engine.validator import Rejection, validate
@@ -152,6 +157,28 @@ def dispatch(
         lambda outcome: outcome["state_diff"],
     )
     return {"ok": True, "tool": checked.tool, **outcome}
+
+
+def dispatch_scripted(
+    state: GameState, roller: DiceRoller, call: Doc, scripted: ScriptedInput | None
+) -> Doc:
+    """`dispatch` for `call`, the JSON form of a call proposed on `scripted`. If
+    both are skill checks, the call runs with the scenario's `dc` and advantage."""
+    expected = scripted.expected_call if scripted is not None else None
+    if (
+        scripted is None
+        or expected is None
+        or expected["tool"] != "skill_check"
+        or call["tool"] != "skill_check"
+    ):
+        return dispatch(state, roller, call)
+    arguments = {**call["arguments"], "dc": expected["arguments"]["dc"]}
+    return dispatch(
+        state,
+        roller,
+        {**call, "arguments": arguments},
+        check_advantage=scripted.check_advantage or "normal",
+    )
 
 
 def open_encounter(

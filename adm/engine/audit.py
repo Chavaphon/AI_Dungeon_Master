@@ -178,7 +178,8 @@ def schema_errors(record: Doc) -> list[str]:
     return [f"{e.json_path}: {e.message}" for e in errors]
 
 
-def _failure_kind(entry: Doc) -> str:
+def failure_kind(entry: Doc) -> str:
+    """The `turn_failure` kind a failed validation entry gives (CLAUDE.md section 7.1)."""
     if entry.get("failure") == "unparseable":
         return "unparseable"
     return FAILURE_KIND.get(entry.get("rejection_code", ""), "precondition")
@@ -231,7 +232,7 @@ def record_errors(record: Doc) -> list[str]:
     if failure is not None:
         if last is None or last["ok"] or len(validation) != RETRY_BUDGET + 1:
             errors.append("turn_failure without an exhausted retry budget")
-        elif failure != _failure_kind(last):
+        elif failure != failure_kind(last):
             errors.append(f"turn_failure {failure} does not match the last attempt")
         if any(s["when"] == "after_call" for s in record["engine_steps"]):
             errors.append("a failed turn has after_call steps")
