@@ -146,6 +146,7 @@ adm/
     loop.py           # the turn loop, failure pipeline, retry budget
   eval/
     checker.py        # automated divergence + rule violation detection
+    entities.py       # entity-mention extraction: PHANTOM candidates
     bands.py          # HP band lexicon and classification
     metrics.py        # M1-M6 computation
     annotate.py       # blind, condition-shuffled annotation CLI
@@ -991,6 +992,10 @@ Added at WBS 7.1 (reasons in `docs/decisions.md`):
 Added at WBS 7.5 (reasons in `docs/decisions.md`):
 
 50. Prompt templates v1.0 are frozen: all eleven files in `config/prompts/`, as on `main` after the ideation-form alignment, each pinned by sha256 in `docs/prompt_templates.md` and checked by a test. A change needs a decision-log entry and the new hash in the same pull request.
+
+Added at WBS 8.6 (reasons in `docs/decisions.md`):
+
+51. The checker writes one JSON line per candidate to `results/automated.jsonl`: the run fields, `check`, `category`, `status: "candidate"`, `confidence` (`high` or `low`), `kind`, `mention`, `span` and `sentence`. Each narrated turn is checked against the state of `docs/rubric.md` §1 (D: the logged state after the turn; A–C: the replayed ground truth), verified against the record's hashes. Failed turns are skipped. A `PHANTOM` candidate is an item word, a character word or a mid-sentence capitalised name that matches no word of an in-scope name.
 
 ## 16. Open questions for the team
 
