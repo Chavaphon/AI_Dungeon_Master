@@ -43,6 +43,7 @@ AI_Dungeon_Master/
   runs/
     A/  B/  C/  D/     audit logs, runs/{condition}/{scenario_id}/{seed}.jsonl (CLAUDE.md §11)
     aborted/           partial or tainted attempts the batch runner played again (WBS 7.6)
+    dry_run/           the WBS 7.7 dry run, same layout; kept out of the main grid's runs/{A..D}
   results/             checker output and scored metrics, e.g. results/automated.jsonl
   benchmarks/          Week 2 model benchmark output (WBS 3.4, 3.5)
   annotations/         human annotation sheets for M1, M3 and M5
@@ -100,4 +101,5 @@ No test calls the model or needs Ollama running; orchestration tests use a recor
 | `tests/orchestration/test_batch.py` | `adm/orchestration/batch.py` expands a manifest seed by seed, then scenario, then condition, and refuses a bad one; an interrupted batch resumes without playing a finished run again; a partial or tainted log is moved to `runs/aborted/` and the run played again; a model error on the last attempt or a config mismatch stops the batch; a bug ends only its own run |
 | `tests/eval/test_entities.py` | `adm/eval/entities.py` finds exactly the `PHANTOM`s of the rubric's worked examples, counts a repeat once, skips scenery, parts and worn things, keeps an item at quantity 0 in scope, never flags an in-scope name in any scenario, and marks negated, ambiguous and proper-noun mentions low confidence |
 | `tests/eval/test_checker.py` | `python -m adm.eval.checker` scores A–C turns on the replayed ground truth and D turns on the logged state, skips failed turns, refuses a log whose state does not match its hashes, and writes one candidate per line, the same bytes every run |
+| `tests/eval/test_validate.py` | `python -m adm.eval.validate` passes a clean A–D grid and reports a record that breaks the schema or a rule it cannot express, a missing record, an input that is not the scripted text, a hash that does not replay, a log in another run's place, an empty log and a planned run with no log; it exits 0 only on a valid grid |
 | `tests/engine/test_dice.py` | `adm/engine/dice.py` parses only the `XdY+Z` of CLAUDE.md §4.2, reproduces a pinned sequence from a seed, keeps the right die under advantage and disadvantage, and returns rolls that match `roll_result` in the tool contract |
