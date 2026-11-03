@@ -163,6 +163,7 @@ results/              # scored output, gitignored
 tests/
 docs/
   decisions.md        # dated decision log; every deviation goes here
+  prompt_templates.md # freeze record of config/prompts/: hashes, line-by-line differences
 ```
 
 ---
@@ -597,7 +598,7 @@ For A–C, the "state" used for scoring is the state the *scenario script* says 
 
 ### 9.1 Prompt templates
 
-These are frozen. Store them verbatim in `config/prompts/` and change them only with a decision-log entry. The shared block is identical in all four.
+These are frozen. Store them verbatim in `config/prompts/` and change them only with a decision-log entry. The shared block is identical in all four. The freeze record is `docs/prompt_templates.md` (WBS 7.5): the sha256 of every file in `config/prompts/`, checked by `tests/orchestration/test_prompt_freeze.py`, and how the five condition templates differ line by line.
 
 **Shared preamble (all conditions)**
 
@@ -986,6 +987,10 @@ Added at WBS 4.18 (reasons in `docs/decisions.md`):
 Added at WBS 7.1 (reasons in `docs/decisions.md`):
 
 49. Conditions A–C share one narration-only harness (`adm/orchestration/narration_only.py`), keyed by its template. Each input gets one `narration` call and the same K, history, rolling summary and safety filter as condition D. Both state hashes and `turn_number` come from the replay's turn for that input, using the state after it. A–C play scripted inputs only.
+
+Added at WBS 7.5 (reasons in `docs/decisions.md`):
+
+50. Prompt templates v1.0 are frozen: all eleven files in `config/prompts/`, as on `main` after the ideation-form alignment, each pinned by sha256 in `docs/prompt_templates.md` and checked by a test. A change needs a decision-log entry and the new hash in the same pull request.
 
 ## 16. Open questions for the team
 
