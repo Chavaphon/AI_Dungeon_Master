@@ -5,6 +5,7 @@ no game logic.
     python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
     python -m adm.cli run --scenario scenarios/s01_cellar.json --condition D --seed 12345
     python -m adm.cli smoke --manifest experiments/smoke_grid.json
+    python -m adm.cli batch --manifest experiments/main_grid.json
 
 `play` is an interactive condition D session. The model is checked against
 `config/model.json` and freshly loaded first (docs/model_selection.md section 4).
@@ -30,11 +31,18 @@ a refused run or a model error is a bug and propagates.
 and reports gate G2 (WBS 6.11, `adm/bench/smoke.py`). An exception ends only
 its own run, which is then unrecoverable; the summary goes to
 `results/bench/smoke/<UTC time>/summary.json`.
+
+`batch` plays every `(seed, scenario, condition)` run of a batch manifest, one
+at a time, each as `run` plays it on a freshly loaded model, and is resumed by
+running it again (WBS 7.6, `adm/orchestration/batch.py`). Each run's model
+client counts its transport retries, so a run with any is played again. Every
+attempt is a line of `results/batch/attempts.jsonl`. It exits 0 only when every
+run of the manifest is complete.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -47,11 +55,13 @@ from rich.markup import escape
 from adm.bench import smoke as smoke_runs
 from adm.engine.audit import turn_failure_counts
 from adm.engine.scenario import Scenario, load_scenario
+from adm.orchestration import batch as batch_runs
 from adm.orchestration.client import (
     ModelClient,
     ModelConfig,
     ModelError,
     OllamaClient,
+    RetryCountingClient,
     load_model_config,
 )
 from adm.orchestration.narration_only import NarrationOnlyStart
@@ -82,6 +92,7 @@ AI_LABEL = "Narrated by AI"
 PROMPT = "> "
 RUNS = Path("runs")
 SMOKE_RESULTS = Path("results/bench/smoke")
+BATCH_LEDGER = Path("results/batch/attempts.jsonl")
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 
@@ -112,10 +123,16 @@ RunsOption = Annotated[Path, typer.Option(help="Directory the audit log is writt
 
 @contextmanager
 def open_session(
-    console: Console, scenario: Scenario, seed: int, runs: Path, condition: str
+    console: Console,
+    scenario: Scenario,
+    seed: int,
+    runs: Path,
+    condition: str,
+    wrap: Callable[[ModelClient], ModelClient] = lambda client: client,
 ) -> Iterator[Harness]:
-    """A new run of `condition` on a freshly loaded model. A run that already
-    has a log is refused before the model loads."""
+    """A new run of `condition` on a freshly loaded model, whose client is
+    passed through `wrap`. A run that already has a log is refused before the
+    model loads."""
     start = HARNESSES[condition]
     config = load_model_config()
     texts = load_templates()
@@ -123,7 +140,7 @@ def open_session(
     with console.status(f"Loading {config.model}..."):
         client_cm = connect(config)
     with client_cm as client:
-        yield start(client, config, texts, scenario, log, seed=seed)
+        yield start(wrap(client), config, texts, scenario, log, seed=seed)
 
 
 @contextmanager
@@ -222,6 +239,81 @@ def smoke(
     path = smoke_runs.write_summary(summary, out / started.strftime("%Y%m%dT%H%M%SZ"))
     smoke_runs.report(console, summary)
     console.print(f"Summary: {path}", markup=False)
+
+
+@app.command()
+def batch(
+    manifest: Annotated[
+        Path, typer.Option(exists=True, dir_okay=False, help="Batch manifest JSON file.")
+    ] = Path("experiments/main_grid.json"),
+    runs: RunsOption = RUNS,
+    ledger: Annotated[Path, typer.Option(help="Attempt ledger, appended to.")] = BATCH_LEDGER,
+    max_attempts: Annotated[
+        int, typer.Option(min=1, help="Attempts per run before it is left pending.")
+    ] = batch_runs.MAX_ATTEMPTS,
+) -> None:
+    """Play every run of a batch manifest that is not complete yet (WBS 7.6)."""
+    console = Console(highlight=False)
+    config = load_model_config()
+    try:
+        plan = batch_runs.load_manifest(manifest, HARNESSES)
+    except batch_runs.ManifestError as exc:
+        console.print(f"[red]{escape(str(exc))}[/red]")
+        raise typer.Exit(2) from exc
+
+    def runner(planned: batch_runs.PlannedRun, staging: Path) -> int:
+        counter: list[RetryCountingClient] = []
+
+        def wrap(client: ModelClient) -> ModelClient:
+            counter.append(RetryCountingClient(client))
+            return counter[0]
+
+        with open_session(
+            console, planned.scenario, planned.seed, staging, planned.condition, wrap
+        ) as session:
+            run_script(session)
+        return counter[0].transport_retries
+
+    context = {
+        "manifest": manifest.as_posix(),
+        "model": config.model,
+        "model_digest": config.model_digest,
+    }
+    try:
+        result = batch_runs.run_batch(
+            plan,
+            runs_dir=runs,
+            runner=runner,
+            ledger=ledger,
+            max_attempts=max_attempts,
+            context=context,
+            log=lambda line: console.print(line, markup=False),
+        )
+    except KeyboardInterrupt:
+        console.print("Interrupted. Run the same command again to resume.", markup=False)
+        raise typer.Exit(130) from None
+    _batch_report(console, plan, result)
+    if not result.done:
+        raise typer.Exit(1)
+
+
+def _batch_report(
+    console: Console, plan: list[batch_runs.PlannedRun], result: batch_runs.BatchResult
+) -> None:
+    complete = set(result.complete)
+    for condition in dict.fromkeys(r.condition for r in plan):
+        ids = [r.run_id for r in plan if r.condition == condition]
+        done = sum(1 for i in ids if i in complete)
+        console.print(f"{condition}: {done}/{len(ids)} complete", markup=False)
+    console.print(
+        f"{len(complete)}/{result.planned} runs complete, {result.played} attempts played.",
+        markup=False,
+    )
+    for label, ids in (("Errors", result.errors), ("Pending", result.pending)):
+        if ids:
+            console.print(f"{label}: {', '.join(ids)}", markup=False)
+    if result.stopped is not None:
+        console.print(f"Stopped: {result.stopped}", markup=False)
 
 
 def _loop(console: Console, session: Harness) -> None:

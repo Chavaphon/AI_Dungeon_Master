@@ -163,6 +163,22 @@ class ModelClient(Protocol):
     def chat(self, messages: Sequence[Message], *, phase: Phase, seed: int) -> ModelReply: ...
 
 
+class RetryCountingClient:
+    """Passes every call to `client` and adds up the transport retries of its
+    replies. The audit log does not record them, so the batch runner (WBS 7.6)
+    counts them here to find a run that must be played again from a fresh load
+    (docs/decisions.md, 2026-10-13, point 4)."""
+
+    def __init__(self, client: ModelClient) -> None:
+        self.client = client
+        self.transport_retries = 0
+
+    def chat(self, messages: Sequence[Message], *, phase: Phase, seed: int) -> ModelReply:
+        reply = self.client.chat(messages, phase=phase, seed=seed)
+        self.transport_retries += reply.transport_retries
+        return reply
+
+
 class OllamaClient:
     def __init__(
         self,

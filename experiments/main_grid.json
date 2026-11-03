@@ -1,0 +1,32 @@
+{
+  "description": "WBS 7.6 main grid (CLAUDE.md section 10.5): 16 scenarios x 4 conditions x seeds 2001, 2002, 2003, the same seeds in every cell. 192 runs, played seed by seed, scenario by scenario, condition by condition.",
+  "scenarios": [
+    "scenarios/s01_cellar.json",
+    "scenarios/s02_toll_bridge.json",
+    "scenarios/s03_forest_shrine.json",
+    "scenarios/s04_goblin_warren.json",
+    "scenarios/s05_wayside_inn.json",
+    "scenarios/s06_drowned_lighthouse.json",
+    "scenarios/s07_smugglers_cove.json",
+    "scenarios/s08_old_mine.json",
+    "scenarios/s09_harvest_fair.json",
+    "scenarios/s10_watchtower.json",
+    "scenarios/s11_frozen_pass.json",
+    "scenarios/s12_bog_witch.json",
+    "scenarios/long01_border_road.json",
+    "scenarios/long02_hollow_manor.json",
+    "scenarios/long03_river_market.json",
+    "scenarios/long04_mountain_monastery.json"
+  ],
+  "conditions": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "seeds": [
+    2001,
+    2002,
+    2003
+  ]
+}

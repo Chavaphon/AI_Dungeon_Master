@@ -144,6 +144,7 @@ adm/
     summary.py        # rolling summary
     safety.py         # output filter
     loop.py           # the turn loop, failure pipeline, retry budget
+    batch.py          # batch runner: manifest grid, resume, re-runs
   eval/
     checker.py        # automated divergence + rule violation detection
     entities.py       # entity-mention extraction: PHANTOM candidates
@@ -996,6 +997,10 @@ Added at WBS 7.5 (reasons in `docs/decisions.md`):
 Added at WBS 8.6 (reasons in `docs/decisions.md`):
 
 51. The checker writes one JSON line per candidate to `results/automated.jsonl`: the run fields, `check`, `category`, `status: "candidate"`, `confidence` (`high` or `low`), `kind`, `mention`, `span` and `sentence`. Each narrated turn is checked against the state of `docs/rubric.md` §1 (D: the logged state after the turn; A–C: the replayed ground truth), verified against the record's hashes. Failed turns are skipped. A `PHANTOM` candidate is an item word, a character word or a mid-sentence capitalised name that matches no word of an in-scope name.
+
+Added at WBS 7.6 (reasons in `docs/decisions.md`):
+
+52. The batch runner plays a manifest's runs seed by seed, scenario by scenario, condition by condition, one at a time on a freshly loaded model. A run is written under `runs/pending/` and moved into `runs/` only when it covers every scripted input with no transport retry; anything partial or tainted is moved to `runs/aborted/` and played again from the start, at most 3 attempts per invocation. A model error on the last attempt, or a version or digest mismatch, stops the batch; running the command again resumes it.
 
 ## 16. Open questions for the team
 

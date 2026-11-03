@@ -42,6 +42,7 @@ Access is limited to the three team members. Sign in with your `@kmutt.ac.th` ac
 AI_Dungeon_Master/
   runs/
     A/  B/  C/  D/     audit logs, runs/{condition}/{scenario_id}/{seed}.jsonl (CLAUDE.md §11)
+    aborted/           partial or tainted attempts the batch runner played again (WBS 7.6)
   results/             checker output and scored metrics, e.g. results/automated.jsonl
   benchmarks/          Week 2 model benchmark output (WBS 3.4, 3.5)
   annotations/         human annotation sheets for M1, M3 and M5
@@ -96,6 +97,7 @@ No test calls the model or needs Ollama running; orchestration tests use a recor
 | `tests/engine/test_rule_suite.py` | The `rule_suite` markers give every CLAUDE.md §13 area its case count, 60 in all; no case is skipped or `xfail`; `docs/rule_suite.md` lists exactly the marked cases |
 | `tests/engine/test_replay.py` | `adm/engine/replay.py` replays every scenario byte-identically from its seed, chains the state hashes from turn 0, and plays rejected and null expected calls as a scripted condition D turn does; `log_differences` ignores only the timings |
 | `tests/orchestration/test_narration_only.py` | The condition A, B and C harnesses run every scenario end to end with one narration call per input; A's prompt has no state or tools, B injects each input's ground-truth state byte for byte as condition D's tool call does, differing from A only by that block, and C differs from B only by the self-check instruction; their hashes and turn numbers are the replay's; K, history, summary and safety filter follow condition D; two runs of one seed differ only in the timings |
+| `tests/orchestration/test_batch.py` | `adm/orchestration/batch.py` expands a manifest seed by seed, then scenario, then condition, and refuses a bad one; an interrupted batch resumes without playing a finished run again; a partial or tainted log is moved to `runs/aborted/` and the run played again; a model error on the last attempt or a config mismatch stops the batch; a bug ends only its own run |
 | `tests/eval/test_entities.py` | `adm/eval/entities.py` finds exactly the `PHANTOM`s of the rubric's worked examples, counts a repeat once, skips scenery, parts and worn things, keeps an item at quantity 0 in scope, never flags an in-scope name in any scenario, and marks negated, ambiguous and proper-noun mentions low confidence |
 | `tests/eval/test_checker.py` | `python -m adm.eval.checker` scores A–C turns on the replayed ground truth and D turns on the logged state, skips failed turns, refuses a log whose state does not match its hashes, and writes one candidate per line, the same bytes every run |
 | `tests/engine/test_dice.py` | `adm/engine/dice.py` parses only the `XdY+Z` of CLAUDE.md §4.2, reproduces a pinned sequence from a seed, keeps the right die under advantage and disadvantage, and returns rolls that match `roll_result` in the tool contract |

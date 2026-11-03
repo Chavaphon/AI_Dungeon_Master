@@ -45,7 +45,7 @@ from rich.console import Console
 from rich.table import Table
 
 from adm.bench.toolcall import mean, p95
-from adm.engine.audit import log_path, read_log, turn_failure_counts
+from adm.engine.audit import covers_script, log_path, read_log, turn_failure_counts
 from adm.engine.scenario import Scenario, load_scenario
 
 Doc = dict[str, Any]
@@ -85,7 +85,6 @@ def _k_reduced(records: Sequence[Doc], k: int) -> int:
 
 def summarise_run(records: Sequence[Doc], inputs: int, k: int, error: str | None) -> Doc:
     """The figures of one run, from its audit log."""
-    indices = [r["input_index"] for r in records]
     turns = len(records)
     rejected = [r for r in records if any(not v["ok"] for v in r["validation"])]
     calls = [c for r in records for c in r["model_calls"]]
@@ -93,7 +92,7 @@ def summarise_run(records: Sequence[Doc], inputs: int, k: int, error: str | None
     latencies = [r["turn_latency_ms"] / 1000 for r in records]
     first = [r["validation"][0] for r in records if r["validation"]]
     return {
-        "complete": error is None and indices == list(range(inputs)),
+        "complete": error is None and covers_script(records, inputs),
         "error": error,
         "inputs": inputs,
         "turns": turns,

@@ -424,3 +424,21 @@ def test_fresh_load_fails_if_the_model_does_not_load() -> None:
     handler, _ = _sequence(_done(), _ps(False), _done(), _ps(False))
     with _client(handler) as client, pytest.raises(cl.ModelUnavailable, match="not loaded"):
         client.fresh_load()
+
+
+# --- transport retries, counted for the batch runner (WBS 7.6) ---------------
+
+
+def test_retry_counting_client_adds_up_transport_retries() -> None:
+    replies = iter(
+        [cl.ModelReply("a", 1, 1, 0, 0, "stop", 0), cl.ModelReply("b", 1, 1, 0, 0, "stop", 2)]
+    )
+
+    class Inner:
+        def chat(self, messages: Any, *, phase: cl.Phase, seed: int) -> cl.ModelReply:
+            return next(replies)
+
+    counting = cl.RetryCountingClient(Inner())
+    assert counting.chat([], phase="toolcall", seed=1).raw_output == "a"
+    assert counting.chat([], phase="narration", seed=1).raw_output == "b"
+    assert counting.transport_retries == 2
