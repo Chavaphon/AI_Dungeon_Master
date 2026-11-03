@@ -620,7 +620,7 @@ Decided by: SS · Supersedes: none
 **Reason:** (1, 2) Invariant 7 lets A to D differ only in the template and the tool wiring, so the context strategy, sampling and filter must be D's. One harness keyed by its template keeps the rule in `docs/conventions.md` §1: no `if condition == ...`. (3) `docs/audit_log.md` §4.4 (decision 4 of the 2.6 review) makes the hashed state, the injected state and the scored state one and the same. `docs/rubric.md` §1 scores condition D against the state after the turn. Using the after-state for A to C keeps the two comparable. B and C (7.2, 7.3) inherit this: the state they inject is the after-state. (4) §9 defines A–C's state only by replaying the script.
 **Changed:** `adm/orchestration/narration_only.py` and `tests/orchestration/test_narration_only.py` added. `adm/cli.py`: `HARNESSES` registers A. `tests/test_cli.py`: `run --condition A` plays a scenario end to end. CLAUDE.md §15 item 49. `README.md`: test table. No new dependencies; the schemas and prompt templates are unchanged.
 
-## 2026-11-04 — Condition B harness: what "injected identically" means (WBS 7.2)
+## 2026-11-03 — Condition B harness: what "injected identically" means (WBS 7.2)
 
 Decided by: SS · Supersedes: none
 
