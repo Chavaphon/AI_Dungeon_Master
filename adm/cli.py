@@ -20,9 +20,9 @@ and are display only: nothing is added to the record or to any prompt.
 `run` plays the scenario's scripted inputs unattended (`session.run_script`),
 printing one line per input. It is the one entry point for every condition
 (WBS 7.4): `HARNESSES` maps a condition to the `HarnessStart` that builds its
-harness, and nothing else differs. Condition D is `Session.start`; A and B are
-the narration-only harness on templates `a` and `b` (WBS 7.1, 7.2,
-`NarrationOnlyStart`), and C is added the same way by WBS 7.3. A condition with no harness yet is
+harness, and nothing else differs. Condition D is `Session.start`; A, B and C
+are the narration-only harness on templates `a`, `b` and `c` (WBS 7.1 to 7.3,
+`NarrationOnlyStart`). A condition with no harness is
 refused before its log is created or the model loads. An exception other than
 a refused run or a model error is a bug and propagates.
 
@@ -72,6 +72,7 @@ CONDITIONS = ("A", "B", "C", "D")
 HARNESSES: dict[str, HarnessStart] = {
     "A": NarrationOnlyStart("a"),
     "B": NarrationOnlyStart("b"),
+    "C": NarrationOnlyStart("c"),
     "D": Session.start,
 }
 D = "D"
@@ -161,7 +162,7 @@ def run(
         console.print(f"[red]Unknown condition {condition}; choose one of A, B, C, D.[/red]")
         raise typer.Exit(2)
     if condition not in HARNESSES:
-        console.print(f"[red]Condition {condition} is not wired yet (WBS 7.3).[/red]")
+        console.print(f"[red]Condition {condition} is not wired yet.[/red]")
         raise typer.Exit(2)
     loaded = load_scenario(scenario)
     with (

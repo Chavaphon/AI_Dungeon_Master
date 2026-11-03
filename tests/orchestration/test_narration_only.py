@@ -1,11 +1,13 @@
-"""Condition A and B harnesses (WBS 7.1, 7.2): the narration-only runner.
+"""Condition A, B and C harnesses (WBS 7.1 to 7.3): the narration-only runner.
 
 Condition A runs a scenario end to end, the done-when of #77. Each scripted
 input gets one narration call on template `a`, with no state, no tool
 definitions and no tool phase. Condition B (the done-when of #79) injects the
 input's ground-truth state exactly as condition D's tool-call prompt injects a
 state: everything up to `</state>` is byte-identical for the same state, and B
-differs from A only by that block. Every turn is logged and passes the audit
+differs from A only by that block. Condition C (the done-when of #80) differs
+from B only by the self-check instruction at the end of its system message.
+Every turn is logged and passes the audit
 schema and its section 3 rules. The record's state hashes and turn number are
 the replay's ground truth (CLAUDE.md section 9). K, the history, the rolling
 summary and the safety filter work as in condition D (invariant 7). Two runs of
@@ -81,7 +83,7 @@ def _harness(
     )
 
 
-@pytest.mark.parametrize("template", ["a", "b"])
+@pytest.mark.parametrize("template", ["a", "b", "c"])
 @pytest.mark.parametrize("path", SCENARIOS, ids=[p.stem for p in SCENARIOS])
 def test_the_condition_runs_a_scenario_end_to_end(
     tmp_path: Path, path: Path, template: str
@@ -122,7 +124,7 @@ def test_the_condition_runs_a_scenario_end_to_end(
             assert data_hash(injected) == record["state_after_hash"]
 
 
-@pytest.mark.parametrize("template", ["a", "b"])
+@pytest.mark.parametrize("template", ["a", "b", "c"])
 def test_the_state_hashes_and_turn_numbers_are_the_replays(tmp_path: Path, template: str) -> None:
     harness = _harness(tmp_path, template=template)
     run_script(harness)
@@ -278,3 +280,41 @@ def test_b_differs_from_a_only_by_the_state_block(tmp_path: Path) -> None:
     for record in (*a_records, *b_records):
         record.update(condition="-", run_id="-")
     assert log_differences(a_records, b_records) == []
+
+
+# --- condition C (WBS 7.3): B plus the self-check instruction ----------------
+
+SELF_CHECK = TEXTS["c"].removeprefix(TEXTS["b"] + "\n\n")
+
+
+def test_c_differs_from_b_only_by_the_self_check_instruction(tmp_path: Path) -> None:
+    """The done-when of #80: for every input, C's narration prompt is B's with
+    the self-check instruction after the history, and nothing else differs: the
+    same state, summary, history and input, the same summary prompts, and the
+    same records apart from the condition and timings."""
+    assert TEXTS["c"] == TEXTS["b"] + "\n\n" + SELF_CHECK
+    assert SELF_CHECK.startswith("Before you reply, check your narration against the state")
+    b = _harness(tmp_path, template="b")
+    c = _harness(tmp_path, template="c")
+    run_script(b)
+    run_script(c)
+
+    assert isinstance(b.client, NarratingClient) and isinstance(c.client, NarratingClient)
+    assert [phase for _, phase, _ in b.client.calls] == [phase for _, phase, _ in c.client.calls]
+    narrated = 0
+    for (b_messages, phase, _), (c_messages, _, _) in zip(
+        b.client.calls, c.client.calls, strict=True
+    ):
+        if phase == "narration":
+            narrated += 1
+            b_system, c_system = b_messages[0]["content"], c_messages[0]["content"]
+            assert c_system == b_system + "\n\n" + SELF_CHECK
+            assert c_messages[1:] == b_messages[1:]
+        else:
+            assert c_messages == b_messages
+    assert narrated == len(CELLAR.scripted_inputs)
+
+    b_records, c_records = read_log(b.log.path), read_log(c.log.path)
+    for record in (*b_records, *c_records):
+        record.update(condition="-", run_id="-")
+    assert log_differences(b_records, c_records) == []

@@ -240,12 +240,12 @@ def test_another_condition_runs_through_the_same_entry_point(
     assert not log_path(tmp_path, "D", SCENARIO.scenario_id, SEED).exists()
 
 
-@pytest.mark.parametrize("condition", ["A", "B"])
+@pytest.mark.parametrize("condition", ["A", "B", "C"])
 def test_run_plays_a_narration_only_condition_end_to_end(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, condition: str
 ) -> None:
-    """The done-whens of #77 and #79: conditions A and B run a scenario end to
-    end through `run`."""
+    """The done-whens of #77, #79 and #80: conditions A, B and C run a scenario
+    end to end through `run`."""
     code, output = _run(monkeypatch, tmp_path, LookingClient(), "--condition", condition)
 
     assert code == 0, output
