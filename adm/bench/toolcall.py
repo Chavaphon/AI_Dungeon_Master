@@ -44,7 +44,8 @@ CASES_PATH = Path(__file__).with_name("toolcall_cases.json")
 
 Doc = dict[str, Any]
 
-# Draft of config/prompts/d_toolcall.txt for WBS 3.3. The frozen copy is WBS 7.5.
+# Draft of config/prompts/d_toolcall.txt for WBS 3.3. The frozen copy is
+# docs/prompt_templates.md (WBS 7.5); this draft stays for the benchmark.
 # Preamble, state block and instruction are verbatim from CLAUDE.md section 9.1.
 # The tool-definition block is not worded there; this wording is the draft.
 PREAMBLE = """\
