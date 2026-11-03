@@ -24,7 +24,7 @@ The evidence for deliverable D6 and the gate G3 item "all four harnesses dry-run
 | Grid | `experiments/dry_run.json`: `s01_cellar` (26 inputs) and `long01_border_road` (52 inputs) × A, B, C, D × seed 3001; 8 runs, 312 inputs |
 | Commands | `python -m adm.cli batch --manifest experiments/dry_run.json --runs runs/dry_run --ledger results/dry_run/attempts.jsonl`, then `python -m adm.eval.validate --runs runs/dry_run --manifest experiments/dry_run.json --out results/dry_run/validation.json` and `python -m adm.eval.checker --runs runs/dry_run --out results/dry_run/automated.jsonl` |
 | Output | logs in `runs/dry_run/{condition}/{scenario_id}/3001.jsonl`; ledger, validation report and checker output in `results/dry_run/` (all gitignored). 13:05 to 13:34 UTC, 29 minutes. |
-| Shared copy | upload `runs/dry_run/` and `results/dry_run/` to the team Drive folder at the same paths (`README.md`, "Shared storage") |
+| Shared copy | `runs/dry_run/` and `results/dry_run/`, uploaded 2026-11-03 to the team Drive folder at the same paths (`README.md`, "Shared storage") |
 
 ## 3. Per run
 
@@ -55,6 +55,5 @@ No narration was changed by the safety filter. Every run of long01 regenerated t
 
 ## 5. Follow-ups
 
-- Upload `runs/dry_run/` and `results/dry_run/` to the shared Drive folder.
 - The eight logs are the transcripts for the 8.11 rubric pilot, and for timing a few M5 excerpts (`docs/narrative_quality.md` §7 point 1). Seed 3001 is in no main-grid cell, so pilot annotators see no transcript they will later rate.
 - Run `python -m adm.eval.validate --runs runs --manifest experiments/main_grid.json` after each main-grid batch (WBS 9.1, 9.2).
