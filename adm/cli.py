@@ -20,8 +20,9 @@ and are display only: nothing is added to the record or to any prompt.
 `run` plays the scenario's scripted inputs unattended (`session.run_script`),
 printing one line per input. It is the one entry point for every condition
 (WBS 7.4): `HARNESSES` maps a condition to the `HarnessStart` that builds its
-harness, and nothing else differs. Condition D is `Session.start`; A to C are
-added to `HARNESSES` by WBS 7.1 to 7.3. A condition with no harness yet is
+harness, and nothing else differs. Condition D is `Session.start`; A is the
+narration-only harness on template `a` (WBS 7.1, `NarrationOnlyStart`), and B
+and C are added the same way by WBS 7.2 and 7.3. A condition with no harness yet is
 refused before its log is created or the model loads. An exception other than
 a refused run or a model error is a bug and propagates.
 
@@ -53,6 +54,7 @@ from adm.orchestration.client import (
     OllamaClient,
     load_model_config,
 )
+from adm.orchestration.narration_only import NarrationOnlyStart
 from adm.orchestration.prompt import load_templates
 from adm.orchestration.session import (
     Harness,
@@ -67,7 +69,7 @@ from adm.orchestration.session import (
 # The audit log's conditions (schemas/audit.schema.json), and the harness of
 # each one that is wired. Interactive play and the G2 smoke runs are condition D.
 CONDITIONS = ("A", "B", "C", "D")
-HARNESSES: dict[str, HarnessStart] = {"D": Session.start}
+HARNESSES: dict[str, HarnessStart] = {"A": NarrationOnlyStart("a"), "D": Session.start}
 D = "D"
 
 QUIT = {"/quit", "/exit"}
@@ -155,7 +157,7 @@ def run(
         console.print(f"[red]Unknown condition {condition}; choose one of A, B, C, D.[/red]")
         raise typer.Exit(2)
     if condition not in HARNESSES:
-        console.print(f"[red]Condition {condition} is not wired yet (WBS 7.1 to 7.3).[/red]")
+        console.print(f"[red]Condition {condition} is not wired yet (WBS 7.2 to 7.3).[/red]")
         raise typer.Exit(2)
     loaded = load_scenario(scenario)
     with (

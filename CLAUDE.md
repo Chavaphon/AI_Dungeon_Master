@@ -983,6 +983,10 @@ Added at WBS 4.18 (reasons in `docs/decisions.md`):
 
 48. The replay harness plays each scripted input's `expected_call` (`{"tool": null}` when it is null) through the engine with the run's one `DiceRoller`, as a scripted condition D turn: a rejected call is a failed turn, a null call is narration-only. It is the A–C ground truth, and two replays of one seed are byte-identical.
 
+Added at WBS 7.1 (reasons in `docs/decisions.md`):
+
+49. Conditions A–C share one narration-only harness (`adm/orchestration/narration_only.py`), keyed by its template. Each input gets one `narration` call and the same K, history, rolling summary and safety filter as condition D. Both state hashes and `turn_number` come from the replay's turn for that input, using the state after it. A–C play scripted inputs only.
+
 ## 16. Open questions for the team
 
 Do not resolve these alone.
