@@ -54,7 +54,7 @@ from adm.engine.audit import AuditLog, Step
 from adm.engine.dice import DiceRoller
 from adm.engine.scenario import Scenario, ScriptedInput, due_encounter, initial_state
 from adm.engine.state import GameState
-from adm.engine.tools import after_call, dispatch, increment_turn, open_encounter
+from adm.engine.tools import after_call, dispatch_scripted, increment_turn, open_encounter
 from adm.engine.validator import ToolCall
 from adm.orchestration.client import ModelClient, ModelConfig
 from adm.orchestration.loop import (
@@ -241,19 +241,10 @@ class Session:
         return turn
 
     def _execute(self, call: ToolCall) -> Doc:
-        proposed = call.model_dump(mode="json")
-        scripted = self.scripted
-        expected = scripted.expected_call if scripted is not None else None
-        if expected is None or expected["tool"] != "skill_check" or call.tool != "skill_check":
-            return dispatch(self.state, self.roller, proposed)
-        # The scenario's DC and advantage, not the model's (CLAUDE.md section 4.7).
-        arguments = {**proposed["arguments"], "dc": expected["arguments"]["dc"]}
-        advantage = scripted.check_advantage if scripted is not None else None
-        return dispatch(
-            self.state,
-            self.roller,
-            {**proposed, "arguments": arguments},
-            check_advantage=advantage or "normal",
+        # A scripted skill check runs with the scenario's DC and advantage
+        # (CLAUDE.md section 4.7), exactly as in the replay harness.
+        return dispatch_scripted(
+            self.state, self.roller, call.model_dump(mode="json"), self.scripted
         )
 
 

@@ -20,7 +20,8 @@ import pytest
 from adm.engine.audit import AuditLog, read_log
 from adm.engine.combat import start_encounter
 from adm.engine.dice import DiceRoller
-from adm.engine.scenario import ScriptedInput, initial_state, load_scenario
+from adm.engine.replay import log_differences, replay_script
+from adm.engine.scenario import Scenario, ScriptedInput, initial_state, load_scenario
 from adm.orchestration import prompt
 from adm.orchestration.client import Message, ModelReply, Phase, load_model_config
 from adm.orchestration.loop import REPHRASE, FailedTurn, NarratedTurn
@@ -322,3 +323,74 @@ def test_a_run_log_is_named_by_its_condition(tmp_path: Path) -> None:
     assert log.path == tmp_path / "B" / SCENARIO.scenario_id / f"{SEED}.jsonl"
     # Another condition's run of the same scenario and seed is a different run.
     new_run_log(tmp_path, "D", SCENARIO.scenario_id, SEED)
+
+
+# --- replay (WBS 4.18, invariant 4) ------------------------------------------
+
+SCENARIOS = sorted((ROOT / "scenarios").glob("*.json"))
+# The record fields a replay turn shares with the audit record.
+REPLAYED = (
+    "input_index",
+    "turn_number",
+    "player_input",
+    "executed_call",
+    "engine_steps",
+    "rolls",
+    "state_before_hash",
+    "state_after_hash",
+    "state_diff",
+    "turn_failure",
+    "narration_only",
+)
+
+
+class OracleClient(ScriptedClient):
+    """Proposes `reply`, the current input's expected call, on every toolcall
+    attempt: the model the replay harness stands for."""
+
+    reply = NULL
+
+    def chat(self, messages: Sequence[Message], *, phase: Phase, seed: int) -> ModelReply:
+        self.toolcalls = [self.reply]
+        return super().chat(messages, phase=phase, seed=seed)
+
+
+def _oracle_run(runs: Path, scenario: Scenario, seed: int = SEED) -> list[Doc]:
+    """A scripted condition D run whose model proposes every expected call."""
+    client = OracleClient()
+    client.seed = seed
+    log = new_run_log(runs, "D", scenario.scenario_id, seed)
+    session = Session.start(client, CONFIG, TEXTS, scenario, log, seed=seed)
+    for index, scripted in enumerate(scenario.scripted_inputs):
+        client.reply = json.dumps(scripted.expected_call or {"tool": None})
+        session.play(scripted.text, input_index=index, scripted=scripted)
+    return read_log(log.path)
+
+
+@pytest.mark.parametrize("path", SCENARIOS, ids=[p.stem for p in SCENARIOS])
+def test_a_session_proposing_the_expected_calls_is_the_replay(tmp_path: Path, path: Path) -> None:
+    """The replay harness is the A to C ground truth (CLAUDE.md section 9): the
+    run condition D gives when the model proposes every expected call."""
+    scenario = load_scenario(path)
+    records = _oracle_run(tmp_path, scenario)
+    turns = replay_script(scenario, SEED)
+    assert len(records) == len(turns) == len(scenario.scripted_inputs)
+    for record, turn in zip(records, turns, strict=True):
+        replayed = turn.to_dict()
+        assert {k: record[k] for k in REPLAYED} == {k: replayed[k] for k in REPLAYED}
+        assert record["validation"][-1] == turn.validation
+
+
+@pytest.mark.parametrize("scenario_id", ["s01_cellar", "long01_border_road"])
+def test_two_runs_of_one_seed_are_identical_apart_from_the_timings(
+    tmp_path: Path, scenario_id: str
+) -> None:
+    """Invariant 4 at the session level: the same model replies, seed and
+    scenario reproduce the audit log in every field but the timings
+    (CLAUDE.md section 11)."""
+    scenario = load_scenario(ROOT / "scenarios" / f"{scenario_id}.json")
+    first = _oracle_run(tmp_path / "first", scenario)
+    second = _oracle_run(tmp_path / "second", scenario)
+    assert log_differences(first, second) == []
+    assert any(r["summary_regenerated"] for r in first)
+    assert log_differences(first, _oracle_run(tmp_path / "other", scenario, SEED + 1))
