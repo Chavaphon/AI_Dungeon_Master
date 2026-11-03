@@ -146,6 +146,7 @@ adm/
     loop.py           # the turn loop, failure pipeline, retry budget
   eval/
     checker.py        # automated divergence + rule violation detection
+    entities.py       # entity-mention extraction: PHANTOM candidates
     bands.py          # HP band lexicon and classification
     metrics.py        # M1-M6 computation
     annotate.py       # blind, condition-shuffled annotation CLI
@@ -986,6 +987,10 @@ Added at WBS 4.18 (reasons in `docs/decisions.md`):
 Added at WBS 7.1 (reasons in `docs/decisions.md`):
 
 49. Conditions A–C share one narration-only harness (`adm/orchestration/narration_only.py`), keyed by its template. Each input gets one `narration` call and the same K, history, rolling summary and safety filter as condition D. Both state hashes and `turn_number` come from the replay's turn for that input, using the state after it. A–C play scripted inputs only.
+
+Added at WBS 8.6 (reasons in `docs/decisions.md`):
+
+50. The checker writes one JSON line per candidate to `results/automated.jsonl`: the run fields, `check`, `category`, `status: "candidate"`, `confidence` (`high` or `low`), `kind`, `mention`, `span` and `sentence`. Each narrated turn is checked against the state of `docs/rubric.md` §1 (D: the logged state after the turn; A–C: the replayed ground truth), verified against the record's hashes. Failed turns are skipped. A `PHANTOM` candidate is an item word, a character word or a mid-sentence capitalised name that matches no word of an in-scope name.
 
 ## 16. Open questions for the team
 
