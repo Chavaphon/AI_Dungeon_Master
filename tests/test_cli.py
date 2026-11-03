@@ -240,15 +240,19 @@ def test_another_condition_runs_through_the_same_entry_point(
     assert not log_path(tmp_path, "D", SCENARIO.scenario_id, SEED).exists()
 
 
-def test_run_plays_condition_a_end_to_end(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """The done-when of #77: condition A runs a scenario end to end through `run`."""
-    code, output = _run(monkeypatch, tmp_path, LookingClient(), "--condition", "A")
+@pytest.mark.parametrize("condition", ["A", "B"])
+def test_run_plays_a_narration_only_condition_end_to_end(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, condition: str
+) -> None:
+    """The done-whens of #77 and #79: conditions A and B run a scenario end to
+    end through `run`."""
+    code, output = _run(monkeypatch, tmp_path, LookingClient(), "--condition", condition)
 
     assert code == 0, output
-    records = read_log(log_path(tmp_path, "A", SCENARIO.scenario_id, SEED))
+    records = read_log(log_path(tmp_path, condition, SCENARIO.scenario_id, SEED))
     total = len(SCENARIO.scripted_inputs)
     assert [r["input_index"] for r in records] == list(range(total))
-    assert all(r["condition"] == "A" and r["executed_call"] is None for r in records)
+    assert all(r["condition"] == condition and r["executed_call"] is None for r in records)
     phases = {c["phase"] for r in records for c in r["model_calls"]}
     assert phases == {"narration", "summary"}
     assert f"input {total}/{total}: ok" in output
