@@ -1,4 +1,4 @@
-"""The automated checker's runner (WBS 8.6, 8.7): run logs in, candidates out.
+"""The automated checker's runner (WBS 8.6 to 8.8): run logs in, candidates out.
 
 The checker reads condition A and D logs written by the real harnesses with a
 fake client, scores each narrated turn against the state of docs/rubric.md
@@ -169,3 +169,17 @@ def test_a_band_contradiction_is_a_contradict_candidate_scored_on_the_turns_stat
     assert (c["subject"], c["implied"], c["actual"]) == (["pc_lyra"], ["badly_hurt"], ["healthy"])
     start, end = c["span"]
     assert record["narration"][start:end] == c["mention"] == "barely standing"
+
+
+def test_treatment_two_steps_from_the_stance_is_a_relation_candidate(tmp_path: Path) -> None:
+    # The Keeper is unfriendly in s01: open warmth is two steps away.
+    narration = "The Keeper beams at you and pours you a drink."
+    _a_run(tmp_path, narrations=[narration])
+    [c] = _check(tmp_path)
+    assert (c["check"], c["category"], c["kind"]) == ("stance", "RELATION", "stance")
+    assert (c["subject"], c["implied"], c["actual"]) == (
+        ["npc_keeper"],
+        ["friendly", "allied"],
+        ["unfriendly"],
+    )
+    assert c["mention"] == "beams" and c["confidence"] == "high"

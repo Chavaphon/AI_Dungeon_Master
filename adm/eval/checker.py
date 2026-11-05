@@ -25,8 +25,9 @@ instead of being scored against the wrong state.
 candidates. WBS 8.6 adds `entity_mention` (`PHANTOM`, `adm/eval/entities.py`).
 WBS 8.7 adds `hp_band` (`CONTRADICT`, `adm/eval/bands.py`): band phrases, an
 unconscious combatant acting, and stated HP numbers, against the scored state.
-The stance and rule-violation checks (WBS 8.8, 8.9) are added to the same list
-and write the same record.
+WBS 8.8 adds `stance` (`RELATION`, `adm/eval/stance.py`): stance markers too far
+from an NPC's recorded stance. The rule-violation check (WBS 8.9) is added to
+the same list and writes the same record.
 
 **The record**, one line per candidate, sorted by run, then turn, then position:
 
@@ -34,8 +35,9 @@ and write the same record.
      "check", "category", "status": "candidate", "confidence": "high" | "low",
      "kind", "mention", "span": [start, end], "sentence"}
 
-`hp_band` candidates add `subject` (the combatant ids the phrase may describe),
-`implied` (what the narration claims) and `actual` (what the state records).
+`hp_band` and `stance` candidates add `subject` (the combatant or NPC ids the
+phrase may describe), `implied` (what the narration claims) and `actual` (what
+the state records).
 
 `span` indexes the record's `narration`. `status` is always `candidate`: a human
 confirms or rejects each one, and the checker never reports a final score for
@@ -60,6 +62,7 @@ from adm.engine.scenario import Scenario, initial_state, load_scenario
 from adm.engine.state import data_hash
 from adm.eval.bands import band_candidates
 from adm.eval.entities import Scope, phantom_candidates
+from adm.eval.stance import stance_candidates
 
 Doc = dict[str, Any]
 RunKey = tuple[str, str, int]  # condition, scenario_id, seed
@@ -159,7 +162,15 @@ def hp_band(turn: Turn) -> list[Doc]:
     ]
 
 
-CHECKS: tuple[Check, ...] = (entity_mention, hp_band)
+def stance(turn: Turn) -> list[Doc]:
+    """`RELATION` candidates: treatment that does not fit an NPC's stance (WBS 8.8)."""
+    return [
+        {"check": "stance", "category": "RELATION", **c.to_dict()}
+        for c in stance_candidates(turn.narration, turn.state)
+    ]
+
+
+CHECKS: tuple[Check, ...] = (entity_mention, hp_band, stance)
 
 
 def check_turn(turn: Turn, checks: Sequence[Check] = CHECKS) -> list[Doc]:
