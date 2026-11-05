@@ -1011,6 +1011,10 @@ Added at WBS 7.7 (reasons in `docs/decisions.md`):
 
 53. The dry run is `s01_cellar` and `long01_border_road` under A–D at seed 3001, a seed no main or smoke run uses, logged to `runs/dry_run/`. A log is valid when every record passes the audit schema and `record_errors`, matches its path, covers its script with the scripted text, and its state hashes replay (`adm/eval/validate.py`).
 
+Added at WBS 8.7 (reasons in `docs/decisions.md`):
+
+54. The `hp_band` check writes `CONTRADICT` candidates of kind `band`, `status` or `hp_number`, with `subject`, `implied` and `actual` added to the record. The actual band is always `engine.combat.hp_band`. A band phrase implies a set of bands (rubric §5.3 intensity words) and is flagged only when it fits none of the combatants it may describe; events, negations, figurative uses and "falls back" are skipped, hedged or ambiguous cases are `low`, and a narration gets at most one candidate per combatant (`adm/eval/bands.py`).
+
 ## 16. Open questions for the team
 
 Do not resolve these alone.
