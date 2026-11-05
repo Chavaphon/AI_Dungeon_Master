@@ -371,7 +371,7 @@ class Candidate:
         }
 
 
-def _sentences(text: str) -> Iterable[tuple[int, str]]:
+def sentences(text: str) -> Iterable[tuple[int, str]]:
     start = 0
     for match in _SENTENCE_END.finditer(text):
         yield start, text[start : match.start()]
@@ -397,7 +397,7 @@ def phantom_candidates(narration: str, scope: Scope) -> list[Candidate]:
             (kind, key), Candidate(kind, narration[start:end], start, end, confidence, sentence)
         )
 
-    for base, sentence in _sentences(narration):
+    for base, sentence in sentences(narration):
         tokens = list(_WORD.finditer(sentence))
         i = 0
         while i < len(tokens):

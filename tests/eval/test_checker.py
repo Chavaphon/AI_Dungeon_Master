@@ -1,4 +1,4 @@
-"""The automated checker's runner (WBS 8.6): run logs in, `PHANTOM` candidates out.
+"""The automated checker's runner (WBS 8.6, 8.7): run logs in, candidates out.
 
 The checker reads condition A and D logs written by the real harnesses with a
 fake client, scores each narrated turn against the state of docs/rubric.md
@@ -152,3 +152,20 @@ def test_the_command_line_writes_one_candidate_per_line_the_same_every_time(
 def test_a_clean_run_has_no_candidates(tmp_path: Path) -> None:
     _a_run(tmp_path, narrations=())
     assert _check(tmp_path) == []
+
+
+def test_a_band_contradiction_is_a_contradict_candidate_scored_on_the_turns_state(
+    tmp_path: Path,
+) -> None:
+    # Lyra is at 20 of 20 after input 0 in the replayed ground truth: healthy.
+    narration = "You stagger back, barely standing."
+    path = _a_run(tmp_path, narrations=[narration])
+    [c] = _check(tmp_path)
+
+    record = read_log(path)[0]
+    assert record["narration"] == narration
+    assert (c["check"], c["category"], c["kind"]) == ("hp_band", "CONTRADICT", "band")
+    assert (c["status"], c["confidence"]) == ("candidate", "high")
+    assert (c["subject"], c["implied"], c["actual"]) == (["pc_lyra"], ["badly_hurt"], ["healthy"])
+    start, end = c["span"]
+    assert record["narration"][start:end] == c["mention"] == "barely standing"

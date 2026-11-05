@@ -23,14 +23,19 @@ instead of being scored against the wrong state.
 
 **The checks.** `CHECKS` lists each check, a function from a `Turn` to its
 candidates. WBS 8.6 adds `entity_mention` (`PHANTOM`, `adm/eval/entities.py`).
-The band, status, resource, stance and rule-violation checks (WBS 8.7 to 8.9)
-are added to the same list and write the same record.
+WBS 8.7 adds `hp_band` (`CONTRADICT`, `adm/eval/bands.py`): band phrases, an
+unconscious combatant acting, and stated HP numbers, against the scored state.
+The stance and rule-violation checks (WBS 8.8, 8.9) are added to the same list
+and write the same record.
 
 **The record**, one line per candidate, sorted by run, then turn, then position:
 
     {"run_id", "condition", "scenario_id", "seed", "input_index", "turn_number",
      "check", "category", "status": "candidate", "confidence": "high" | "low",
      "kind", "mention", "span": [start, end], "sentence"}
+
+`hp_band` candidates add `subject` (the combatant ids the phrase may describe),
+`implied` (what the narration claims) and `actual` (what the state records).
 
 `span` indexes the record's `narration`. `status` is always `candidate`: a human
 confirms or rejects each one, and the checker never reports a final score for
@@ -53,6 +58,7 @@ from adm.engine.audit import apply_diff, read_log
 from adm.engine.replay import replay_script
 from adm.engine.scenario import Scenario, initial_state, load_scenario
 from adm.engine.state import data_hash
+from adm.eval.bands import band_candidates
 from adm.eval.entities import Scope, phantom_candidates
 
 Doc = dict[str, Any]
@@ -145,7 +151,15 @@ def entity_mention(turn: Turn) -> list[Doc]:
     ]
 
 
-CHECKS: tuple[Check, ...] = (entity_mention,)
+def hp_band(turn: Turn) -> list[Doc]:
+    """`CONTRADICT` candidates: HP bands, status and HP numbers (WBS 8.7)."""
+    return [
+        {"check": "hp_band", "category": "CONTRADICT", **c.to_dict()}
+        for c in band_candidates(turn.narration, turn.state)
+    ]
+
+
+CHECKS: tuple[Check, ...] = (entity_mention, hp_band)
 
 
 def check_turn(turn: Turn, checks: Sequence[Check] = CHECKS) -> list[Doc]:
