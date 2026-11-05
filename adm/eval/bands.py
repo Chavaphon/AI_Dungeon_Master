@@ -277,9 +277,9 @@ _FUNCTION = frozenset(
 )
 _JOINERS = frozenset(["and", "then", "but", "or", "yet", "finally", "suddenly"])
 _PRONOUNS = frozenset(["it", "he", "she", "they", "who", "which"])
-_SECOND_PERSON = frozenset(["you", "your", "yours", "yourself"])
+SECOND_PERSON = frozenset(["you", "your", "yours", "yourself"])
 # Words of a display name that do not name it alone.
-_DESCRIPTIVE = frozenset(
+DESCRIPTIVE = frozenset(
     [
         "the",
         "a",
@@ -296,7 +296,7 @@ _DESCRIPTIVE = frozenset(
         "great",
     ]
 )
-_HEDGE = re.compile(
+HEDGE = re.compile(
     r"\b(if|would|could|might|will|should|unless|earlier|almost|nearly|once|before)\b|['’]ll\b",
     re.IGNORECASE,
 )
@@ -409,7 +409,7 @@ _LONGEST = max(len(k) for k in PHRASES)
 
 
 @dataclass(frozen=True)
-class _Token:
+class Token:
     word: str
     start: int
     end: int
@@ -434,14 +434,14 @@ class Combatants:
             hp[cid] = (c["current_hp"], c["max_hp"])
             words = [w.lower() for w in _TOKEN.findall(c["display_name"])]
             if c.get("is_player_character"):
-                words += _SECOND_PERSON
+                words += SECOND_PERSON
             for word in words:
-                if word not in _DESCRIPTIVE:
-                    names.setdefault(_singular(word), set()).add(cid)
+                if word not in DESCRIPTIVE:
+                    names.setdefault(name_word(word), set()).add(cid)
         return cls({w: frozenset(ids) for w, ids in names.items()}, bands, hp)
 
     def named(self, word: str) -> frozenset[str]:
-        return self.names.get(_singular(word), frozenset())
+        return self.names.get(name_word(word), frozenset())
 
 
 @dataclass(frozen=True)
@@ -471,26 +471,26 @@ class BandCandidate:
         }
 
 
-def _singular(word: str) -> str:
+def name_word(word: str) -> str:
     word = re.sub(r"['’]s$", "", word)
     if len(word) > 3 and word.endswith("s") and not word.endswith(("ss", "us", "is")):
         return word[:-1]
     return word
 
 
-def _tokens(sentence: str) -> list[_Token]:
+def tokenize(sentence: str) -> list[Token]:
     return [
-        _Token(m.group().lower().replace("’", "'"), m.start(), m.end())
+        Token(m.group().lower().replace("’", "'"), m.start(), m.end())
         for m in _TOKEN.finditer(sentence)
     ]
 
 
-def _adjacent(sentence: str, left: _Token, right: _Token) -> bool:
+def adjacent(sentence: str, left: Token, right: Token) -> bool:
     """Whether only whitespace separates two tokens."""
     return not sentence[left.end : right.start].strip()
 
 
-def _match(tokens: list[_Token], i: int) -> tuple[int, HpBand] | None:
+def _match(tokens: list[Token], i: int) -> tuple[int, HpBand] | None:
     """The longest lexicon phrase starting at token `i`: its length and band."""
     for n in range(min(_LONGEST, len(tokens) - i), 0, -1):
         band = PHRASES.get(tuple(t.word for t in tokens[i : i + n]))
@@ -499,7 +499,7 @@ def _match(tokens: list[_Token], i: int) -> tuple[int, HpBand] | None:
     return None
 
 
-def _negated(tokens: list[_Token], i: int) -> bool:
+def negated(tokens: list[Token], i: int) -> bool:
     before = [t.word for t in tokens[max(0, i - 3) : i]]
     pairs = set(zip(before, before[1:], strict=False))
     return any(w in _NEGATIONS or w.endswith("n't") for w in before) or bool(
@@ -508,7 +508,7 @@ def _negated(tokens: list[_Token], i: int) -> bool:
 
 
 def _subject_before(
-    sentence: str, tokens: list[_Token], i: int, cast: Combatants
+    sentence: str, tokens: list[Token], i: int, cast: Combatants
 ) -> frozenset[str] | None:
     """The combatants named just before token `i`, skipping adverbs. `None` when
     the word before is no combatant: the phrase is about something else. An
@@ -516,7 +516,7 @@ def _subject_before(
     j = i - 1
     while j >= 0 and tokens[j].word.endswith("ly") and tokens[j].word not in cast.names:
         j -= 1
-    if j < 0 or not _adjacent(sentence, tokens[j], tokens[j + 1]):
+    if j < 0 or not adjacent(sentence, tokens[j], tokens[j + 1]):
         return frozenset()
     word = tokens[j].word
     if named := cast.named(word):
@@ -526,7 +526,7 @@ def _subject_before(
     return None
 
 
-def _sentence_subjects(tokens: list[_Token], cast: Combatants) -> list[frozenset[str]]:
+def _sentence_subjects(tokens: list[Token], cast: Combatants) -> list[frozenset[str]]:
     """Each distinct group of combatants named in a sentence, in order."""
     groups: list[frozenset[str]] = []
     for t in tokens:
@@ -543,7 +543,7 @@ def _bands_of(cast: Combatants, subject: frozenset[str]) -> tuple[str, ...]:
 def _phrase_candidates(
     sentence: str,
     base: int,
-    tokens: list[_Token],
+    tokens: list[Token],
     cast: Combatants,
     previous: list[frozenset[str]],
     hedged: bool,
@@ -564,9 +564,9 @@ def _phrase_candidates(
         direct: frozenset[str] | None = frozenset()
         sure = n > 1 or phrase[0] not in AMBIGUOUS
 
-        if _negated(tokens, i - n):
+        if negated(tokens, i - n):
             continue
-        if nxt is not None and _adjacent(sentence, last, nxt):
+        if nxt is not None and adjacent(sentence, last, nxt):
             if nxt.word in _OBJECTS:  # an event: "hurt you", "fell the rat"
                 continue
             if phrase[-1] in VERBS and nxt.word in _NOT_DOWN:  # "falls back"
@@ -582,14 +582,14 @@ def _phrase_candidates(
         elif (
             n == 1
             and nxt is not None
-            and _adjacent(sentence, last, nxt)
+            and adjacent(sentence, last, nxt)
             and nxt.word not in _FUNCTION
             and not nxt.word.endswith("ly")
         ):
             direct = cast.named(nxt.word)  # "the wounded rat"
             if not direct:  # "the dying torchlight"
                 continue
-        elif i - n > 0 and _adjacent(sentence, tokens[i - n - 1], tokens[i - n]):
+        elif i - n > 0 and adjacent(sentence, tokens[i - n - 1], tokens[i - n]):
             direct = cast.named(tokens[i - n - 1].word)  # "Lyra, unhurt" is not adjacent
 
         if direct:
@@ -618,7 +618,7 @@ def _phrase_candidates(
 
 
 def _status_candidates(
-    sentence: str, base: int, tokens: list[_Token], cast: Combatants, hedged: bool
+    sentence: str, base: int, tokens: list[Token], cast: Combatants, hedged: bool
 ) -> Iterable[BandCandidate]:
     for i, t in enumerate(tokens):
         if t.word not in ACTS_YOU:
@@ -626,7 +626,7 @@ def _status_candidates(
         subject = _subject_before(sentence, tokens, i, cast)
         if not subject:
             continue
-        you = tokens[i - 1].word in _SECOND_PERSON
+        you = tokens[i - 1].word in SECOND_PERSON
         if t.word not in (ACTS_YOU if you else ACTS_THIRD):
             continue
         actual = _bands_of(cast, subject)
@@ -653,7 +653,7 @@ def _number(text: str) -> int:
 def _number_candidates(
     sentence: str,
     base: int,
-    tokens: list[_Token],
+    tokens: list[Token],
     cast: Combatants,
     previous: list[frozenset[str]],
     hedged: bool,
@@ -690,8 +690,8 @@ def band_candidates(narration: str, state: Mapping[str, Any]) -> list[BandCandid
     found: list[BandCandidate] = []
     previous: list[frozenset[str]] = []
     for base, sentence in sentences(narration):
-        tokens = _tokens(sentence)
-        hedged = bool(_HEDGE.search(sentence))
+        tokens = tokenize(sentence)
+        hedged = bool(HEDGE.search(sentence))
         found += _phrase_candidates(sentence, base, tokens, cast, previous, hedged)
         found += _status_candidates(sentence, base, tokens, cast, hedged)
         found += _number_candidates(sentence, base, tokens, cast, previous, hedged)

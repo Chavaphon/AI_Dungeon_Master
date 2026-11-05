@@ -153,6 +153,7 @@ adm/
     checker.py        # automated divergence + rule violation detection
     entities.py       # entity-mention extraction: PHANTOM candidates
     bands.py          # HP band lexicon and classification
+    stance.py         # stance-marker lexicon: RELATION candidates
     metrics.py        # M1-M6 computation
     annotate.py       # blind, condition-shuffled annotation CLI
     validate.py       # run logs: schema, script coverage, hash replay
@@ -1014,6 +1015,10 @@ Added at WBS 7.7 (reasons in `docs/decisions.md`):
 Added at WBS 8.7 (reasons in `docs/decisions.md`):
 
 54. The `hp_band` check writes `CONTRADICT` candidates of kind `band`, `status` or `hp_number`, with `subject`, `implied` and `actual` added to the record. The actual band is always `engine.combat.hp_band`. A band phrase implies a set of bands (rubric §5.3 intensity words) and is flagged only when it fits none of the combatants it may describe; events, negations, figurative uses and "falls back" are skipped, hedged or ambiguous cases are `low`, and a narration gets at most one candidate per combatant (`adm/eval/bands.py`).
+
+Added at WBS 8.8 (reasons in `docs/decisions.md`):
+
+55. The `stance` check writes `RELATION` candidates for NPCs in `npc_relationships` only. A stance marker implies a set of stances (hostile: `hostile`; cold: `hostile`, `unfriendly`; warm: `friendly`, `allied`; no neutral markers) and is flagged only when every one is more than `ADJACENCY` = 1 steps from the stance after the turn. Negated markers, the party's own behaviour and mixed tones are skipped; at most one candidate per NPC per narration (`adm/eval/stance.py`).
 
 ## 16. Open questions for the team
 
