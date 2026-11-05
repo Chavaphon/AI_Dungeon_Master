@@ -205,7 +205,7 @@ INTENSITY: dict[str, frozenset[HpBand]] = {
     **dict.fromkeys(["slightly", "lightly", "mildly"], frozenset({HEALTHY, WOUNDED})),
 }
 
-_NEGATIONS = frozenset(["not", "no", "never", "nor", "without"])
+_NEGATIONS = frozenset(["not", "no", "never", "nor", "without", "cannot"])
 _NEGATION_PAIRS = frozenset({("far", "from"), ("no", "longer")})
 # Words after a phrase that make it an event ("hurt you") or fall away from a
 # combatant ("falls back").
@@ -507,7 +507,7 @@ def negated(tokens: list[Token], i: int) -> bool:
     )
 
 
-def _subject_before(
+def subject_before(
     sentence: str, tokens: list[Token], i: int, cast: Combatants
 ) -> frozenset[str] | None:
     """The combatants named just before token `i`, skipping adverbs. `None` when
@@ -576,7 +576,7 @@ def _phrase_candidates(
             if intensity is not None:
                 bands, first = intensity, tokens[i - n - 1]
         if n == 1 and phrase[0] in VERBS:
-            direct = _subject_before(sentence, tokens, i - n, cast)
+            direct = subject_before(sentence, tokens, i - n, cast)
             if direct is None:  # "the barrels collapse"
                 continue
         elif (
@@ -623,7 +623,7 @@ def _status_candidates(
     for i, t in enumerate(tokens):
         if t.word not in ACTS_YOU:
             continue
-        subject = _subject_before(sentence, tokens, i, cast)
+        subject = subject_before(sentence, tokens, i, cast)
         if not subject:
             continue
         you = tokens[i - 1].word in SECOND_PERSON

@@ -154,6 +154,7 @@ adm/
     entities.py       # entity-mention extraction: PHANTOM candidates
     bands.py          # HP band lexicon and classification
     stance.py         # stance-marker lexicon: RELATION candidates
+    rules.py          # M4 rule violations: narrated and in the state
     metrics.py        # M1-M6 computation
     annotate.py       # blind, condition-shuffled annotation CLI
     validate.py       # run logs: schema, script coverage, hash replay
@@ -715,7 +716,7 @@ A narration containing no band phrase is not scored for band accuracy. Ambiguity
 3. **Status contradiction.** Narration implies an unconscious combatant is acting, or an active one is down.
 4. **Resource comparison.** Narration mentions casting or spending when `state_diff` shows no corresponding change, or vice versa.
 5. **Stance comparison** against the stance lexicon (hostile/warm/neutral speech markers).
-6. **Rule violations (M4)**, which are checked against the *state*, not the narration: negative HP, slot spent below zero, action out of turn order, action after encounter end.
+6. **Rule violations (M4)**, which are checked against the *state*: negative HP, slot spent below zero, action out of turn order, action after encounter end. Two parts (item 56 below): the state and engine actions themselves (`state_audit`, zero by construction), and the same breaks described in the narration, judged against the state and what the turn did (`rule_violation`).
 
 Everything else is human-annotated. The checker must report **candidates with a confidence flag**, never final scores, for `PHANTOM`. A human confirms or rejects each candidate.
 
@@ -1019,6 +1020,10 @@ Added at WBS 8.7 (reasons in `docs/decisions.md`):
 Added at WBS 8.8 (reasons in `docs/decisions.md`):
 
 55. The `stance` check writes `RELATION` candidates for NPCs in `npc_relationships` only. A stance marker implies a set of stances (hostile: `hostile`; cold: `hostile`, `unfriendly`; warm: `friendly`, `allied`; no neutral markers) and is flagged only when every one is more than `ADJACENCY` = 1 steps from the stance after the turn. Negated markers, the party's own behaviour and mixed tones are skipped; at most one candidate per NPC per narration (`adm/eval/stance.py`).
+
+Added at WBS 8.9 (reasons in `docs/decisions.md`):
+
+56. M4 is written with `category: "RULE"` in two parts. `state_audit` checks every narrated turn's state and engine actions (HP out of range, slots or quantities below zero, out-of-turn actions, combat with no encounter, Cure Wounds exempt) and is zero by construction. `rule_violation` checks the narration against the state and what the turn did, D's own and A–C's replayed ground truth: attacks after the encounter ended, attacks by a combatant that did not act this encounter turn, Cure Wounds with no slot, and negative HP stated. M4 per condition is high-confidence `rule_violation` plus `state_audit` candidates per 100 turns (`adm/eval/rules.py`).
 
 ## 16. Open questions for the team
 
