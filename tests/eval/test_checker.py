@@ -1,4 +1,4 @@
-"""The automated checker's runner (WBS 8.6 to 8.8): run logs in, candidates out.
+"""The automated checker's runner (WBS 8.6 to 8.9): run logs in, candidates out.
 
 The checker reads condition A and D logs written by the real harnesses with a
 fake client, scores each narrated turn against the state of docs/rubric.md
@@ -183,3 +183,27 @@ def test_treatment_two_steps_from_the_stance_is_a_relation_candidate(tmp_path: P
         ["unfriendly"],
     )
     assert c["mention"] == "beams" and c["confidence"] == "high"
+
+
+ATTACK_AFTER_VICTORY = "The giant rat lunges at you from the shadows."
+
+
+@pytest.mark.parametrize("template", ["a", "b", "c"])
+def test_m4_runs_on_conditions_a_to_c(tmp_path: Path, template: str) -> None:
+    # Input 10 comes after the cellar fight is won (the replayed ground truth).
+    log = new_run_log(tmp_path, template.upper(), CELLAR.scenario_id, SEED)
+    narrations = [CLEAN] * 10 + [ATTACK_AFTER_VICTORY]
+    start = NarrationOnlyStart(template)
+    run_script(start(FakeClient(narrations), CONFIG, TEXTS, CELLAR, log, seed=SEED))
+    rules = [c for c in _check(tmp_path) if c["category"] == "RULE"]
+    assert [(c["check"], c["kind"], c["input_index"]) for c in rules] == [
+        ("rule_violation", "after_encounter_end", 10)
+    ]
+
+
+def test_m4_runs_on_condition_d_and_its_state_breaks_no_rule(tmp_path: Path) -> None:
+    _d_run(tmp_path)
+    records = read_log(next(tmp_path.glob("D/*/*.jsonl")))
+    # The fake client proposes no calls, but the scripted encounter still starts.
+    assert any(s["step"] == "encounter_start" for r in records for s in r["engine_steps"])
+    assert [c for c in _check(tmp_path) if c["check"] == "state_audit"] == []

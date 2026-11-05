@@ -26,8 +26,11 @@ candidates. WBS 8.6 adds `entity_mention` (`PHANTOM`, `adm/eval/entities.py`).
 WBS 8.7 adds `hp_band` (`CONTRADICT`, `adm/eval/bands.py`): band phrases, an
 unconscious combatant acting, and stated HP numbers, against the scored state.
 WBS 8.8 adds `stance` (`RELATION`, `adm/eval/stance.py`): stance markers too far
-from an NPC's recorded stance. The rule-violation check (WBS 8.9) is added to
-the same list and writes the same record.
+from an NPC's recorded stance. WBS 8.9 adds the M4 checks (`RULE`,
+`adm/eval/rules.py`): `rule_violation`, rule breaks the narration describes
+given what the turn did, and `state_audit`, rule breaks in the state and engine
+actions themselves, which the engine makes zero by construction. `RULE` is M4,
+not one of the four M1 divergence categories.
 
 **The record**, one line per candidate, sorted by run, then turn, then position:
 
@@ -35,9 +38,11 @@ the same list and writes the same record.
      "check", "category", "status": "candidate", "confidence": "high" | "low",
      "kind", "mention", "span": [start, end], "sentence"}
 
-`hp_band` and `stance` candidates add `subject` (the combatant or NPC ids the
-phrase may describe), `implied` (what the narration claims) and `actual` (what
-the state records).
+`hp_band`, `stance` and the M4 candidates add `subject` (the combatant or NPC
+ids the phrase may describe); `hp_band` and `stance` also add `implied` (what
+the narration claims) and `actual` (what the state records). A `state_audit`
+candidate has no narration: its `span` is `[0, 0]`, its `sentence` empty and
+its `mention` the offending field or action.
 
 `span` indexes the record's `narration`. `status` is always `candidate`: a human
 confirms or rejects each one, and the checker never reports a final score for
@@ -62,6 +67,7 @@ from adm.engine.scenario import Scenario, initial_state, load_scenario
 from adm.engine.state import data_hash
 from adm.eval.bands import band_candidates
 from adm.eval.entities import Scope, phantom_candidates
+from adm.eval.rules import narrated_violations, state_violations
 from adm.eval.stance import stance_candidates
 
 Doc = dict[str, Any]
@@ -77,11 +83,16 @@ class LogMismatch(ValueError):
 
 @dataclass(frozen=True)
 class Turn:
-    """One narrated turn and what it is scored against."""
+    """One narrated turn and what it is scored against: the state after it, the
+    state before it, and what the engine did in it (the executed call and the
+    engine steps; for A to C, the replayed ground truth's)."""
 
     record: Doc
     scenario: Scenario
     state: Doc
+    before: Doc
+    call: Doc | None
+    steps: Sequence[Doc]
 
     @property
     def narration(self) -> str:
@@ -109,35 +120,57 @@ def _check_hash(state: Doc, record: Doc, field: str) -> None:
         )
 
 
-def scored_states(scenario: Scenario, records: Sequence[Doc]) -> list[Doc]:
-    """The state each record is scored against, checked against its hashes."""
+@dataclass(frozen=True)
+class Scored:
+    """What one record is scored against (docs/rubric.md section 1)."""
+
+    before: Doc
+    state: Doc
+    call: Doc | None
+    steps: Sequence[Doc]
+
+
+def scored_turns(scenario: Scenario, records: Sequence[Doc]) -> list[Scored]:
+    """The states and engine actions each record is scored against, checked
+    against its hashes: condition D's own, A to C's replayed ground truth."""
     if not records:
         return []
     condition, seed = records[0]["condition"], records[0]["seed"]
-    states: list[Doc] = []
+    scored: list[Scored] = []
     if condition == "D":
         state = initial_state(scenario, seed).to_dict()
         for record in records:
             _check_hash(state, record, "state_before_hash")
-            state = apply_diff(state, record["state_diff"])
-            _check_hash(state, record, "state_after_hash")
-            states.append(state)
-        return states
+            after = apply_diff(state, record["state_diff"])
+            _check_hash(after, record, "state_after_hash")
+            scored.append(Scored(state, after, record["executed_call"], record["engine_steps"]))
+            state = after
+        return scored
     truth = replay_script(scenario, seed)
+    start = initial_state(scenario, seed).to_dict()
     for record in records:
         index = record["input_index"]
         if index is None or not 0 <= index < len(truth):
             raise LogMismatch(f"{record['run_id']}: input_index {index} is not a scripted input")
-        _check_hash(truth[index].state, record, "state_after_hash")
-        states.append(truth[index].state)
-    return states
+        turn = truth[index]
+        _check_hash(turn.state, record, "state_after_hash")
+        # A-C records carry the state after the input in both hashes (CLAUDE.md
+        # section 15 item 49), so the state before is the replay's, unchecked.
+        before = truth[index - 1].state if index else start
+        scored.append(Scored(before, turn.state, turn.executed_call, turn.engine_steps))
+    return scored
+
+
+def scored_states(scenario: Scenario, records: Sequence[Doc]) -> list[Doc]:
+    """The state each record is scored against, checked against its hashes."""
+    return [s.state for s in scored_turns(scenario, records)]
 
 
 def turns(scenario: Scenario, records: Sequence[Doc]) -> Iterator[Turn]:
-    """The narrated turns of one run, in order, each with its scored state."""
-    for record, state in zip(records, scored_states(scenario, records), strict=True):
+    """The narrated turns of one run, in order, each with what it is scored against."""
+    for record, s in zip(records, scored_turns(scenario, records), strict=True):
         if record["turn_failure"] is None:
-            yield Turn(record, scenario, state)
+            yield Turn(record, scenario, s.state, s.before, s.call, s.steps)
 
 
 # --- the checks --------------------------------------------------------------
@@ -170,7 +203,19 @@ def stance(turn: Turn) -> list[Doc]:
     ]
 
 
-CHECKS: tuple[Check, ...] = (entity_mention, hp_band, stance)
+def rule_violation(turn: Turn) -> list[Doc]:
+    """M4: rule breaks the narration describes, given what the turn did (WBS 8.9)."""
+    found = narrated_violations(turn.narration, turn.state, turn.before, turn.call, turn.steps)
+    return [{"check": c.check, "category": "RULE", **c.to_dict()} for c in found]
+
+
+def state_audit(turn: Turn) -> list[Doc]:
+    """M4: rule breaks in the turn's state and engine actions; zero by construction."""
+    found = state_violations(turn.state, turn.before, turn.call, turn.steps)
+    return [{"check": c.check, "category": "RULE", **c.to_dict()} for c in found]
+
+
+CHECKS: tuple[Check, ...] = (entity_mention, hp_band, stance, rule_violation, state_audit)
 
 
 def check_turn(turn: Turn, checks: Sequence[Check] = CHECKS) -> list[Doc]:
