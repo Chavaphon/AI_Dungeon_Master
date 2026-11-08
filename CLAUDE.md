@@ -81,6 +81,9 @@ python -m adm.eval.checker --runs runs/ --out results/automated.jsonl
 python -m adm.eval.checker_validation sample --runs runs/dry_run
 python -m adm.eval.checker_validation score --runs runs/dry_run
 
+# rubric pilot, WBS 8.11: Krippendorff's alpha between two annotators of the same 30 turns
+python -m adm.eval.rubric_pilot --labels SD=results/checker_validation/labels.csv --labels XX=results/checker_validation/labels_XX.csv
+
 # blind annotation: M5 ratings and the M3 intent-fidelity sample (resumable)
 python -m adm.eval.annotate m5 --rater SS
 python -m adm.eval.annotate m3 --annotator CI
@@ -160,6 +163,7 @@ adm/
     stance.py         # stance-marker lexicon: RELATION candidates
     rules.py          # M4 rule violations: narrated and in the state
     checker_validation.py  # 30-turn hand-labelled validation: precision, recall
+    rubric_pilot.py   # rubric pilot: Krippendorff's alpha between annotators
     metrics.py        # M1-M6 computation
     annotate.py       # blind, condition-shuffled annotation CLI
     validate.py       # run logs: schema, script coverage, hash replay
@@ -1033,6 +1037,10 @@ Added at WBS 8.9 (reasons in `docs/decisions.md`):
 Added at WBS 8.10 (reasons in `docs/decisions.md`):
 
 57. The checker is validated on 30 narrated dry-run turns (seed 3001), 8/8/7/7 from A/B/C/D in sha256 draw order, labelled blind to condition and checker output from a sheet of each turn's scored state and engine actions. A candidate matches at most one overlapping label of its turn and category. Precision and recall per category, all and high-confidence, and every miss are written to `docs/checker_validation.md` (`adm/eval/checker_validation.py`).
+
+Added at WBS 8.11 (reasons in `docs/decisions.md`):
+
+58. The rubric pilot is the 30 turns of the 8.10 sample, labelled independently by SD (the 8.10 labels) and a second annotator. The unit is one turn and one rubric category, valued by the number of divergences recorded; Krippendorff's alpha is interval on those counts, per category and pooled, and nominal on whether a turn has any divergence. Disagreements and `6.4` notes go to 8.12 (`docs/rubric_pilot.md`, `adm/eval/rubric_pilot.py`).
 
 ## 16. Open questions for the team
 
