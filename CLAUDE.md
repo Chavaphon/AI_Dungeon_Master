@@ -681,7 +681,7 @@ Note that D's narration call does **not** receive the full state, only the facts
 
 ## 10. Divergence rubric and the automated checker
 
-This is the measurement instrument. Its thresholds must be fixed before any scoring begins, and frozen once the pilot is done.
+This is the measurement instrument. Its thresholds must be fixed before any scoring begins, and frozen once the pilot is done. The full annotation rubric is `docs/rubric.md` v1.0, frozen at gate G3 (WBS 8.12) under the git tag `rubric-v1.0` and pinned by sha256 in `tests/test_rubric.py`; changing it needs a `docs/decisions.md` entry.
 
 ### 10.1 The four categories
 
@@ -692,7 +692,9 @@ This is the measurement instrument. Its thresholds must be fixed before any scor
 | `RESOURCE` | Resource error | Narration describes spending, gaining or consuming a resource inconsistently with state (spell slots, inventory quantities) |
 | `RELATION` | Relationship contradiction | Narration treats an NPC in a manner inconsistent with its recorded stance |
 
-One narration may contain several divergences, including several of the same category. Count each. The unit of M1 is **divergences per 100 turns**.
+One narration may contain several divergences, including several of the same category. Count each. The unit of M1 is **divergences per 100 turns**. A phrase that fits more than one category is recorded once, in the first that applies in the order `PHANTOM`, `CONTRADICT`, `RESOURCE`, `RELATION`. The same divergence repeated within one narration counts once; in a later turn it counts again.
+
+The scenario definition includes the characters, groups and places named in the text of its `scripted_inputs`: they are in scope for `PHANTOM`, as are descriptions of them and invented personal names for them (rubric §6.1 rule 6).
 
 ### 10.2 Hit-point bands — the threshold that decides everything
 
@@ -1041,6 +1043,10 @@ Added at WBS 8.10 (reasons in `docs/decisions.md`):
 Added at WBS 8.11 (reasons in `docs/decisions.md`):
 
 58. The rubric pilot is the 30 turns of the 8.10 sample, labelled independently by SD (the 8.10 labels) and a second annotator. The unit is one turn and one rubric category, valued by the number of divergences recorded; Krippendorff's alpha is interval on those counts, per category and pooled, and nominal on whether a turn has any divergence. Disagreements and `6.4` notes go to 8.12 (`docs/rubric_pilot.md`, `adm/eval/rubric_pilot.py`).
+
+Added at WBS 8.12 (reasons in `docs/decisions.md`):
+
+59. The divergence rubric is frozen as v1.0 (`docs/rubric.md`, tag `rubric-v1.0`, hash in `tests/test_rubric.py`). Characters, groups and places named in a scenario's scripted inputs are in scope for `PHANTOM`, with their descriptions and invented names; an invented plural of an item that exists once is a `PHANTOM`; an `active` quest treated as completed or failed is a `CONTRADICT`; `RELATION` forgives one stance step either side. The checker is unchanged.
 
 ## 16. Open questions for the team
 

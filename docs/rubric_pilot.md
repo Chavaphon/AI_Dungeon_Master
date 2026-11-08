@@ -1,6 +1,6 @@
 # Rubric pilot
 
-WBS 8.11 · Owner: SD · Status: **done, 2026-11-08** · CLAUDE.md wins on any conflict.
+WBS 8.11 · Owner: SD · Status: **done, 2026-11-08**; disagreements resolved at WBS 8.12 (section 4) · CLAUDE.md wins on any conflict.
 
 Before the rubric is frozen at G3 (WBS 8.12), two annotators label the same turns independently by `docs/rubric.md` v0.6, and Krippendorff's alpha measures how far they agree. The disagreements listed in section 2 are the agenda for 8.12.
 
@@ -78,3 +78,22 @@ Alpha is `–` where it is undefined: every value the same, so there is no disag
 5. **`RELATION` adjacency (rubric §7 point 1):** both annotators had the one one-step case (S30) and both left it unrecorded. No evidence against the allowance: **keep it**.
 
 If the team adopts change 1, the main-grid annotation should use the rule as written; the pilot does not need to be re-run, since it has identified the gap the freeze is meant to close.
+
+## 4. Resolved at the rubric freeze (WBS 8.12)
+
+Decided by the team on 2026-11-08 (`docs/decisions.md`, WBS 8.12) and written into `docs/rubric.md` v1.0, tag `rubric-v1.0`. Changes 1, 3 and 5 were adopted as proposed. On change 2, an invented plural of an item that exists once is a `PHANTOM` (rubric §6.1 rule 4). Change 4 is outside the rubric (`RULE` is M4). The pilot is not re-run: section 2 stays the agreement measured under v0.6, and the table below is the reading under v1.0.
+
+| Turn | Category | SD | CI | v1.0 | Rule |
+|---|---|---|---|---|---|
+| S03 | `PHANTOM` | 0 | 1 | 0 | §6.1 rule 6: the drovers are named in a scripted input |
+| S04 | `PHANTOM` | 0 | 2 | 0 | §6.1 rule 6: the two men are the gate guards of a scripted input, described |
+| S07 | `PHANTOM` | 0 | 1 | 1 | §6.1 rule 4: "our missing ledgers", a plural of the one ledger |
+| S13 | `PHANTOM` | 0 | 1 | 0 | §6.1 rule 6: the drovers |
+| S15 | `PHANTOM` | 0 | 1 | 0 | §6.1 rule 6: the drovers |
+| S22 | `PHANTOM` | 0 | 1 | 0 | §6.1 rule 6: the drovers |
+| S23 | `PHANTOM` | 1 | 2 | 1 | "a handful of coins" stands; §6.1 rule 6: the fort's commander is named in a scripted input |
+| S23 | `CONTRADICT` | 0 | 1 | 1 | §6.2 rule 2: the reward is handed over while the quest is still `active` |
+| S27 | `PHANTOM` | 0 | 2 | 0 | §6.1 rule 6: Orlo's sister is named in a scripted input, and "Commander Alderan" is an invented name for the fort's commander |
+| S28 | `PHANTOM` | 0 | 1 | 0 | §6.1 rule 6: the drovers |
+
+Under v1.0, SD's reading matches 8 of the 10 units and CI's matches 2 (S07, S23 `CONTRADICT`). Both point to a gap in v0.6, not a lapse by either annotator. The one-step stance case (S30) stays unrecorded by both, and the `RELATION` allowance is kept (rubric §6.4 rule 3).

@@ -1,8 +1,8 @@
-# Divergence rubric v0.6
+# Divergence rubric v1.0
 
-WBS 8.1, 8.2 · Owner: SD · Status: **draft, for the 8.11 pilot** · CLAUDE.md wins on any conflict.
+WBS 8.1, 8.2, 8.12 · Owner: SD · Status: **frozen, 2026-11-08 (WBS 8.12, gate G3), git tag `rubric-v1.0`** · CLAUDE.md wins on any conflict.
 
-This is the human annotation rubric for M1, the divergence rate (CLAUDE.md §10). It gives the four categories from §10.1, how to count them, and two positive and two negative worked examples per category. Sections 5 and 6, the hit-point band rules in detail and the borderline conventions, are WBS 8.2. The rubric is frozen as v1.0 at G3 (WBS 8.12).
+This is the human annotation rubric for M1, the divergence rate (CLAUDE.md §10). It gives the four categories from §10.1, how to count them, and two positive and two negative worked examples per category. Sections 5 and 6, the hit-point band rules in detail and the borderline conventions, are WBS 8.2. The rubric was piloted by two annotators (WBS 8.11, `docs/rubric_pilot.md`) and frozen as v1.0 at G3 (WBS 8.12); section 7 lists what changed from v0.6. It is pinned by sha256 in `tests/test_rubric.py`. Any change after the freeze needs a `docs/decisions.md` entry and the new hash in the same pull request.
 
 ## 1. What a divergence is
 
@@ -10,7 +10,7 @@ A divergence is a phrase in the narration that **disagrees with the state**. Ann
 
 - **Condition D:** the state after that turn, plus the turn's `narration_facts` and `state_diff` in the audit log.
 - **Conditions A–C:** the ground-truth state for that turn, from replaying the scenario's scripted inputs through the engine (§9).
-- **All conditions:** the scenario definition. Its `display_name`s and `locations` are in scope even when they are not in the state (`docs/scenario_format.md`).
+- **All conditions:** the scenario definition. Its `display_name`s and `locations` are in scope even when they are not in the state (`docs/scenario_format.md`). So are the characters, groups and places that the text of its `scripted_inputs` names, such as "the drovers" or "the fort's commander" (§6.1 rule 6).
 
 Only disagreement with the state counts. Weak prose, a wrong tone, or narration that acts for the player character are M5 (narrative quality), not divergences.
 
@@ -151,7 +151,7 @@ Adjacent bands are not forgiven (CLAUDE.md §10.2). "It was only one band off" i
 
 A **band phrase** is a word or phrase that describes **how hurt a combatant is now**. The checker uses only the lexicon in CLAUDE.md §10.2. Annotators judge by meaning, so "fully restored" is a `healthy` phrase although it is not in the lexicon. The following are **not** band phrases and are not scored for band accuracy:
 
-1. **Events, not conditions.** Words that describe a blow landing this turn, not the state it leaves behind: "the bite hurts", "the blade wounds your arm", "you are struck". On its own a hit claims no band, because it can leave a combatant in any of them. "The bite leaves you badly wounded" describes the result and **is** a band phrase (`badly_hurt`).
+1. **Events, not conditions.** Words that describe a blow landing this turn, not the state it leaves behind: "the bite hurts", "the blade wounds your arm", "you are struck". On its own a hit claims no band, because it can leave a combatant in any of them. "The bite leaves you badly wounded" describes the result and **is** a band phrase (`badly_hurt`). A hit narrated against a target that took no damage this turn is an event too, and is not scored for band accuracy. (It may still be a `CONTRADICT` for another reason, such as an unconscious combatant narrated as acting, §5.5 rule 2.)
 2. **Negated phrases.** "You are far from dying", "not yet beaten", "no longer bleeding". Not scored either way. (Settles rubric v0.5 open point 2.)
 3. **Figurative phrases about something else.** "The dying torchlight", "the barrels collapse", "a wounded silence". The phrase must be about a combatant. (Settles open point 2.)
 4. **The past and the future.** "Earlier, you were nearly killed" and "one more hit and you'll fall" make no claim about the band now.
@@ -221,13 +221,14 @@ These settle the open points of rubric v0.5 and the cases that come up most ofte
 1. **Parts and features of a listed location are in scope.** "The damp stone walls", "the floor" and "a crack in the ceiling" belong to "the cellar". A separate place that is not listed ("the crypt below", "the next room") is a `PHANTOM`. (Settles open point 1.)
 2. **Scenery is not an item.** Dust, cobwebs, puddles, shadows and smells are not phantom items. Something is an item when the narration lets it be picked up, used, given or spent. "A rusty key glints in the dust" is a `PHANTOM` item; "dust drifts in the torchlight" is not.
 3. **Unnamed and unseen presences are not entities.** "A noise from somewhere above" or "you feel watched" asserts no character. "A guard shouts from the stairs" does.
-4. **Too many of a kind is a phantom.** "Three rats" when the state has two is one `PHANTOM` (the third rat), not a `CONTRADICT`.
+4. **Too many of a kind is a phantom.** "Three rats" when the state has two is one `PHANTOM` (the third rat), not a `CONTRADICT`. A plural of an item that exists once is one `PHANTOM` too, in dialogue as well as in description: "our missing ledgers" when the scenario has one ledger.
 5. **Parts of an in-scope entity are in scope.** As in P3, the rat's teeth and tail and Lyra's armour or cloak are not phantoms. A distinct object that a character carries ("the rat's golden collar") is.
+6. **What the scripted inputs name is in scope.** A character, group or place named in the text of the scenario's `scripted_inputs` is in scope, as if it had a `display_name`, because the stimulus put it there and the model is answering the player: "the drovers", "the gate guards", "the fort's commander" and "Orlo's sister" in `long01_border_road`. It is in scope in every turn of the run, before and after the input that names it. Describing one ("a burly man with a thick beard" for a gate guard) or giving one an invented personal name ("Commander Alderan" for the fort's commander) adds no entity and is not a divergence. A character or group no input names ("the toll captain's men") is still a `PHANTOM`, and so is too many of an in-scope group (rule 4) when the scenario fixes their number.
 
 ### 6.2 `CONTRADICT`
 
 1. **Dialogue counts.** What an NPC says is part of the narration, as in C2. An NPC who lies is not an exception: this game has no deception mechanic, so a false statement is still a divergence.
-2. **Quest state is scored by meaning.** Narration that treats a `completed` or `failed` quest as open, or a `not_started` quest as already under way, is a `CONTRADICT`. Hints and rumours about a `not_started` quest are not.
+2. **Quest state is scored by meaning.** Narration that treats a `completed` or `failed` quest as open, a `not_started` quest as already under way, or an `active` quest as already `completed` or `failed`, is a `CONTRADICT`. Handing over a quest's reward while the quest is still `active` treats it as completed. Hints and rumours about a `not_started` quest are not, and neither is progress towards an `active` quest's end ("the fort is in sight").
 
 ### 6.3 `RESOURCE`
 
@@ -238,9 +239,17 @@ These settle the open points of rubric v0.5 and the cases that come up most ofte
 
 1. **Only NPCs with a stance.** `RELATION` applies only to entries in `npc_relationships`. A `hostile` faction creature with no stance, such as the giant rats, cannot have a `RELATION` divergence. (Settles open point 3.)
 2. **The stance after the turn.** If `update_npc_relationship` ran this turn, the narration is scored against the new stance. A change described in the narration without the tool call is a divergence (example L2).
-3. **Two steps away, or a different direction.** Behaviour that fits the recorded stance or one step either side of it is not a divergence: the stance markers are coarse and the stance ladder has five steps. Behaviour two or more steps away (warmth towards `unfriendly`, hostility towards `friendly`) is. The adjacency allowance is for `RELATION` only. HP bands have none.
+3. **Two steps away, or a different direction.** Behaviour that fits the recorded stance or one step either side of it is not a divergence: the stance markers are coarse and the stance ladder has five steps. Behaviour two or more steps away (warmth towards `unfriendly`, hostility towards `friendly`) is. The adjacency allowance is for `RELATION` only. HP bands have none. (Kept at the v1.0 freeze: in the 8.11 pilot, both annotators left the one one-step case unrecorded.)
 
-## 7. Open points for the 8.11 pilot
+## 7. Changes from v0.6 (WBS 8.12)
 
-1. **RELATION adjacency (§6.4 rule 3).** This is a proposal. If the pilot shows that annotators disagree mostly on one-step stance cases, keep it. If they agree on them, drop it, and treat any stance mismatch as a divergence, as HP bands are treated.
-2. **Checker coverage of §5.3.** The lexicon cannot tell an event ("the bite hurts") from a condition ("you are hurt"), or a negated phrase from a plain one. WBS 8.7 must either skip those cases or flag them as low confidence, so that the checker under-reports as CLAUDE.md §10.2 requires. WBS 8.10 should report how many of the 30 hand-labelled turns these cases account for. *Answered by WBS 8.7:* events, negations and figurative uses are skipped, and the past, the future and ambiguous lexicon words ("falls", "fine") are flagged `low` (`adm/eval/bands.py`, `docs/decisions.md` 2026-11-05).
+The 8.11 pilot (`docs/rubric_pilot.md`) measured pooled alpha 0.731, with `PHANTOM` at 0.553. The team settled its disagreements and open points as follows (`docs/decisions.md` 2026-11-08, WBS 8.12):
+
+1. **Characters named in the scripted inputs are in scope** (§1, §6.1 rule 6), with their descriptions and invented personal names. This was 8 of the pilot's 10 disagreeing units.
+2. **A plural of an item that exists once is a `PHANTOM`**, in dialogue too (§6.1 rule 4).
+3. **An `active` quest treated as completed or failed is a `CONTRADICT`** (§6.2 rule 2).
+4. **The `RELATION` adjacency allowance is kept** (§6.4 rule 3). It was v0.6's open point 1.
+5. **A hit narrated against a target that took no damage is an event**, not scored for band accuracy (§5.3 rule 1).
+6. **Checker coverage of §5.3** (v0.6 open point 2) was answered by WBS 8.7: events, negations and figurative uses are skipped, and the past, the future and ambiguous lexicon words ("falls", "fine") are flagged `low` (`adm/eval/bands.py`). The 8.10 validation found §5.3 cases in 2 of 30 turns.
+
+Not changed: `RULE` (M4) is not a rubric category, so disagreements about rule breaks narrated in the pilot are outside the rubric. The automated checker's `PHANTOM` scope is unchanged and does not read the scripted inputs, so characters named only there can still appear as candidates; the human pass rejects them under rule 6.

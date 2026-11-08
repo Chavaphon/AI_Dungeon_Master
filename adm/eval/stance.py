@@ -28,8 +28,8 @@ when **every** stance it implies is more than `ADJACENCY` steps from the
 recorded one. So hostility toward a `neutral` NPC is flagged (the done-when of
 WBS 8.8), as is warmth toward an `unfriendly` one (rubric example L1) and
 hostility toward a `friendly` one (L2), while coldness toward `unfriendly` (L3)
-or `neutral` is not. The allowance is a proposal for the 8.11 pilot (rubric
-section 7 point 1); setting `ADJACENCY` to 0 drops it.
+or `neutral` is not. The allowance was kept at the rubric v1.0 freeze (WBS 8.12)
+after the 8.11 pilot; setting `ADJACENCY` to 0 drops it.
 
 **Not scored**, so the checker under-reports as CLAUDE.md section 10.2 requires:
 
