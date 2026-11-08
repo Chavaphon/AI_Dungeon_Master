@@ -1,6 +1,6 @@
 # Intent-fidelity annotation protocol (M3) v0.9
 
-WBS 8.14 · Owner: SD · Status: **draft, for confirmation at the Week 5 checkpoint** · CLAUDE.md wins on any conflict.
+WBS 8.14 · Owner: SD · Status: **confirmed at the Week 5 checkpoint, 2026-11-08** · CLAUDE.md wins on any conflict.
 
 This is the protocol for M3, intent fidelity (CLAUDE.md §10.4): on a 15% random sample of turns, a human judges, yes or no, whether the executed call represents what the player asked for. It is the critic layer of the VERIFY pyramid (§1.2). It looks for the failure the validator cannot see: a valid call for the wrong action (§7.2). The annotation itself is WBS 9.7 (CI, Week 6), on the annotation tool of WBS 8.15.
 
@@ -110,3 +110,5 @@ The results section (WBS 11.3) gives:
 
 1. **A second annotator.** CLAUDE.md §10.4 asks for Krippendorff's alpha on a 20% double-scored overlap but does not say whether M3 is included. The WBS has a second-annotator pass only for M1 (9.6). Proposal: no second pass for M3 within the 9.7 budget. Rule 3.3.6 and the reason codes make the judgement narrow. If the team wants alpha for M3 too, 20% of the M3 sample is about 1 extra hour for SS, and 9.6 grows by that much.
 2. **Who annotates.** 9.7 is CI's, and CI also wrote the orchestration that produces the calls. If the team prefers an annotator who did not build the tool phase, SD or SS could take it. This changes owners, not the protocol.
+
+Settled at the Week 5 checkpoint (`docs/decisions.md`, 2026-11-08): no second annotator for M3, and the report states that M3 is single-annotated; 9.7 stays with CI.

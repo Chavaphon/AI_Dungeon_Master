@@ -67,6 +67,6 @@ The model does not give up on an attack once the encounter is over. It swaps to 
 
 ## 5. Follow-ups
 
-- Upload the ten logs, the aborted log and `results/bench/smoke/` to the shared Drive folder (§2, "Shared copy"). Until then the gate G2 evidence exists on one laptop only.
-- The Ollama tray app is set to start at login and auto-updates. Before the Week 6 batches, turn that off or run a bare `ollama serve`. Otherwise the pinned-version check will stop the batch.
+- Upload the ten logs, the aborted log and `results/bench/smoke/` to the shared Drive folder (§2, "Shared copy"). Until then the gate G2 evidence exists on one laptop only. Done by CI, confirmed at the Week 5 checkpoint (`docs/decisions.md`, 2026-11-08).
+- The Ollama tray app is set to start at login and auto-updates. Before the Week 6 batches, turn that off or run a bare `ollama serve`. Otherwise the pinned-version check will stop the batch. Done: experiment runs use a standalone server (`docs/hardware.md` §7).
 - Nothing here blocks WBS 7.x. Condition D is ready to join the common runner (7.4).

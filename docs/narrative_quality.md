@@ -1,6 +1,6 @@
 # Narrative-quality rating form (M5) v0.9
 
-WBS 8.13 · Owner: SD · Status: **draft, for confirmation at the Week 5 checkpoint** · CLAUDE.md wins on any conflict.
+WBS 8.13 · Owner: SD · Status: **confirmed at the Week 5 checkpoint, 2026-11-08** · CLAUDE.md wins on any conflict.
 
 This is the form and procedure for M5, narrative quality (CLAUDE.md §10.4): two raters, blind to condition, score narration from 1 to 5 on **coherence**, **vividness** and **tone appropriateness**, plus one **engagement** item, "Would you want to keep reading?". The ratings are WBS 9.8 (first rater, SS) and 9.9 (second rater, SD). Agreement is WBS 10.5.
 
@@ -122,3 +122,5 @@ If rating falls behind, as R5 defines, both raters rate the 48 short-scenario ex
 
 1. **Five exchanges per excerpt and 64 excerpts** are a proposal, sized to the 4 hours of 9.8 and 9.9. A few can be timed on the 7.7 dry-run transcripts before rating starts, and the window can shrink to four exchanges if 3.5 minutes is optimistic.
 2. **The annotation tool (8.15, CI)** shows the excerpts and writes `results/m5_ratings.jsonl`. It needs §3 and §5 from this form. Done: `python -m adm.eval.annotate m5 --rater <initials>` (`docs/decisions.md`, 2026-11-02).
+
+Settled at the Week 5 checkpoint (`docs/decisions.md`, 2026-11-08): five exchanges per excerpt and 64 excerpts, as drafted. The §7 fallback is the only reduction.
