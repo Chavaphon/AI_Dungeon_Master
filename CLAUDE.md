@@ -77,6 +77,10 @@ python -m adm.eval.validate --runs runs/dry_run --manifest experiments/dry_run.j
 # score transcripts
 python -m adm.eval.checker --runs runs/ --out results/automated.jsonl
 
+# checker validation, WBS 8.10: draw and label 30 dry-run turns, then score
+python -m adm.eval.checker_validation sample --runs runs/dry_run
+python -m adm.eval.checker_validation score --runs runs/dry_run
+
 # blind annotation: M5 ratings and the M3 intent-fidelity sample (resumable)
 python -m adm.eval.annotate m5 --rater SS
 python -m adm.eval.annotate m3 --annotator CI
@@ -155,6 +159,7 @@ adm/
     bands.py          # HP band lexicon and classification
     stance.py         # stance-marker lexicon: RELATION candidates
     rules.py          # M4 rule violations: narrated and in the state
+    checker_validation.py  # 30-turn hand-labelled validation: precision, recall
     metrics.py        # M1-M6 computation
     annotate.py       # blind, condition-shuffled annotation CLI
     validate.py       # run logs: schema, script coverage, hash replay
@@ -1024,6 +1029,10 @@ Added at WBS 8.8 (reasons in `docs/decisions.md`):
 Added at WBS 8.9 (reasons in `docs/decisions.md`):
 
 56. M4 is written with `category: "RULE"` in two parts. `state_audit` checks every narrated turn's state and engine actions (HP out of range, slots or quantities below zero, out-of-turn actions, combat with no encounter, Cure Wounds exempt) and is zero by construction. `rule_violation` checks the narration against the state and what the turn did, D's own and A–C's replayed ground truth: attacks after the encounter ended, attacks by a combatant that did not act this encounter turn, Cure Wounds with no slot, and negative HP stated. M4 per condition is high-confidence `rule_violation` plus `state_audit` candidates per 100 turns (`adm/eval/rules.py`).
+
+Added at WBS 8.10 (reasons in `docs/decisions.md`):
+
+57. The checker is validated on 30 narrated dry-run turns (seed 3001), 8/8/7/7 from A/B/C/D in sha256 draw order, labelled blind to condition and checker output from a sheet of each turn's scored state and engine actions. A candidate matches at most one overlapping label of its turn and category. Precision and recall per category, all and high-confidence, and every miss are written to `docs/checker_validation.md` (`adm/eval/checker_validation.py`).
 
 ## 16. Open questions for the team
 
