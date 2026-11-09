@@ -110,7 +110,7 @@ def test_cli_writes_the_results_block(tmp_path: Path):
         ],
     )  # fmt: skip
     assert result.exit_code == 0, result.output
-    text = doc.read_text()
+    text = doc.read_text(encoding="utf-8")
     assert "Pending." not in text and "Annotators: SD, XX. Turns: 4." in text
     assert text.endswith("\n## 3\n")
 

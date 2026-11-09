@@ -741,3 +741,11 @@ Attendees: SS, CI, SD · Note-taker: SS
 4. Both Week 4 follow-ups are done. CI uploaded the G2 evidence (the ten logs, the aborted 1009 log and `results/bench/smoke/`) to the shared Drive folder, as reported at the meeting. Experiment runs use a standalone `ollama serve` with no tray app or updater (`docs/hardware.md` §7, 7.6). — `docs/smoke_runs.md` §5.
 
 **Open, carried to next week:** none.
+
+## 2026-11-09 — Main run of the short scenarios in two batches (WBS 9.1)
+
+Decided by: CI · Supersedes: none
+
+**Decision:** 9.1 plays the 12 short scenarios of the main grid in two batches, `experiments/main_short_1.json` (`s01` to `s06`) and then `experiments/main_short_2.json` (`s07` to `s12`). Each batch is 4 conditions × seeds 2001, 2002, 2003, for 72 runs, and both play into `runs/` with the default ledger `results/batch/attempts.jsonl`. Together they are the 144 short-scenario runs of `experiments/main_grid.json`. 9.2 (#95) plays the long scenarios.
+**Reason:** The batch runner orders a manifest seed by seed (decision 52), so a `main_grid.json` batch would interleave the long sessions of 9.2 with 9.1. Two batches of about 3 hours each fit attended sessions with the GPU kept idle. Every run starts on a freshly loaded model, so the order does not change any run: these logs are the ones a `main_grid.json` batch would write, and a later batch over it skips them as complete.
+**Changed:** `experiments/main_short_1.json` and `experiments/main_short_2.json` added. `tests/orchestration/test_batch.py`: a test that the two are disjoint and together are the short part of the main grid. No new dependencies; the schemas and the specifications are unchanged.

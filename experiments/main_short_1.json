@@ -1,0 +1,22 @@
+{
+  "description": "WBS 9.1 main run, batch 1 of 2: the short scenarios s01 to s06 x 4 conditions x seeds 2001, 2002, 2003, part of the main grid (CLAUDE.md section 10.5, experiments/main_grid.json). 72 runs, played seed by seed, scenario by scenario, condition by condition.",
+  "scenarios": [
+    "scenarios/s01_cellar.json",
+    "scenarios/s02_toll_bridge.json",
+    "scenarios/s03_forest_shrine.json",
+    "scenarios/s04_goblin_warren.json",
+    "scenarios/s05_wayside_inn.json",
+    "scenarios/s06_drowned_lighthouse.json"
+  ],
+  "conditions": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "seeds": [
+    2001,
+    2002,
+    2003
+  ]
+}

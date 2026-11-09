@@ -134,6 +134,20 @@ def test_main_grid_is_the_section_10_5_grid() -> None:
     assert {r.condition for r in runs} == {"A", "B", "C", "D"}
 
 
+def test_main_short_batches_are_the_short_part_of_the_main_grid() -> None:
+    grid = {r.run_id for r in b.load_manifest(ROOT / "experiments" / "main_grid.json", "ABCD")}
+    batches = [
+        {r.run_id for r in b.load_manifest(ROOT / "experiments" / f"main_short_{n}.json", "ABCD")}
+        for n in (1, 2)
+    ]
+    assert [len(batch) for batch in batches] == [72, 72]
+    assert not batches[0] & batches[1]
+    short = {f"s{n:02d}" for n in range(1, 13)}
+    union = batches[0] | batches[1]
+    assert union == {run_id for run_id in grid if run_id.split("_")[1] in short}
+    assert len(union) == 144
+
+
 @pytest.mark.parametrize(
     "overrides",
     [
