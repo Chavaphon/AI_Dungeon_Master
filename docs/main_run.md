@@ -27,7 +27,7 @@ The short-scenario part of the main grid (CLAUDE.md §10.5): `s01` to `s12` × c
 | Batch 2 | `experiments/main_short_2.json`: `s07` to `s12`, 72 runs. 12:30:04 to 14:10:32 UTC, 1 h 40 min |
 | Commands | `python -m adm.cli batch --manifest experiments/main_short_N.json`, then `python -m adm.eval.validate --runs runs --manifest experiments/main_short_N.json --out results/batch/validation_main_short_N.json` |
 | Output | logs in `runs/{condition}/{scenario_id}/{seed}.jsonl`; ledger `results/batch/attempts.jsonl` (144 lines, all `complete`, attempt 1) and the two validation reports in `results/batch/` (all gitignored) |
-| Shared copy | pending: upload `runs/{A,B,C,D}/s*/` and `results/batch/` to the team Drive folder at the same paths (`README.md`, "Shared storage") |
+| Shared copy | `runs/{A,B,C,D}/s*/` and `results/batch/`, uploaded 2026-11-09 to the team Drive folder at the same paths (`README.md`, "Shared storage") |
 
 The smoke logs of G2 (`runs/D/long01..04`, seeds 1001 to 1010) share the `runs/` folder and are listed by the validator as "Not in the manifest". So are batch 1's logs when batch 2 is validated. Both are expected.
 
@@ -216,4 +216,4 @@ No narration was changed by the safety filter, no prompt came near the 8,192-tok
 
 - 9.2 (#95): the four long scenarios, `long01` to `long04` × A–D × the same seeds.
 - 9.3 (#96) onwards: the checker (9.4) and annotation run over these logs. Nothing here has been scored.
-- Upload the logs and `results/batch/` to the Drive folder (§2).
+- The logs are on the Drive (§2); 9.4 onwards reads them from there or from `runs/`.
