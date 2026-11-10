@@ -1,0 +1,20 @@
+{
+  "description": "WBS 9.2 main run of the long scenarios: long01 to long04 x 4 conditions x seeds 2001, 2002, 2003, part of the main grid (CLAUDE.md section 10.5, experiments/main_grid.json). 48 runs, played seed by seed, scenario by scenario, condition by condition.",
+  "scenarios": [
+    "scenarios/long01_border_road.json",
+    "scenarios/long02_hollow_manor.json",
+    "scenarios/long03_river_market.json",
+    "scenarios/long04_mountain_monastery.json"
+  ],
+  "conditions": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "seeds": [
+    2001,
+    2002,
+    2003
+  ]
+}

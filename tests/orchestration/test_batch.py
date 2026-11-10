@@ -148,6 +148,18 @@ def test_main_short_batches_are_the_short_part_of_the_main_grid() -> None:
     assert len(union) == 144
 
 
+def test_main_long_batch_completes_the_main_grid() -> None:
+    def ids(name: str) -> set[str]:
+        return {r.run_id for r in b.load_manifest(ROOT / "experiments" / name, "ABCD")}
+
+    long = ids("main_long.json")
+    short = ids("main_short_1.json") | ids("main_short_2.json")
+    assert len(long) == 48
+    assert {run_id.split("_")[1] for run_id in long} == {f"long{n:02d}" for n in range(1, 5)}
+    assert not long & short
+    assert long | short == ids("main_grid.json")
+
+
 @pytest.mark.parametrize(
     "overrides",
     [
