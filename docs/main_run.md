@@ -214,6 +214,6 @@ No narration was changed by the safety filter, no prompt came near the 8,192-tok
 
 ## 6. Follow-ups
 
-- 9.2 (#95): the four long scenarios, `long01` to `long04` × A–D × the same seeds.
+- 9.2 (#95): the four long scenarios, `long01` to `long04` × A–D × the same seeds, played 2026-11-10: `docs/long_run.md`.
 - 9.3 (#96) onwards: the checker (9.4) and annotation run over these logs. Nothing here has been scored.
 - The logs are on the Drive (§2); 9.4 onwards reads them from there or from `runs/`.
