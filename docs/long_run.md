@@ -29,7 +29,7 @@ The long-session part of the main grid (CLAUDE.md §10.5): `long01` to `long04` 
 | Batch | `experiments/main_long.json`: `long01` to `long04`, 48 runs. 10:39:53 to 12:54:48 UTC, 2 h 15 min |
 | Commands | `python -m adm.cli batch --manifest experiments/main_long.json`, then `python -m adm.eval.validate --runs runs --manifest experiments/main_long.json --out results/batch/validation_main_long.json`, and the same with `experiments/main_grid.json` and `validation_main_grid.json` |
 | Output | logs in `runs/{condition}/{scenario_id}/{seed}.jsonl`; ledger `results/batch/attempts.jsonl` (192 lines, all `complete`, attempt 1) and the validation reports in `results/batch/` (all gitignored) |
-| Shared copy | not yet uploaded: `runs/{A,B,C,D}/long*/` seeds 2001 to 2003 and `results/batch/` go to the team Drive folder at the same paths (`README.md`, "Shared storage") |
+| Shared copy | `runs/{A,B,C,D}/long*/` seeds 2001 to 2003 and `results/batch/`, uploaded 2026-11-10 to the team Drive folder at the same paths (`README.md`, "Shared storage") |
 
 As in 9.1, the validator lists the logs outside its manifest as "Not in the manifest": the 144 short runs and the ten G2 smoke logs (`runs/D/long01..04`, seeds 1001 to 1010) for `main_long.json`, and the smoke logs alone for `main_grid.json`. Both are expected.
 
@@ -125,6 +125,6 @@ No narration was changed by the safety filter and K was never reduced. The large
 
 ## 6. Follow-ups
 
-- Upload `runs/{A,B,C,D}/long*/` (seeds 2001 to 2003) and `results/batch/` to the team Drive folder, then record it in §2.
+- The logs are on the Drive (§2); 9.4 onwards reads them from there or from `runs/`.
 - 9.3 (#96) onwards: the checker (9.4) and annotation run over these logs and those of 9.1, 192 runs in all. Nothing here has been scored.
 - 10.2: RQ2 from `input_index` or `turn_number` (§3).
