@@ -311,26 +311,35 @@ def checksum_lines(runs_dir: Path, report: Report) -> list[str]:
 
 
 def read_checksums(path: Path) -> dict[str, str]:
+    """A `sha256sum` file, by each log's place inside the runs directory,
+    `{condition}/{scenario_id}/{seed}.jsonl`, so a copy in another folder can
+    be checked against it."""
     sums = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         if line.strip():
             digest, name = line.split(maxsplit=1)
-            sums[name.lstrip("*").strip()] = digest
+            parts = name.lstrip("*").strip().split("/")
+            sums["/".join(parts[-3:])] = digest
     return sums
 
 
 def checksum_errors(runs_dir: Path, report: Report, expected: Mapping[str, str]) -> list[str]:
     """Where this copy's logs differ from a checksum file of the checked dataset."""
-    have = {log_path(runs_dir, *r.key).as_posix(): r.sha256 for r in report.runs}
+    have = {log_path(runs_dir, *r.key).relative_to(runs_dir).as_posix(): r for r in report.runs}
     errors = []
     for name, digest in expected.items():
+        where = (runs_dir / name).as_posix()
         if name not in have:
-            errors.append(f"{name}: in the checksum file, not planned by the manifest")
-        elif have[name] is None:
-            errors.append(f"{name}: no such log")
-        elif have[name] != digest:
-            errors.append(f"{name}: sha256 differs from the checksum file")
-    errors.extend(f"{name}: not in the checksum file" for name in have if name not in expected)
+            errors.append(f"{where}: in the checksum file, not planned by the manifest")
+        elif have[name].sha256 is None:
+            errors.append(f"{where}: no such log")
+        elif have[name].sha256 != digest:
+            errors.append(f"{where}: sha256 differs from the checksum file")
+    errors.extend(
+        f"{(runs_dir / name).as_posix()}: not in the checksum file"
+        for name in have
+        if name not in expected
+    )
     return errors
 
 

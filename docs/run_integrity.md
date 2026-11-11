@@ -76,12 +76,12 @@ Anyone who reads the logs later (9.4 to 9.10, the analysis) checks their copy fi
 python -m adm.eval.integrity --checksums experiments/main_grid.sha256
 ```
 
-It exits 0 only when the copy has no gap and every log has the checked bytes. `sha256sum -c experiments/main_grid.sha256` checks the bytes alone.
+It exits 0 only when the copy has no gap and every log has the checked bytes. A copy in another folder is checked with `--runs`, for example a fresh Drive download into `results/drive_check/runs/` (gitignored): `python -m adm.eval.integrity --runs results/drive_check/runs --checksums experiments/main_grid.sha256`. Files are matched by `{condition}/{scenario_id}/{seed}.jsonl`. `sha256sum -c experiments/main_grid.sha256` checks the bytes alone, from the repository root.
 
 The logs were written on Windows and end their lines with CRLF; the checksums are of those bytes. Copy them as binary files: a tool that changes line endings changes every checksum, though not the records.
 
 ## 5. Follow-ups
 
-- **Drive layout (SS or CI, before 9.4 reads the Drive).** In the shared folder, move `runs/D/s07_smugglers_cove/long0*/{2001,2002,2003}.jsonl` into `runs/D/long0*/`, then delete the four `long0*` folders left inside `runs/D/s07_smugglers_cove/`; their smoke logs are duplicates. Then download again and run the checksum command of §4.
+- **Drive layout (SS or CI, before 9.4 reads the Drive).** In the shared folder, move `runs/D/s07_smugglers_cove/long0*/{2001,2002,2003}.jsonl` into `runs/D/long0*/`, then delete the four `long0*` folders left inside `runs/D/s07_smugglers_cove/`; their smoke logs are duplicates. Then download `runs/` again into `results/drive_check/runs/` and run the `--runs` command of §4. *Drive moves reported done by SS on 2026-11-11; the fresh-download check is pending.*
 - **CI.** Run the same command against the logs on the machine that played them. If they match, the Drive copy is byte for byte what was played.
 - **9.4 (#97) onwards.** Run the §4 command before scoring or annotating. 9.10 (#102) has no failed or incomplete batch to re-run.

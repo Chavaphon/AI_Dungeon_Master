@@ -386,3 +386,29 @@ def test_the_command_line_exits_1_and_names_the_gaps(root: Path) -> None:
     result = CliRunner().invoke(integrity.app, _cli(root))
     assert result.exit_code == 1
     assert f"Gaps: {_rid('B')}" in result.output
+
+
+def test_a_copy_in_another_folder_is_checked_against_the_same_checksums(
+    root: Path, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    sums = root / "main_grid.sha256"
+    written = CliRunner().invoke(integrity.app, _cli(root, "--write-checksums", str(sums)))
+    assert written.exit_code == 0, written.output
+
+    copy = tmp_path_factory.mktemp("download") / "drive_check" / "runs"
+    for path in (root / "runs").rglob("*.jsonl"):
+        target = copy / path.relative_to(root / "runs")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(path.read_bytes())
+    args = ["--runs", str(copy), "--manifest", str(root / "manifest.json")]
+    args += ["--ledger", str(_ledger(root)), "--checksums", str(sums)]
+
+    checked = CliRunner().invoke(integrity.app, args)
+    assert checked.exit_code == 0, checked.output
+    assert "match" in checked.output
+
+    _log(root, "A").unlink()  # the original is gone; the copy is checked on its own
+    (copy / "B" / "s01_cellar" / f"{SEED}.jsonl").unlink()
+    missing = CliRunner().invoke(integrity.app, args)
+    assert missing.exit_code == 1
+    assert f"{(copy / 'B' / 's01_cellar').as_posix()}/{SEED}.jsonl: no such log" in missing.output
