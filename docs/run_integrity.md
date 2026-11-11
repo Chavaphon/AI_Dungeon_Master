@@ -64,7 +64,7 @@ The ten smoke logs in those folders are byte-identical to the ones in place (`ru
 
 **Fix.** Nothing was played again. In the downloaded copy, the 12 main-grid logs were moved into `runs/D/long0*/` and the nested duplicates removed. Checked again, all 192 runs are whole and valid, with 6,420 records. Every log's record count equals the one in CI's validation report for the main grid (`results/batch/validation_main_grid.json`, 9.2), and the 54 failed turns (precondition 47, schema 6, unknown entity 1) are the 40 of 9.1 and the 14 of 9.2.
 
-**Still to do on the Drive** (§5): the same moves in the shared folder, so the next download is right.
+**On the Drive.** SS made the same moves in the shared folder on 2026-11-11. A fresh download of `runs/` into `results/drive_check/runs/`, checked with `python -m adm.eval.integrity --runs results/drive_check/runs --checksums experiments/main_grid.sha256`, has no gap, no stray file, and every one of the 192 logs matches its checksum. The Drive copy is now the checked dataset.
 
 ## 4. Checksums
 
@@ -82,6 +82,6 @@ The logs were written on Windows and end their lines with CRLF; the checksums ar
 
 ## 5. Follow-ups
 
-- **Drive layout (SS or CI, before 9.4 reads the Drive).** In the shared folder, move `runs/D/s07_smugglers_cove/long0*/{2001,2002,2003}.jsonl` into `runs/D/long0*/`, then delete the four `long0*` folders left inside `runs/D/s07_smugglers_cove/`; their smoke logs are duplicates. Then download `runs/` again into `results/drive_check/runs/` and run the `--runs` command of §4. *Drive moves reported done by SS on 2026-11-11; the fresh-download check is pending.*
+- **Drive layout: done.** Fixed by SS on 2026-11-11 and confirmed on a fresh download (§3).
 - **CI.** Run the same command against the logs on the machine that played them. If they match, the Drive copy is byte for byte what was played.
 - **9.4 (#97) onwards.** Run the §4 command before scoring or annotating. 9.10 (#102) has no failed or incomplete batch to re-run.
