@@ -583,6 +583,10 @@ def m1(
         bool, typer.Option(help="Second annotator: the 20% overlap runs only (WBS 9.6).")
     ] = False,
     redo: RedoOption = None,
+    draft: Annotated[
+        Path | None,
+        typer.Option(help="AI pre-label file to review (decision log 2026-11-12)."),
+    ] = None,
 ) -> None:
     """Annotate divergences (M1) by rubric v1.0, whole runs, blind to condition."""
     console = Console(highlight=False)
@@ -600,6 +604,16 @@ def m1(
     except CheckerMismatch as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(1) from exc
+    drafts: dict[str, Doc] = {}
+    if draft is not None:
+        if overlap:
+            console.print("[red]The overlap is annotated without a draft (WBS 9.6).[/red]")
+            raise typer.Exit(1)
+        try:
+            drafts = m1_sample.load_draft(read_lines(draft), items)
+        except m1_sample.DraftError as exc:
+            console.print(f"[red]The draft does not fit the sample: {exc}[/red]", markup=False)
+            raise typer.Exit(1) from exc
 
     path = results / "m1_labels.jsonl"
     done = {r["turn_id"] for r in read_lines(path) if r["annotator"] == annotator}
@@ -620,16 +634,39 @@ def m1(
         for item in todo:
             console.print(f"\n[{len(done) + 1}/{len(items)}]", markup=False)
             console.print(m1_sample.render(item), markup=False)
+            shown = drafts.get(item.turn_id)
+            if shown is not None:
+                console.print(m1_sample.render_draft(item, shown), markup=False)
+                accepted = _ask(
+                    console,
+                    "Accept draft? Enter = accept, e = edit (q to stop): ",
+                    m1_sample.parse_accept,
+                )
+                if accepted and redo is None:
+                    line = m1_sample.record(
+                        item,
+                        annotator,
+                        set(shown["confirmed"]),
+                        shown["added"],
+                        "",
+                        draft=shown,
+                        review="accepted",
+                    )
+                    append_line(path, line)
+                    done.add(item.turn_id)
+                    continue
             confirmed: set[int] = set()
-            if item.candidates:
+            if shown is not None and accepted:
+                confirmed = set(shown["confirmed"])
+            elif item.candidates:
                 count = len(item.candidates)
                 confirmed = _ask(
                     console,
                     "Confirm which? numbers, a = all, Enter = none (q to stop): ",
                     lambda a, count=count: m1_sample.parse_confirmed(a, count),
                 )
-            added: list[Doc] = []
-            while True:
+            added: list[Doc] = list(shown["added"]) if shown is not None and accepted else []
+            while shown is None or not accepted:
                 category = _ask(
                     console,
                     "Missed divergence? category letter, Enter = done: ",
@@ -645,7 +682,8 @@ def m1(
                 )
                 added.append({"category": category, "phrase": span[0], "span": span[1]})
             note = _ask(console, "Note (optional): ", _note(redo is not None))
-            line = m1_sample.record(item, annotator, confirmed, added, note)
+            review = None if shown is None else ("accepted" if accepted else "edited")
+            line = m1_sample.record(item, annotator, confirmed, added, note, shown, review)
             if redo is not None:
                 key = (item.turn_id, annotator)
                 replace_line(path, lambda r, key=key: (r["turn_id"], r["annotator"]) == key, line)

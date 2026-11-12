@@ -92,7 +92,7 @@ python -m adm.eval.annotate m5 --rater SS
 python -m adm.eval.annotate m3 --annotator CI
 
 # M1 divergence annotation, WBS 9.5 and 9.6: 64 whole runs, checker candidates shown (resumable)
-python -m adm.eval.annotate m1 --annotator SD
+python -m adm.eval.annotate m1 --annotator SD --draft results/m1_draft_claude.jsonl  # review the AI draft
 python -m adm.eval.annotate m1 --annotator SS --overlap
 ```
 
@@ -1061,7 +1061,7 @@ Added at WBS 9.3 (reasons in `docs/decisions.md`):
 
 60. Before annotation, `adm/eval/integrity.py` checks every main-grid run on the copy the annotators read: a log in its place that passes the run-log validator, a last ledger attempt `complete` with no transport retry, one model for every run, and the manifest's seeds in every cell. A run that fails is a gap, fixed by fetching the copy again or playing the run again (9.10); turn failures and empty narrations are data. `experiments/main_grid.sha256` pins the bytes of the 192 checked logs, and every later reader checks its copy against it (`docs/run_integrity.md`).
 
-61. M1 is annotated on whole runs: per scenario, one seed of 2001–2003 in sha256 order, with all four conditions at it, 64 runs and about 2,100 narrated turns. Each turn shows the 9.4 checker candidates, numbered, blind to condition; the annotator confirms the true ones and adds what none covers, by rubric v1.0. The second annotator's overlap is a fifth of each condition's runs, 16 in all (`adm/eval/m1.py`, `python -m adm.eval.annotate m1`).
+61. M1 is annotated on whole runs: per scenario, one seed of 2001–2003 in sha256 order, with all four conditions at it, 64 runs and about 2,100 narrated turns. Each turn shows the 9.4 checker candidates, numbered, blind to condition; the annotator confirms the true ones and adds what none covers, by rubric v1.0. The second annotator's overlap is a fifth of each condition's runs, 16 in all (`adm/eval/m1.py`, `python -m adm.eval.annotate m1`). SD's labels start from an AI draft reviewed turn by turn (`--draft`; each line keeps the draft and whether it was accepted or edited); the overlap is labelled without one (decision log 2026-11-12).
 
 ## 16. Open questions for the team
 

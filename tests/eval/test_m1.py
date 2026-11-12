@@ -239,3 +239,87 @@ def test_m1_overlap_takes_a_fifth_of_each_condition(tmp_path: Path, runs: Path) 
 def test_m1_with_no_whole_scenario_says_so(tmp_path: Path) -> None:
     code, out = _m1(tmp_path, tmp_path / "empty", "")
     assert code == 1 and "four conditions" in out
+
+
+# --- the AI draft (decision log 2026-11-12) -------------------------------------
+
+
+def _draft_lines(items: list[m1.M1Turn]) -> list[dict]:
+    """A draft that confirms every candidate and adds one RESOURCE phrase to the first turn."""
+    lines = [
+        {
+            "turn_id": i.turn_id,
+            "confirmed": list(range(1, len(i.candidates) + 1)),
+            "added": [],
+            "note": "",
+        }
+        for i in items
+    ]
+    lines[0]["added"] = [{"category": "RESOURCE", "phrase": items[0].turn.narration.split()[0]}]
+    return lines
+
+
+def test_a_draft_is_checked_against_the_sample(runs: Path) -> None:
+    items = _items(runs)
+    lines = _draft_lines(items)
+    draft = m1.load_draft(lines, items)
+    assert set(draft) == {i.turn_id for i in items}
+    phrase = lines[0]["added"][0]["phrase"]
+    assert draft[items[0].turn_id]["added"] == [
+        {"category": "RESOURCE", "phrase": phrase, "span": [0, len(phrase)]}
+    ]
+    phantom = next(i for i in items if i.candidates)
+    bad_cases = [
+        (lines[:-1], "no draft line"),
+        ([*lines, lines[0]], "appears twice"),
+        ([{**lines[0], "turn_id": "nope/1"}, *lines[1:]], "not a sampled turn"),
+        (
+            [{**d, "confirmed": [99]} if d["turn_id"] == phantom.turn_id else d for d in lines],
+            "out of range",
+        ),
+        (
+            [{**lines[0], "added": [{"category": "X", "phrase": phrase}]}, *lines[1:]],
+            "unknown category",
+        ),
+        (
+            [{**lines[0], "added": [{"category": "PHANTOM", "phrase": "zzz"}]}, *lines[1:]],
+            "not in the narration",
+        ),
+    ]
+    for bad, message in bad_cases:
+        with pytest.raises(m1.DraftError, match=message):
+            m1.load_draft(bad, items)
+
+
+def test_a_draft_is_shown_and_accepted_or_edited(tmp_path: Path, runs: Path) -> None:
+    items = _items(runs)
+    draft_path = tmp_path / "draft.jsonl"
+    draft_path.write_text(
+        "".join(json.dumps(d) + "\n" for d in _draft_lines(items)), encoding="utf-8"
+    )
+    first, second = items[0], items[1]
+    # Accept the first turn's draft with Enter; edit the second: confirm none, add nothing.
+    edit = "e\n" + ("\n" if second.candidates else "") + "\nchecker was right\nq\n"
+    code, out = _m1(tmp_path, runs, "\n" + edit, "--draft", str(draft_path))
+    assert code == 0, out
+    assert "Draft (AI pre-label):" in out and "adds:     RESOURCE" in out
+    accepted, edited = _lines(tmp_path / "results" / "m1_labels.jsonl")
+    assert accepted["turn_id"] == first.turn_id and accepted["review"] == "accepted"
+    assert accepted["added"] == accepted["draft"]["added"] and accepted["note"] == ""
+    assert [c["confirmed"] for c in accepted["candidates"]] == [True] * len(first.candidates)
+    assert edited["turn_id"] == second.turn_id and edited["review"] == "edited"
+    assert edited["added"] == [] and edited["note"] == "checker was right"
+    assert not any(c["confirmed"] for c in edited["candidates"])
+    assert edited["draft"]["confirmed"] == list(range(1, len(second.candidates) + 1))
+
+
+def test_a_draft_is_refused_for_the_overlap_or_when_it_does_not_fit(
+    tmp_path: Path, runs: Path
+) -> None:
+    items = _items(runs)
+    draft_path = tmp_path / "draft.jsonl"
+    draft_path.write_text(json.dumps(_draft_lines(items)[0]) + "\n", encoding="utf-8")
+    code, out = _m1(tmp_path, runs, "", "--draft", str(draft_path), "--overlap")
+    assert code == 1 and "without a draft" in out
+    code, out = _m1(tmp_path, runs, "", "--draft", str(draft_path))
+    assert code == 1 and "no draft line" in out
