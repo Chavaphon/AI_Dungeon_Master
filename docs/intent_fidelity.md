@@ -16,7 +16,7 @@ Section 2 is the **sampling rule** and section 3 the **decision rule**, the two 
 
 ## 2. Sampling rule
 
-1. **Population.** Every condition D turn record of the final dataset (D8, after the 9.10 re-runs) whose `turn_failure` is `null`.
+1. **Population.** Every condition D turn record of the final dataset (D8, after the 9.10 re-runs) whose `turn_failure` is `null`. The dataset is the condition D runs `experiments/main_grid.json` plans (48 runs, seeds 2001–2003). The G2 smoke logs that share `runs/D/long0*/` (seeds 1001–1010) are not in it, and the tool stops if a planned log is missing (`docs/decisions.md`, 2026-11-12, WBS 9.7).
 2. **Strata.** One stratum per `scenario_id`: twelve short scenarios and four long sessions. This keeps each scenario's share of the sample equal to its share of the turns, so long sessions are not under-sampled by chance.
 3. **Draw.** In each stratum, sort the records by the key `sha256("m3-v1/" + run_id + "/" + input_index)`, as lowercase hex, and take the first `ceil(0.15 × n)`, where `n` is the stratum's size.
 4. **Fallback (risk R5).** If annotation falls behind, as R5 defines, the rate drops from 15% to 10%. Because the draw is an ordering, the 10% sample is the first `ceil(0.10 × n)` of the same order, a subset of the 15% one. Turns already scored stay valid. The rate used is reported with the result.

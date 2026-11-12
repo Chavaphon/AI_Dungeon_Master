@@ -1063,6 +1063,10 @@ Added at WBS 9.3 (reasons in `docs/decisions.md`):
 
 61. M1 is annotated on whole runs: per scenario, one seed of 2001–2003 in sha256 order, with all four conditions at it, 64 runs and about 2,100 narrated turns. Each turn shows the 9.4 checker candidates, numbered, blind to condition; the annotator confirms the true ones and adds what none covers, by rubric v1.0. The second annotator's overlap is a fifth of each condition's runs, 16 in all (`adm/eval/m1.py`, `python -m adm.eval.annotate m1`).
 
+Added at WBS 9.7 (reasons in `docs/decisions.md`):
+
+62. The M3 population is the condition D runs of `experiments/main_grid.json`: `annotate m3 --manifest` (that file by default) leaves out the G2 smoke logs in `runs/D/`, and stops if a planned log is missing. 242 turns at 15%. M3 is annotated by CI alone, blind, with no AI draft.
+
 ## 16. Open questions for the team
 
 Do not resolve these alone.

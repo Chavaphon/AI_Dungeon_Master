@@ -382,14 +382,30 @@ def test_m5_with_no_excerpt_says_so(tmp_path: Path) -> None:
     assert code == 1 and "s01_cellar" in out
 
 
+def _manifest(tmp_path: Path, seeds: Sequence[int]) -> Path:
+    """A batch manifest planning s01_cellar under all four conditions."""
+    path = tmp_path / "manifest.json"
+    doc = {
+        "scenarios": [str(SCENARIOS / "s01_cellar.json")],
+        "conditions": ["A", "B", "C", "D"],
+        "seeds": list(seeds),
+    }
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    return path
+
+
+def _m3(tmp_path: Path, runs_dir: Path, seeds: Sequence[int], keys: str) -> Any:
+    args = ["m3", "--annotator", "CI", "--runs", str(runs_dir), "--rate", "1.0"]
+    args += ["--scenarios", str(SCENARIOS), "--results", str(tmp_path / "results")]
+    args += ["--manifest", str(_manifest(tmp_path, seeds))]
+    return CliRunner().invoke(annotate.app, args, input=keys)
+
+
 def test_m3_records_a_verdict_with_a_reason_code(
     d_runs: tuple[Path, int, SnapshotClient], tmp_path: Path
 ) -> None:
     runs_dir, seed, _ = d_runs
-    args = ["m3", "--annotator", "CI", "--runs", str(runs_dir), "--rate", "1.0"]
-    args += ["--scenarios", str(SCENARIOS), "--results", str(tmp_path / "results")]
-    keys = "n\nWRONG\nwrong_tool\n\ny\n\nq\n"
-    result = CliRunner().invoke(annotate.app, args, input=keys)
+    result = _m3(tmp_path, runs_dir, [seed], "n\nWRONG\nwrong_tool\n\ny\n\nq\n")
     assert result.exit_code == 0, result.output
     first, second = _lines(tmp_path / "results" / "m3_intent.jsonl")
     order = annotate.draw_sample(annotate.load_runs(runs_dir), rate=1.0)
@@ -403,3 +419,25 @@ def test_m3_records_a_verdict_with_a_reason_code(
     }
     assert second["faithful"] is True and second["reason"] is None
     assert run_id("D", "s01_cellar", seed) not in result.output
+
+
+def test_m3_draws_only_from_the_runs_the_manifest_plans(
+    d_runs: tuple[Path, int, SnapshotClient], tmp_path: Path
+) -> None:
+    """A smoke log in runs/D at a seed the main grid does not plan is not in
+    the population (docs/intent_fidelity.md section 2, rule 1)."""
+    runs_dir, seed, _ = d_runs
+    _d_run(runs_dir, seed + 1)
+    result = _m3(tmp_path, runs_dir, [seed], "q\n")
+    assert result.exit_code == 0, result.output
+    assert "[1/5]" in result.output, "five turns of the one planned run, not ten"
+
+
+def test_m3_refuses_a_population_with_a_planned_log_missing(
+    d_runs: tuple[Path, int, SnapshotClient], tmp_path: Path
+) -> None:
+    runs_dir, seed, _ = d_runs
+    result = _m3(tmp_path, runs_dir, [seed, seed + 1], "q\n")
+    assert result.exit_code == 1
+    assert run_id("D", "s01_cellar", seed + 1) in result.output
+    assert not (tmp_path / "results" / "m3_intent.jsonl").exists()

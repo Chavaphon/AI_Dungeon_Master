@@ -17,8 +17,11 @@ The four scores and a note go to `results/m5_ratings.jsonl` (section 5).
 the sample of section 2 from the condition D logs and shows each turn as
 section 3.2 says: the player's input, the executed call with each id followed by
 its display name, and the state the tool-call prompt saw (the state before the
-turn, plus the encounter that opened before the call). The verdict, a reason
-code if unfaithful, and a note go to `results/m3_intent.jsonl` (section 5).
+turn, plus the encounter that opened before the call). The population is the
+condition D runs the main-grid manifest plans, so smoke logs that share
+`runs/D/` are left out, and a planned log that is missing stops the tool. The
+verdict, a reason code if unfaithful, and a note go to `results/m3_intent.jsonl`
+(section 5).
 
 `m1` is the divergence annotation (M1, docs/rubric.md v1.0, WBS 9.5 and 9.6).
 It shows every narrated turn of the 64 sampled runs (`adm/eval/m1.py`), run by
@@ -53,6 +56,7 @@ from adm.engine.scenario import Scenario, initial_state, load_scenario
 from adm.engine.state import data_hash
 from adm.eval import m1 as m1_sample
 from adm.eval.checker import LogMismatch as CheckerMismatch
+from adm.eval.integrity import load_plan
 
 Doc = dict[str, Any]
 RunKey = tuple[str, str, int]  # condition, scenario_id, seed
@@ -506,11 +510,20 @@ def m3(
     rate: Annotated[
         float, typer.Option(help="Sampling rate; 0.10 is the R5 fallback.", min=0.0, max=1.0)
     ] = M3_RATE,
+    manifest: Annotated[
+        Path, typer.Option(help="The batch manifest whose condition D runs are the population.")
+    ] = Path("experiments/main_grid.json"),
     redo: RedoOption = None,
 ) -> None:
     """Annotate intent fidelity (M3) on the condition D sample."""
     console = Console(highlight=False)
-    logs = load_runs(runs)
+    planned = {key for key in load_plan(manifest)[0] if key[0] == "D"}
+    logs = {key: records for key, records in load_runs(runs).items() if key in planned}
+    missing = sorted(planned - logs.keys())
+    if missing:
+        names = ", ".join(f"{c}_{sid}_{seed}" for c, sid, seed in missing)
+        console.print(f"No log for planned runs: {names}", markup=False, style="red")
+        raise typer.Exit(1)
     sample = draw_sample(logs, rate=rate)
     if not sample:
         console.print("[red]No condition D turns to annotate.[/red]")
