@@ -394,10 +394,10 @@ def _manifest(tmp_path: Path, seeds: Sequence[int]) -> Path:
     return path
 
 
-def _m3(tmp_path: Path, runs_dir: Path, seeds: Sequence[int], keys: str) -> Any:
+def _m3(tmp_path: Path, runs_dir: Path, seeds: Sequence[int], keys: str, *extra: str) -> Any:
     args = ["m3", "--annotator", "CI", "--runs", str(runs_dir), "--rate", "1.0"]
     args += ["--scenarios", str(SCENARIOS), "--results", str(tmp_path / "results")]
-    args += ["--manifest", str(_manifest(tmp_path, seeds))]
+    args += ["--manifest", str(_manifest(tmp_path, seeds)), *extra]
     return CliRunner().invoke(annotate.app, args, input=keys)
 
 
@@ -440,4 +440,82 @@ def test_m3_refuses_a_population_with_a_planned_log_missing(
     result = _m3(tmp_path, runs_dir, [seed, seed + 1], "q\n")
     assert result.exit_code == 1
     assert run_id("D", "s01_cellar", seed + 1) in result.output
+    assert not (tmp_path / "results" / "m3_intent.jsonl").exists()
+
+
+# --- the AI draft for M3 (decision log 2026-11-12, WBS 9.7) ---------------------
+
+
+def _m3_draft(sample: Sequence[annotate.Turn]) -> list[Doc]:
+    """Every turn faithful, except the first: WRONG_TOOL with a note."""
+    lines = [{"item_id": t.item_id, "faithful": True, "reason": None, "note": ""} for t in sample]
+    lines[0] = {**lines[0], "faithful": False, "reason": "WRONG_TOOL", "note": "a check, not a hit"}
+    return lines
+
+
+def test_an_m3_draft_is_checked_against_the_sample(
+    d_runs: tuple[Path, int, SnapshotClient],
+) -> None:
+    runs_dir, _, _ = d_runs
+    sample = annotate.draw_sample(annotate.load_runs(runs_dir), rate=1.0)
+    lines = _m3_draft(sample)
+    draft = annotate.load_draft(lines, sample)
+    assert set(draft) == {t.item_id for t in sample}
+    assert draft[sample[0].item_id] == {
+        "faithful": False,
+        "reason": "WRONG_TOOL",
+        "note": "a check, not a hit",
+    }
+
+    first = lines[0]
+    for bad, message in [
+        (lines[:-1], "no draft line"),
+        ([*lines, first], "twice"),
+        ([*lines, {**first, "item_id": "ffffffff"}], "not a sampled turn"),
+        ([{**first, "reason": None}, *lines[1:]], "reason"),
+        ([{**first, "reason": "WRONG"}, *lines[1:]], "reason"),
+        ([{**first, "faithful": True}, *lines[1:]], "reason"),
+        ([{**first, "faithful": "no"}, *lines[1:]], "faithful"),
+    ]:
+        with pytest.raises(annotate.DraftMismatch, match=message):
+            annotate.load_draft(bad, sample)
+
+
+def test_an_m3_draft_is_shown_and_accepted_or_edited(
+    d_runs: tuple[Path, int, SnapshotClient], tmp_path: Path
+) -> None:
+    runs_dir, seed, _ = d_runs
+    sample = annotate.draw_sample(annotate.load_runs(runs_dir), rate=1.0)
+    draft_path = tmp_path / "draft.jsonl"
+    draft_path.write_text(
+        "".join(json.dumps(d) + "\n" for d in _m3_draft(sample)), encoding="utf-8"
+    )
+    # Accept the first turn's draft with Enter; edit the second to unfaithful, MISSED.
+    keys = "\n" + "x\ne\nn\nmissed\nno call\n" + "q\n"
+    result = _m3(tmp_path, runs_dir, [seed], keys, "--draft", str(draft_path))
+    assert result.exit_code == 0, result.output
+    assert "a check, not a hit" in result.output
+    accepted, edited = _lines(tmp_path / "results" / "m3_intent.jsonl")
+    assert accepted["run_id"] == sample[0].run_id and accepted["annotator"] == "CI"
+    assert (accepted["faithful"], accepted["reason"], accepted["note"]) == (False, "WRONG_TOOL", "")
+    assert accepted["review"] == "accepted"
+    assert accepted["draft"] == {
+        "faithful": False,
+        "reason": "WRONG_TOOL",
+        "note": "a check, not a hit",
+    }
+    assert (edited["faithful"], edited["reason"], edited["note"]) == (False, "MISSED", "no call")
+    assert edited["review"] == "edited"
+    assert edited["draft"] == {"faithful": True, "reason": None, "note": ""}
+
+
+def test_m3_refuses_a_draft_that_does_not_fit(
+    d_runs: tuple[Path, int, SnapshotClient], tmp_path: Path
+) -> None:
+    runs_dir, seed, _ = d_runs
+    sample = annotate.draw_sample(annotate.load_runs(runs_dir), rate=1.0)
+    draft_path = tmp_path / "draft.jsonl"
+    draft_path.write_text(json.dumps(_m3_draft(sample)[0]) + "\n", encoding="utf-8")
+    result = _m3(tmp_path, runs_dir, [seed], "", "--draft", str(draft_path))
+    assert result.exit_code == 1 and "no draft line" in result.output
     assert not (tmp_path / "results" / "m3_intent.jsonl").exists()

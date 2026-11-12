@@ -21,7 +21,9 @@ turn, plus the encounter that opened before the call). The population is the
 condition D runs the main-grid manifest plans, so smoke logs that share
 `runs/D/` are left out, and a planned log that is missing stops the tool. The
 verdict, a reason code if unfaithful, and a note go to `results/m3_intent.jsonl`
-(section 5).
+(section 5). With `--draft`, each turn also shows an AI draft verdict made from
+the same view (decision log 2026-11-12, WBS 9.7): Enter accepts it, `e` judges
+the turn from scratch, and the line keeps `draft` and `review`.
 
 `m1` is the divergence annotation (M1, docs/rubric.md v1.0, WBS 9.5 and 9.6).
 It shows every narrated turn of the 64 sampled runs (`adm/eval/m1.py`), run by
@@ -109,6 +111,10 @@ SPELLS = {"spell_fire_bolt": "Fire Bolt", "spell_cure_wounds": "Cure Wounds"}
 
 class KeyDrift(RuntimeError):
     """The M5 key on disk is not the selection the logs give now."""
+
+
+class DraftMismatch(ValueError):
+    """An M3 draft that does not fit the sample it is meant for."""
 
 
 class LogMismatch(ValueError):
@@ -348,6 +354,47 @@ def render_turn(record: Doc, state: Doc, item_id: str = "") -> str:
     return "\n".join(lines)
 
 
+def load_draft(lines: Sequence[Doc], sample: Sequence[Turn]) -> dict[str, Doc]:
+    """The M3 draft by item id, checked against the sample: every sampled turn
+    once, `faithful` a boolean, and `reason` one of the codes exactly when the
+    verdict is unfaithful."""
+    ids = {t.item_id for t in sample}
+    draft: dict[str, Doc] = {}
+    errors: list[str] = []
+    for n, line in enumerate(lines, 1):
+        item_id, faithful, reason = line.get("item_id"), line.get("faithful"), line.get("reason")
+        note = line.get("note", "")
+        if item_id not in ids:
+            errors.append(f"line {n}: {item_id!r} is not a sampled turn")
+        elif item_id in draft:
+            errors.append(f"line {n}: {item_id} is drafted twice")
+        elif not isinstance(faithful, bool):
+            errors.append(f"line {n}: faithful must be true or false")
+        elif faithful and reason is not None:
+            errors.append(f"line {n}: a faithful verdict has no reason")
+        elif not faithful and reason not in REASONS:
+            errors.append(f"line {n}: an unfaithful verdict needs a reason from {REASONS}")
+        elif not isinstance(note, str):
+            errors.append(f"line {n}: note must be text")
+        else:
+            draft[item_id] = {"faithful": faithful, "reason": reason, "note": note}
+    missing = sorted(ids - draft.keys())
+    if missing and not errors:
+        errors.append(f"{len(missing)} sampled turns have no draft line, e.g. {missing[:3]}")
+    if errors:
+        raise DraftMismatch("; ".join(errors[:5]))
+    return draft
+
+
+def render_draft(draft: Doc) -> str:
+    """The draft verdict of one turn, under the turn."""
+    verdict = "faithful" if draft["faithful"] else f"unfaithful, {draft['reason']}"
+    lines = ["", "Draft (AI, from this view)", f"  verdict: {verdict}"]
+    if draft["note"]:
+        lines.append(f"  note:    {draft['note']}")
+    return "\n".join(lines)
+
+
 # --- ratings files -----------------------------------------------------------
 
 
@@ -429,6 +476,13 @@ def _reason(answer: str) -> str:
     if code not in REASONS:
         raise ValueError(f"Type one of {', '.join(REASONS)}.")
     return code
+
+
+def _accept(answer: str) -> bool:
+    """Enter accepts the draft; `e` edits the turn."""
+    if answer.lower() not in {"", "e"}:
+        raise ValueError("Press Enter to accept the draft, or type e to edit.")
+    return answer == ""
 
 
 def _name_option(value: str) -> str:
@@ -513,6 +567,9 @@ def m3(
     manifest: Annotated[
         Path, typer.Option(help="The batch manifest whose condition D runs are the population.")
     ] = Path("experiments/main_grid.json"),
+    draft: Annotated[
+        Path | None, typer.Option(help="An AI draft to review (decision log 2026-11-12).")
+    ] = None,
     redo: RedoOption = None,
 ) -> None:
     """Annotate intent fidelity (M3) on the condition D sample."""
@@ -528,6 +585,13 @@ def m3(
     if not sample:
         console.print("[red]No condition D turns to annotate.[/red]")
         raise typer.Exit(1)
+    drafts: dict[str, Doc] = {}
+    if draft is not None:
+        try:
+            drafts = load_draft(read_lines(draft), sample)
+        except DraftMismatch as exc:
+            console.print(f"The draft does not fit the sample: {exc}", markup=False, style="red")
+            raise typer.Exit(1) from exc
     found = load_scenarios(scenarios, {t.scenario_id for t in sample})
 
     path = results / "m3_intent.jsonl"
@@ -557,12 +621,22 @@ def m3(
                 "as far as one call in this game can?",
                 markup=False,
             )
-            faithful = _ask(console, "Faithful? y/n (q to stop): ", _yes_no)
-            reason = None
-            if not faithful:
-                console.print(f"Reason: {', '.join(REASONS)}", markup=False)
-                reason = _ask(console, "Reason code: ", _reason)
-            note = _ask(console, "Note (optional): ", _note(redo is not None))
+            shown = drafts.get(turn.item_id)
+            accepted = False
+            if shown is not None:
+                console.print(render_draft(shown), markup=False)
+                if redo is None:
+                    question = "Accept draft? Enter = accept, e = edit (q to stop): "
+                    accepted = _ask(console, question, _accept)
+            if accepted:
+                faithful, reason, note = shown["faithful"], shown["reason"], ""
+            else:
+                faithful = _ask(console, "Faithful? y/n (q to stop): ", _yes_no)
+                reason = None
+                if not faithful:
+                    console.print(f"Reason: {', '.join(REASONS)}", markup=False)
+                    reason = _ask(console, "Reason code: ", _reason)
+                note = _ask(console, "Note (optional): ", _note(redo is not None))
             verdict = {
                 "run_id": turn.run_id,
                 "input_index": turn.input_index,
@@ -571,6 +645,9 @@ def m3(
                 "reason": reason,
                 "note": note,
             }
+            if shown is not None:
+                verdict["draft"] = shown
+                verdict["review"] = "accepted" if accepted else "edited"
             if redo is not None:
                 key = (turn.run_id, turn.input_index, annotator)
                 replace_line(

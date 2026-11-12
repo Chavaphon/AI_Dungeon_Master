@@ -100,6 +100,8 @@ The tool (8.15, `python -m adm.eval.annotate m3 --annotator <initials>`) writes 
 
 `reason` is `null` when `faithful` is `true`.
 
+With `--draft results/m3_draft_claude.jsonl` (decision log 2026-11-12, WBS 9.7), each turn also shows an AI draft verdict made from the same view. Enter accepts it and `e` judges the turn from scratch; the line then also holds `draft` (the verdict shown) and `review` (`accepted` or `edited`). The results report how many drafts were accepted unchanged.
+
 The results section (WBS 11.3) gives:
 
 - **M3** as faithful turns over scored turns, with a 95% Wilson interval, and the sampling rate used (§2, rule 4).

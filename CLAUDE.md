@@ -90,6 +90,7 @@ python -m adm.eval.rubric_pilot --labels SD=results/checker_validation/labels.cs
 # blind annotation: M5 ratings and the M3 intent-fidelity sample (resumable)
 python -m adm.eval.annotate m5 --rater SS
 python -m adm.eval.annotate m3 --annotator CI
+python -m adm.eval.annotate m3 --annotator CI --draft results/m3_draft_claude.jsonl  # review the AI draft
 
 # M1 divergence annotation, WBS 9.5 and 9.6: 64 whole runs, checker candidates shown (resumable)
 python -m adm.eval.annotate m1 --annotator SD
@@ -1065,7 +1066,7 @@ Added at WBS 9.3 (reasons in `docs/decisions.md`):
 
 Added at WBS 9.7 (reasons in `docs/decisions.md`):
 
-62. The M3 population is the condition D runs of `experiments/main_grid.json`: `annotate m3 --manifest` (that file by default) leaves out the G2 smoke logs in `runs/D/`, and stops if a planned log is missing. 242 turns at 15%. M3 is annotated by CI alone, blind, with no AI draft.
+62. The M3 population is the condition D runs of `experiments/main_grid.json`: `annotate m3 --manifest` (that file by default) leaves out the G2 smoke logs in `runs/D/`, and stops if a planned log is missing. 242 turns at 15%. CI's verdicts start from an AI draft reviewed turn by turn (`--draft`; each line keeps the draft and whether it was accepted or edited); M3 stays single-annotated (decision log 2026-11-12).
 
 ## 16. Open questions for the team
 
