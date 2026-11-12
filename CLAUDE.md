@@ -74,6 +74,9 @@ python -m adm.cli batch --manifest experiments/main_grid.json
 python -m adm.cli batch --manifest experiments/dry_run.json --runs runs/dry_run --ledger results/dry_run/attempts.jsonl
 python -m adm.eval.validate --runs runs/dry_run --manifest experiments/dry_run.json
 
+# main-grid integrity before annotation, WBS 9.3: completeness, crashes, seeds, checksums
+python -m adm.eval.integrity --manifest experiments/main_grid.json --checksums experiments/main_grid.sha256
+
 # score transcripts
 python -m adm.eval.checker --runs runs/ --out results/automated.jsonl
 
@@ -167,6 +170,7 @@ adm/
     metrics.py        # M1-M6 computation
     annotate.py       # blind, condition-shuffled annotation CLI
     validate.py       # run logs: schema, script coverage, hash replay
+    integrity.py      # main grid before annotation: completeness, crashes, seeds, checksums
   cli.py
 config/
   model.json
@@ -1047,6 +1051,10 @@ Added at WBS 8.11 (reasons in `docs/decisions.md`):
 Added at WBS 8.12 (reasons in `docs/decisions.md`):
 
 59. The divergence rubric is frozen as v1.0 (`docs/rubric.md`, tag `rubric-v1.0`, hash in `tests/test_rubric.py`). Characters, groups and places named in a scenario's scripted inputs are in scope for `PHANTOM`, with their descriptions and invented names; an invented plural of an item that exists once is a `PHANTOM`; an `active` quest treated as completed or failed is a `CONTRADICT`; `RELATION` forgives one stance step either side. The checker is unchanged.
+
+Added at WBS 9.3 (reasons in `docs/decisions.md`):
+
+60. Before annotation, `adm/eval/integrity.py` checks every main-grid run on the copy the annotators read: a log in its place that passes the run-log validator, a last ledger attempt `complete` with no transport retry, one model for every run, and the manifest's seeds in every cell. A run that fails is a gap, fixed by fetching the copy again or playing the run again (9.10); turn failures and empty narrations are data. `experiments/main_grid.sha256` pins the bytes of the 192 checked logs, and every later reader checks its copy against it (`docs/run_integrity.md`).
 
 ## 16. Open questions for the team
 
