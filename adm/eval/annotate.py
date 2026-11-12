@@ -2,6 +2,7 @@
 
     python -m adm.eval.annotate m5 --rater SS
     python -m adm.eval.annotate m3 --annotator CI
+    python -m adm.eval.annotate m1 --annotator SD
 
 `m5` is the narrative-quality rating (M5, docs/narrative_quality.md). It picks
 one excerpt per scenario and condition from the run logs, exactly as section 2
@@ -18,6 +19,12 @@ section 3.2 says: the player's input, the executed call with each id followed by
 its display name, and the state the tool-call prompt saw (the state before the
 turn, plus the encounter that opened before the call). The verdict, a reason
 code if unfaithful, and a note go to `results/m3_intent.jsonl` (section 5).
+
+`m1` is the divergence annotation (M1, docs/rubric.md v1.0, WBS 9.5 and 9.6).
+It shows every narrated turn of the 64 sampled runs (`adm/eval/m1.py`), run by
+run, with the 9.4 checker candidates numbered. The annotator confirms the true
+candidates and adds what no candidate covers; the turn goes to
+`results/m1_labels.jsonl`. `--overlap` limits it to the second annotator's 20%.
 
 Every choice and order is a sha256 hash of fixed strings, never an RNG
 (invariant 3), so anyone can reproduce them from the logs. A rater who stops
@@ -44,6 +51,8 @@ from rich.console import Console
 from adm.engine.audit import apply_diff, read_log, step_part
 from adm.engine.scenario import Scenario, initial_state, load_scenario
 from adm.engine.state import data_hash
+from adm.eval import m1 as m1_sample
+from adm.eval.checker import LogMismatch as CheckerMismatch
 
 Doc = dict[str, Any]
 RunKey = tuple[str, str, int]  # condition, scenario_id, seed
@@ -426,7 +435,7 @@ def _name_option(value: str) -> str:
 
 @app.callback()
 def main() -> None:
-    """Blind, condition-shuffled annotation for M5 and M3 (WBS 8.15)."""
+    """Blind, condition-shuffled annotation for M5, M3 and M1 (WBS 8.15, 9.5)."""
 
 
 @app.command()
@@ -562,6 +571,90 @@ def m3(
     except _Stop:
         pass
     console.print(f"\n{len(done)}/{len(sample)} annotated. Annotations: {path}", markup=False)
+
+
+@app.command()
+def m1(
+    annotator: Annotated[str, typer.Option(help="Your initials.", callback=_name_option)],
+    runs: RunsOption = Path("runs"),
+    scenarios: ScenariosOption = Path("scenarios"),
+    results: ResultsOption = Path("results"),
+    overlap: Annotated[
+        bool, typer.Option(help="Second annotator: the 20% overlap runs only (WBS 9.6).")
+    ] = False,
+    redo: RedoOption = None,
+) -> None:
+    """Annotate divergences (M1) by rubric v1.0, whole runs, blind to condition."""
+    console = Console(highlight=False)
+    logs = load_runs(runs)
+    sample = m1_sample.draw_runs(sorted(logs))
+    if overlap:
+        sample = m1_sample.overlap_runs(sample)
+    if not sample:
+        console.print("[red]No scenario has a run in all four conditions at one seed.[/red]")
+        raise typer.Exit(1)
+    found = load_scenarios(scenarios, {sid for _, sid, _ in sample})
+    order = m1_sample.annotator_order(sample, annotator)
+    try:
+        items = list(m1_sample.sample_turns(order, logs, found))
+    except CheckerMismatch as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from exc
+
+    path = results / "m1_labels.jsonl"
+    done = {r["turn_id"] for r in read_lines(path) if r["annotator"] == annotator}
+    if redo is not None:
+        todo = [t for t in items if t.turn_id == redo and t.turn_id in done]
+        if not todo:
+            console.print(f"[red]You have not annotated {redo}.[/red]")
+            raise typer.Exit(1)
+    else:
+        todo = [t for t in items if t.turn_id not in done]
+    console.print(
+        f"{len(order)} runs, {len(items)} turns. Categories: "
+        + ", ".join(f"{k} {v}" for k, v in m1_sample.CATEGORIES.items()),
+        markup=False,
+    )
+
+    try:
+        for item in todo:
+            console.print(f"\n[{len(done) + 1}/{len(items)}]", markup=False)
+            console.print(m1_sample.render(item), markup=False)
+            confirmed: set[int] = set()
+            if item.candidates:
+                count = len(item.candidates)
+                confirmed = _ask(
+                    console,
+                    "Confirm which? numbers, a = all, Enter = none (q to stop): ",
+                    lambda a, count=count: m1_sample.parse_confirmed(a, count),
+                )
+            added: list[Doc] = []
+            while True:
+                category = _ask(
+                    console,
+                    "Missed divergence? category letter, Enter = done: ",
+                    m1_sample.parse_category,
+                )
+                if category is None:
+                    break
+                narration = item.turn.narration
+                span = _ask(
+                    console,
+                    "Phrase (copy from the narration): ",
+                    lambda a, n=narration: (a.strip(), m1_sample.find_phrase(n, a)),
+                )
+                added.append({"category": category, "phrase": span[0], "span": span[1]})
+            note = _ask(console, "Note (optional): ", _note(redo is not None))
+            line = m1_sample.record(item, annotator, confirmed, added, note)
+            if redo is not None:
+                key = (item.turn_id, annotator)
+                replace_line(path, lambda r, key=key: (r["turn_id"], r["annotator"]) == key, line)
+            else:
+                append_line(path, line)
+                done.add(item.turn_id)
+    except _Stop:
+        pass
+    console.print(f"\n{len(done)}/{len(items)} annotated. Labels: {path}", markup=False)
 
 
 if __name__ == "__main__":
