@@ -92,5 +92,5 @@ By kind: action after encounter end 121 (high 18), action out of turn order 54 (
 - **9.5 (#98), 9.6 (#99):** the M1 sample is annotated by rubric v1.0. The candidates are a starting list, not the answer. The checker's recall on validation was 0.35 overall and zero for `RESOURCE`, so annotators read whole narrations, not only flagged spans.
 - **The volume is `PHANTOM`.** 87 per cent of the candidates are `entity_mention`, Of its kinds, `character` and `proper_noun` (1,605 candidates here) had no true positive on validation: 0 of 7 and 0 of 3, against 4 of 11 for `item` (`docs/checker_validation.md` §2, "By check"). Expect most of them to be rejected.
 - **9.7 (#100):** reads the same logs, unblocked by this pass.
-- **10.1 and 10.4:** compute M1 and M4 from confirmed labels, with the bootstrap of CLAUDE.md §10.5, not from these counts.
+- **10.1 and 10.4:** compute M1 and M4 from confirmed labels, with the bootstrap of CLAUDE.md §10.5, not from these counts. *Amended at 10.4 (decision log 2026-11-13, "M4 and M6 summaries"):* M4's headline is decision 56's automated figure over all 192 runs, as CLAUDE.md §10.4 says, with the confirmed labels of the M1 sample beside it (`docs/m4_rule_violations.md`).
 - **Before reading the logs again,** check the copy: `python -m adm.eval.integrity --checksums experiments/main_grid.sha256`.
