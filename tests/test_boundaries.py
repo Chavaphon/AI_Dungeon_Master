@@ -13,8 +13,12 @@ import pytest
 
 ADM = Path(__file__).resolve().parents[1] / "adm"
 
-# The one module allowed to import random (CLAUDE.md invariant 3).
+# The modules allowed to import random: the game's dice (CLAUDE.md invariant 3)
+# and the analysis bootstrap, whose seeded RNG CLAUDE.md section 10.5 places in
+# adm/eval (docs/decisions.md, WBS 10.3). numpy.random stays banned everywhere.
 DICE_MODULE = ADM / "engine" / "dice.py"
+BOOTSTRAP_MODULE = ADM / "eval" / "metrics.py"
+RANDOM_MODULES = {DICE_MODULE, BOOTSTRAP_MODULE}
 
 # package -> top-level modules it must never import
 FORBIDDEN = {
@@ -62,12 +66,12 @@ def test_package_respects_import_boundaries(package: str) -> None:
     assert not violations, "\n".join(violations)
 
 
-def test_random_only_imported_by_dice_module() -> None:
+def test_random_only_imported_by_dice_and_bootstrap_modules() -> None:
     violations = [
         f"{path.relative_to(ADM.parent)} imports {module}"
         for path in _source_files()
-        if path != DICE_MODULE
         for module in _imported_modules(path)
-        if _matches(module, "random") or _matches(module, "numpy.random")
+        if (_matches(module, "random") and path not in RANDOM_MODULES)
+        or _matches(module, "numpy.random")
     ]
     assert not violations, "\n".join(violations)
