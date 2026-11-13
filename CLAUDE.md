@@ -92,6 +92,9 @@ python -m adm.eval.annotate m5 --rater SS
 python -m adm.eval.annotate m3 --annotator CI
 python -m adm.eval.annotate m3 --annotator CI --draft results/m3_draft_claude.jsonl  # review the AI draft
 
+# M2 invalid tool-call and recovery rates, WBS 10.3: condition D, run-level bootstrap intervals
+python -m adm.eval.metrics m2 --checksums experiments/main_grid.sha256 --doc docs/m2_tool_calls.md
+
 # M1 divergence annotation, WBS 9.5 and 9.6: 64 whole runs, checker candidates shown (resumable)
 python -m adm.eval.annotate m1 --annotator SD
 python -m adm.eval.annotate m1 --annotator SS --overlap
@@ -1067,6 +1070,10 @@ Added at WBS 9.3 (reasons in `docs/decisions.md`):
 Added at WBS 9.7 (reasons in `docs/decisions.md`):
 
 62. The M3 population is the condition D runs of `experiments/main_grid.json`: `annotate m3 --manifest` (that file by default) leaves out the G2 smoke logs in `runs/D/`, and stops if a planned log is missing. 242 turns at 15%. CI's verdicts start from an AI draft reviewed turn by turn (`--draft`; each line keeps the draft and whether it was accepted or edited); M3 stays single-annotated (decision log 2026-11-12).
+
+Added at WBS 10.3 (reasons in `docs/decisions.md`):
+
+63. M2's headline is rejected turns over turns (a turn with any `ok: false` attempt; a `{"tool": null}` reply is not a rejection), with rejected attempts over turns beside it. A rejected turn with no `turn_failure` is recovered, narration-only included. Its intervals use the shared run-level bootstrap in `adm/eval/metrics.py`, the one module besides `engine/dice.py` that may import `random` (`docs/m2_tool_calls.md`).
 
 ## 16. Open questions for the team
 
