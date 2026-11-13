@@ -83,5 +83,47 @@ The logs were written on Windows and end their lines with CRLF; the checksums ar
 ## 5. Follow-ups
 
 - **Drive layout: done.** Fixed by SS on 2026-11-11 and confirmed on a fresh download (§3).
-- **CI.** Run the same command against the logs on the machine that played them. If they match, the Drive copy is byte for byte what was played.
-- **9.4 (#97) onwards.** Run the §4 command before scoring or annotating. 9.10 (#102) has no failed or incomplete batch to re-run.
+- **CI: done.** Run by CI on 2026-11-13 against the logs on the machine that played them: every one of the 192 logs matches its checksum, so the Drive copy is byte for byte what was played (§6).
+- **9.4 (#97) onwards.** Run the §4 command before scoring or annotating. 9.10 (#102) has no failed or incomplete batch to re-run (§6).
+
+## 6. Re-runs and Milestone 2 (WBS 9.10)
+
+WBS 9.10 · Owner: CI · Run 2026-11-13. Done when: "Dataset complete; MILESTONE 2 evidenced" (TASK_CHECKLIST.md, 9.10).
+
+### 6.1 The copy that was played
+
+The same check, against the logs on CI's machine, the one that played all 192 runs, with the committed checksums:
+
+```
+python -m adm.eval.integrity --manifest experiments/main_grid.json --checksums experiments/main_grid.sha256 --out results/integrity/main_grid_ci.json
+```
+
+| Check | Result |
+|---|---|
+| Completeness | 192 of 192 planned runs whole and valid, 6,420 records |
+| Crashes | 0 runs with an earlier failed attempt, 0 pending logs, 0 aborted logs; the ledger (`results/batch/attempts.jsonl`) has 192 lines, every one `complete` |
+| Seeds | 2001, 2002, 2003 in every cell |
+| Model | `llama3.1:8b`, `sha256:46e0c10c…ca666e`, all 192 runs |
+| Turn failures (data) | precondition 47, schema 6, unknown entity 1, as in §3 |
+| Empty narrations | none |
+| Checksums against `experiments/main_grid.sha256` | **match**, all 192 |
+| Gaps | **none**; exit 0 |
+
+The ten logs not in the manifest are the G2 smoke runs (seeds 1001–1010, `docs/smoke_runs.md`). `runs/aborted/D/long04_mountain_monastery/1009.jsonl` (30 October) is a smoke attempt from before the main grid and is not part of it; `runs/pending/` holds no log.
+
+### 6.2 Nothing re-run
+
+No planned run is missing, cut short, crashed or tainted by a transport retry, on either copy, so the batch runner was not run again. A re-run of a complete run reproduces it byte for byte (invariant 4), so it could not change the 54 failed turns or any narration: they are data. The dataset is the 192 logs pinned by `experiments/main_grid.sha256` (sha256 `5655b4adbe788e5d5a83162f73157fc261872656b708c31fc49ababec880d56a`), and both the Drive copy and the copy that was played match it.
+
+### 6.3 Milestone 2 and deliverable D8
+
+Milestone 2 (15 November): "Audit-log dataset complete." D8: "All runs present, seeds recorded, integrity checked."
+
+| Must be true | Evidence |
+|---|---|
+| All 12 scenarios × 4 conditions run | 144 of 144 short runs (`docs/main_run.md`), whole and valid here |
+| Long sessions run | 48 of 48 long runs at 50 turns (`docs/long_run.md`), whole and valid here |
+| Integrity-checked | §1 on the Drive copy (SS, 2026-11-11) and §6.1 on the copy that was played (CI, 2026-11-13): no gap, checksums match |
+| Seeds recorded | 2001, 2002, 2003 in all 64 (scenario, condition) cells; every record's and every ledger line's `seed` is its run's (§1) |
+
+Milestone 2 is met. The fallback, cutting the long sessions to 30 turns, was not needed.
