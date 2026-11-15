@@ -123,7 +123,7 @@ def test_h1_fails_when_the_ratio_is_above_half_or_the_interval_reaches_one() -> 
 
 
 def test_the_report_block_has_every_condition_and_the_h1_line() -> None:
-    runs = [run(c, s, 20, n) for c, n in zip("ABCD", (10, 8, 6, 2)) for s in (1, 2)]
+    runs = [run(c, s, 20, n) for c, n in zip("ABCD", (10, 8, 6, 2), strict=True) for s in (1, 2)]
     runs.append(RunM1(("A", "long01_border_road", 2001), 50, {k: 0 for k in m1_rates.RUBRIC}, 0))
     block = m1_rates.render(m1_rates.m1_report(runs, resamples=100))
     for c in "ABCD":
