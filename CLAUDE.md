@@ -99,6 +99,7 @@ python -m adm.eval.metrics m2 --checksums experiments/main_grid.sha256 --doc doc
 python -m adm.eval.annotate m1 --annotator SD --draft results/m1_draft_claude.jsonl  # review the AI draft
 python -m adm.eval.annotate m1 --annotator SS --overlap --draft results/m1_overlap_draft_claude.jsonl
 python -m adm.eval.m1_agreement --labels results/m1_labels.jsonl --labels results/m1_labels_SS.jsonl  # WBS 9.6: the overlap pairs up
+python -m adm.eval.m1_rates --checksums experiments/main_grid.sha256 --doc docs/m1_rates.md  # WBS 10.1: M1 per condition and H1
 ```
 
 ### 2.1 Dependencies
@@ -180,6 +181,7 @@ adm/
     annotate.py       # blind, condition-shuffled annotation CLI
     m1.py             # M1 sample (64 whole runs), overlap, order and turn display for annotate m1
     m1_agreement.py   # M1 overlap: pairing check and Krippendorff's alpha between annotators
+    m1_rates.py       # M1 per condition with run-level intervals, the ratios to A and H1
     validate.py       # run logs: schema, script coverage, hash replay
     integrity.py      # main grid before annotation: completeness, crashes, seeds, checksums
   cli.py
@@ -1076,6 +1078,10 @@ Added at WBS 9.7 (reasons in `docs/decisions.md`):
 Added at WBS 10.3 (reasons in `docs/decisions.md`):
 
 63. M2's headline is rejected turns over turns (a turn with any `ok: false` attempt; a `{"tool": null}` reply is not a rejection), with rejected attempts over turns beside it. A rejected turn with no `turn_failure` is recovered, narration-only included. Its intervals use the shared run-level bootstrap in `adm/eval/metrics.py`, the one module besides `engine/dice.py` that may import `random` (`docs/m2_tool_calls.md`).
+
+Added at WBS 10.1 (reasons in `docs/decisions.md`):
+
+64. M1 is the first annotator's labels on the whole 9.5 sample: per turn, confirmed candidates plus added labels in the four rubric categories (`RULE` is M4), over narrated turns, pooled per condition as 100 × divergences / turns. H1 is the D/A ratio of those rates with the shared bootstrap; the B/A and C/A ratios and the ratio without `PHANTOM` are given beside it. The overlap labels are for agreement only (`adm/eval/m1_rates.py`, `docs/m1_rates.md`).
 
 ## 16. Open questions for the team
 
