@@ -27,13 +27,13 @@ Counts per condition, rates per 100 turns and their intervals are 10.1 and 10.4,
 
 ## 3. Limitations, to be stated in the report
 
-- **No edits.** SD changed no turn, so the first-annotator M1 labels are the AI's, confirmed by SD. The methods section says so: "First-annotator M1 labels were drafted by an AI model from the blind view and accepted turn by turn by SD without change; the 20% overlap was labelled independently by a second annotator." The 9.6 alpha is then agreement between the AI draft and an independent human, and is reported as such.
+- **No edits.** SD changed no turn, so the first-annotator M1 labels are the AI's, confirmed by SD. The methods section says so: "First-annotator M1 labels were drafted by an AI model from the blind view and accepted turn by turn by SD without change; the 20% overlap was labelled independently by a second annotator." The 9.6 alpha is then agreement between the AI draft and an independent human, and is reported as such. **Superseded 2026-11-15:** the overlap also starts from an AI draft, made separately and reviewed by SS, so the alpha is between two reviewed AI drafts. The methods wording is in `docs/decisions.md` (2026-11-15) and `docs/m1_overlap.md`.
 - **Items named only in a player input are scored inconsistently.** Rubric v1.0 §6.1 rule 6 brings characters, groups and places named in the scripted inputs into scope, not items, so such items are strictly `PHANTOM`. The draft batches split: some scored them (for example the satchel, coins and shield), others left them unrecorded as ambiguous. About 32 turns carry a draft note on this call, and every one was accepted as drafted. Batches were formed from runs in hash order, not by condition, so the split is not expected to favour one condition, but it is not balanced by design either; 10.1 should report `PHANTOM` with this caveat.
 - **Borderline calls.** 259 draft notes mark a call as borderline or for SD to check (one combatant phrase covering two downed NPCs counted once, death claims, light fixtures as scenery, and so on). All were accepted as drafted.
 - **Scenario notes vs the rubric.** The annotator notes in the Bog Witch and Harvest Fair scenario files call a named villager and the fortune teller `PHANTOM`; rubric §6.1 rule 6 puts them in scope. The draft followed the rubric. The scenario notes are to be corrected so 9.6 is not misled.
 
 ## 4. For 9.6 and the analysis
 
-- **9.6 (#99, SS):** `python -m adm.eval.annotate m1 --annotator SS --overlap`, 16 runs, 511 turns, with no draft and without seeing these labels. Use rubric v1.0 as written, including §6.1 rule 6 for input-named items.
+- **9.6 (#99, SS):** `python -m adm.eval.annotate m1 --annotator SS --overlap --draft results/m1_overlap_draft_claude.jsonl`, 16 runs, 511 turns, without seeing these labels (`docs/m1_overlap.md`). Use rubric v1.0 as written, including §6.1 rule 6 for input-named items.
 - **10.1:** M1 per condition from these labels: confirmed candidates plus added labels, per 100 narrated turns, `RULE` excluded (it is M4).
 - **Before reading the logs again,** check the copy: `python -m adm.eval.integrity --checksums experiments/main_grid.sha256`.
