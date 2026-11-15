@@ -1,6 +1,6 @@
 # M1 annotation: the second-annotator overlap
 
-WBS 9.6 · Owner: SS · Draft 2026-11-15, **review by SS pending** · CLAUDE.md wins on any conflict.
+WBS 9.6 · Owner: SS · Reviewed 2026-11-15 · CLAUDE.md wins on any conflict.
 
 The second annotator's divergence labels for M1 (CLAUDE.md §10.4) on the 20% overlap, by rubric v1.0 (`docs/rubric.md`), so that Krippendorff's alpha against the first annotator (9.5, `docs/m1_annotation.md`) can be computed. Done when: "Agreement is computable" (TASK_CHECKLIST.md, 9.6). Why the overlap starts from an AI draft is in `docs/decisions.md` (2026-11-15).
 
@@ -15,10 +15,13 @@ The second annotator's divergence labels for M1 (CLAUDE.md §10.4) on the 20% ov
 | Labels added beyond the candidates | **268**: `CONTRADICT` 120, `PHANTOM` 90, `RULE` 46, `RESOURCE` 11, `RELATION` 1 |
 | Turns with at least one label | 225 |
 | Turns with a draft note | 310 |
-| Review by SS | **not started**. The labels are SS's once every turn is reviewed |
-| Agreement | computable once SS's lines exist, by §3 |
+| Review by SS | **511 of 511** turns: **494 accepted**, **14 edited**, **3 relabelled** with `--redo` without the draft shown |
+| Labels file | `results/m1_labels_SS.jsonl` (gitignored; for the team Drive `results/`), sha256 `dd0a2c8dd263710abe7cf1db249d1b3c05927142283694765de032230dd90285` |
+| Final labels | **86** candidates confirmed, **260** labels added: `CONTRADICT` 113, `PHANTOM` 89, `RULE` 46, `RESOURCE` 11, `RELATION` 1; 219 turns with at least one label; 17 notes by SS |
+| SS's side of the pairing | every overlap turn once, each shown with the checker candidates the sample gives now |
+| Agreement | computable once SD's `m1_labels.jsonl` is beside it: §3 step 3 |
 
-Counts per condition are not given here: SS is still to review, blind to condition.
+Counts per condition are left to 10.1 and 10.5.
 
 ## 2. How the draft was made
 
@@ -52,4 +55,5 @@ Counts per condition are not given here: SS is still to review, blind to conditi
 ## 5. Limitations, to be stated in the report
 
 - **The alpha is between two reviewed AI drafts.** The first-annotator labels are the 9.5 AI draft, accepted by SD without change. The overlap labels start from a separate draft by the same model. The alpha therefore measures agreement between two reviewed drafts, likely higher than two independent humans would reach, and is not human inter-rater reliability (decision log 2026-11-15, point 4).
-- **Review share.** The report gives how many overlap turns SS changed, as it does for SD.
+- **Review share.** SS changed 17 of 511 turns (14 edited, 3 relabelled), 3.3%; the other 494 are the draft unchanged. The report gives this, as it gives SD's 0 of 2,124.
+- **Review time.** The draft file was written at 12:41 and the labels file last at 13:20 on 2026-11-15, so the review of 511 turns took at most about 40 minutes, about 5 seconds a turn. The report should say the review was quick, so that the labels are read as close to the draft.
