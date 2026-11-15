@@ -3,8 +3,13 @@
     python -m adm.eval.metrics m2 --checksums experiments/main_grid.sha256 \\
         --doc docs/m2_tool_calls.md
 
-Only M2 is here so far (WBS 10.3); the others join as subcommands. The module
-reads logs and never calls the model or imports orchestration
+    python -m adm.eval.metrics m4 --checksums experiments/main_grid.sha256 \\
+        --doc docs/m4_rule_violations.md [--labels results/m1_labels.jsonl]
+    python -m adm.eval.metrics m6 --checksums experiments/main_grid.sha256 \\
+        --doc docs/m6_latency.md
+
+M2 (WBS 10.3), M4 and M6 (WBS 10.4) are here; the others join as subcommands.
+The module reads logs and never calls the model or imports orchestration
 (docs/conventions.md section 1).
 
 **The dataset** is the runs `experiments/main_grid.json` plans, read from
@@ -30,6 +35,21 @@ and can exceed 1. The **recovery rate** is recovered turns over rejected turns.
 Pooled rates are ratios of sums over all runs, so a long run weighs more than a
 short one, as its turns do.
 
+**M4** is all four conditions (decision 56): per narrated turn (failed D turns
+are not scored, as in the checker), the `rule_violation` and `state_audit`
+candidates of `adm/eval/checker.py`. M4 is high-confidence `rule_violation` plus
+`state_audit` per 100 narrated turns; low-confidence candidates are given
+apart. With `--labels`, one annotator's 9.5 labels on the M1 sample (decision
+61) give the confirmed rule breaks: `RULE` candidates confirmed plus `RULE`
+breaks added, per 100 narrated turns, and the precision of the candidates shown.
+
+**M6** is all four conditions: seconds per turn is `turn_latency_ms / 1000` over
+every record, failed turns included, since the player waited for them too.
+Tokens per second is `completion_tokens / eval_ms` per model call, a mean over
+calls, as in docs/smoke_runs.md; a call with no `eval_ms` is left out and
+counted. The target is p95 under 10 s per turn in D (CLAUDE.md section 10.5),
+met only when the p95 and its interval's upper bound are both under it.
+
 **Intervals** are 95% percentile bootstraps over whole runs, 10,000 resamples,
 stratified by condition (CLAUDE.md section 10.5). The bootstrap's RNG is one
 `random.Random(BOOTSTRAP_SEED)` per interval, so a report is reproducible. It
@@ -46,13 +66,16 @@ from collections import Counter
 from collections.abc import Callable, Hashable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Annotated, Any, TypeVar
+from typing import Annotated, Any, TypeVar, get_args
 
 import typer
 
 from adm.engine.audit import log_path, read_log, run_id, turn_failure_counts
-from adm.eval.checker import RunKey
+from adm.engine.scenario import Scenario
+from adm.eval.checker import RunKey, Turn, check_turn, rule_violation, state_audit, turns
 from adm.eval.integrity import file_sha256, load_plan, read_checksums
+from adm.eval.m1 import draw_runs
+from adm.eval.rules import StateRule
 
 Doc = dict[str, Any]
 T = TypeVar("T")
@@ -262,6 +285,364 @@ def m2(runs: Sequence[RunM2], *, resamples: int = RESAMPLES, seed: int = BOOTSTR
     }
 
 
+# --- shared helpers ------------------------------------------------------------
+
+
+def _per100(numerator: str, denominator: str) -> Callable[[Sequence[Any]], float | None]:
+    ratio = _ratio(numerator, denominator)
+
+    def rate(runs: Sequence[Any]) -> float | None:
+        value = ratio(runs)
+        return None if value is None else 100 * value
+
+    return rate
+
+
+def _rate_doc(
+    runs: Sequence[Any],
+    numerator: str,
+    denominator: str,
+    *,
+    resamples: int,
+    seed: int,
+    strata: Callable[[Any], Hashable] | None = None,
+) -> Doc:
+    """A rate per 100 with its run-level bootstrap interval and its counts."""
+    stat = _per100(numerator, denominator)
+    interval = bootstrap(runs, stat, strata=strata, resamples=resamples, seed=seed)
+    return {
+        "value": stat(runs),
+        "interval": list(interval) if interval else None,
+        "numerator": sum(getattr(r, numerator) for r in runs),
+        "denominator": sum(getattr(r, denominator) for r in runs),
+    }
+
+
+def _bootstrap_doc(resamples: int, seed: int) -> Doc:
+    return {"resamples": resamples, "seed": seed, "confidence": CONFIDENCE, "unit": "run"}
+
+
+def _by_condition(runs: Sequence[Any]) -> dict[str, list[Any]]:
+    """Runs grouped by condition (their key's first part), conditions sorted."""
+    groups: dict[str, list[Any]] = {}
+    for r in runs:
+        groups.setdefault(r.key[0], []).append(r)
+    return dict(sorted(groups.items()))
+
+
+# --- M4 ------------------------------------------------------------------------
+
+RULE_KINDS = get_args(StateRule)
+M4_CHECKS = (rule_violation, state_audit)
+
+
+@dataclass(frozen=True)
+class RunM4:
+    """The M4 counts of one run: its narrated turns and its `RULE` candidates.
+    `kinds` maps each rule to its counts as `rule_violation` high, low and
+    `state_audit`."""
+
+    key: RunKey
+    narrated: int
+    high: int
+    low: int
+    state_audit: int
+    kinds: dict[str, dict[str, int]] = field(default_factory=dict)
+
+    @property
+    def m4(self) -> int:
+        return self.high + self.state_audit
+
+
+def m4_run(key: RunKey, narrated: Sequence[Turn]) -> RunM4:
+    """Count one run's `RULE` candidates over its narrated turns."""
+    kinds: dict[str, Counter[str]] = {}
+    for turn in narrated:
+        for c in check_turn(turn, M4_CHECKS):
+            column = "state_audit" if c["check"] == "state_audit" else c["confidence"]
+            kinds.setdefault(c["kind"], Counter())[column] += 1
+    total = _sum_counts(list(kinds.values()))
+    return RunM4(
+        key=key,
+        narrated=len(narrated),
+        high=total["high"],
+        low=total["low"],
+        state_audit=total["state_audit"],
+        kinds={k: dict(sorted(v.items())) for k, v in sorted(kinds.items())},
+    )
+
+
+@dataclass(frozen=True)
+class RunLabels:
+    """One annotator's `RULE` labels on one run of the M1 sample: the checker's
+    candidates shown and confirmed, by confidence, and the rule breaks added."""
+
+    key: RunKey
+    narrated: int
+    shown_high: int
+    shown_low: int
+    confirmed_high: int
+    confirmed_low: int
+    added: int
+
+    @property
+    def shown(self) -> int:
+        return self.shown_high + self.shown_low
+
+    @property
+    def confirmed_candidates(self) -> int:
+        return self.confirmed_high + self.confirmed_low
+
+    @property
+    def confirmed(self) -> int:
+        return self.confirmed_candidates + self.added
+
+
+def read_labels(path: Path, annotator: str) -> dict[tuple[str, int], Doc]:
+    """One annotator's M1 label lines, by run id and input index."""
+    labels: dict[tuple[str, int], Doc] = {}
+    with path.open(encoding="utf-8") as lines:
+        for line in lines:
+            if not line.strip():
+                continue
+            doc = json.loads(line)
+            if doc["annotator"] != annotator:
+                continue
+            key = (doc["run_id"], int(doc["input_index"]))
+            if key in labels:
+                raise DatasetError(f"{path.as_posix()}: two lines for {key[0]} input {key[1]}")
+            labels[key] = doc
+    return labels
+
+
+def label_runs(
+    sample: Mapping[RunKey, Sequence[Turn]], labels: Mapping[tuple[str, int], Doc]
+) -> list[RunLabels]:
+    """The `RULE` labels of every sample run. Every narrated turn of the sample
+    must have a label line: a metric of a part-annotated sample is refused."""
+    if not sample:
+        raise DatasetError("No run of the M1 sample is in the dataset (decision 61).")
+    missing: list[str] = []
+    counted: list[RunLabels] = []
+    for key, narrated in sample.items():
+        shown: Counter[str] = Counter()
+        confirmed: Counter[str] = Counter()
+        added = 0
+        for turn in narrated:
+            line = labels.get((str(turn.record["run_id"]), int(turn.record["input_index"])))
+            if line is None:
+                missing.append(f"{turn.record['run_id']} input {turn.record['input_index']}")
+                continue
+            for c in line["candidates"]:
+                if c["category"] == "RULE":
+                    shown[c["confidence"]] += 1
+                    confirmed[c["confidence"]] += bool(c["confirmed"])
+            added += sum(1 for a in line["added"] if a["category"] == "RULE")
+        counted.append(
+            RunLabels(
+                key=key,
+                narrated=len(narrated),
+                shown_high=shown["high"],
+                shown_low=shown["low"],
+                confirmed_high=confirmed["high"],
+                confirmed_low=confirmed["low"],
+                added=added,
+            )
+        )
+    if missing:
+        more = f" and {len(missing) - 5} more" if len(missing) > 5 else ""
+        head = ", ".join(missing[:5]) + more
+        raise DatasetError(f"{len(missing)} sample turns have no label line: {head}")
+    return counted
+
+
+def _share(numerator: int, denominator: int) -> float | None:
+    return numerator / denominator if denominator else None
+
+
+def m4(
+    runs: Sequence[RunM4],
+    labelled: Sequence[RunLabels] | None = None,
+    *,
+    annotator: str | None = None,
+    resamples: int = RESAMPLES,
+    seed: int = BOOTSTRAP_SEED,
+) -> Doc:
+    """M4 per condition with its bootstrap interval, the candidates by rule and,
+    given an annotator's labels on the M1 sample, the confirmed rule breaks."""
+    options = {"resamples": resamples, "seed": seed}
+    groups = _by_condition(runs)
+    conditions = {
+        c: {
+            "runs": len(group),
+            **{name: sum(getattr(r, name) for r in group) for name in M4_TOTALS},
+            "m4": _rate_doc(group, "m4", "narrated", **options),
+            "low_per_100": _per100("low", "narrated")(group),
+        }
+        for c, group in groups.items()
+    }
+    conditions["all"] = {
+        "runs": len(runs),
+        **{name: sum(getattr(r, name) for r in runs) for name in M4_TOTALS},
+        "m4": _rate_doc(runs, "m4", "narrated", strata=lambda r: r.key[0], **options),
+        "low_per_100": _per100("low", "narrated")(runs),
+    }
+    kinds = {
+        kind: {
+            c: dict(_sum_counts([r.kinds.get(kind, {}) for r in group]))
+            for c, group in groups.items()
+        }
+        for kind in sorted({k for r in runs for k in r.kinds}, key=_kind_order)
+    }
+    return {
+        "bootstrap": _bootstrap_doc(resamples, seed),
+        "runs": len(runs),
+        "conditions": conditions,
+        "kinds": kinds,
+        "labels": None if labelled is None else _labels_doc(labelled, annotator, options),
+    }
+
+
+M4_TOTALS = ("narrated", "high", "low", "state_audit", "m4")
+LABEL_TOTALS = (
+    "narrated",
+    "shown_high",
+    "shown_low",
+    "confirmed_high",
+    "confirmed_low",
+    "added",
+    "confirmed",
+)
+
+
+def _kind_order(kind: str) -> tuple[int, str]:
+    return (RULE_KINDS.index(kind) if kind in RULE_KINDS else len(RULE_KINDS), kind)
+
+
+def _labels_doc(labelled: Sequence[RunLabels], annotator: str | None, options: Doc) -> Doc:
+    def row(group: Sequence[RunLabels], strata: Callable[[Any], Hashable] | None) -> Doc:
+        t = {name: sum(getattr(r, name) for r in group) for name in LABEL_TOTALS}
+        return {
+            "runs": len(group),
+            **t,
+            "rate": _rate_doc(group, "confirmed", "narrated", strata=strata, **options),
+            "precision_high": _share(t["confirmed_high"], t["shown_high"]),
+            "precision_low": _share(t["confirmed_low"], t["shown_low"]),
+        }
+
+    conditions = {c: row(group, None) for c, group in _by_condition(labelled).items()}
+    conditions["all"] = row(labelled, lambda r: r.key[0])
+    return {"annotator": annotator, "runs": len(labelled), "conditions": conditions}
+
+
+# --- M6 ------------------------------------------------------------------------
+
+M6_TARGET_S = 10.0
+M6_TARGET_CONDITION = "D"
+PHASES = ("toolcall", "narration", "summary")
+
+
+@dataclass(frozen=True)
+class RunM6:
+    """The M6 timings of one run: seconds per turn, every record, and tokens per
+    second of each model call whose generation time was logged."""
+
+    key: RunKey
+    seconds: tuple[float, ...]
+    rates: tuple[tuple[str, float], ...]
+    zero_eval: int
+
+
+def m6_run(key: RunKey, records: Sequence[Doc]) -> RunM6:
+    """One run's seconds per turn (`turn_latency_ms`) and tokens per second per
+    call (`completion_tokens / eval_ms`), skipping calls with no `eval_ms`."""
+    rates: list[tuple[str, float]] = []
+    zero = 0
+    for r in records:
+        for call in r["model_calls"]:
+            if call["eval_ms"] > 0:
+                rates.append((call["phase"], 1000 * call["completion_tokens"] / call["eval_ms"]))
+            else:
+                zero += 1
+    return RunM6(
+        key=key,
+        seconds=tuple(r["turn_latency_ms"] / 1000 for r in records),
+        rates=tuple(rates),
+        zero_eval=zero,
+    )
+
+
+def _seconds(runs: Sequence[RunM6]) -> list[float]:
+    return [s for r in runs for s in r.seconds]
+
+
+def _mean(values: Sequence[float]) -> float | None:
+    return sum(values) / len(values) if values else None
+
+
+def _p95(runs: Sequence[RunM6]) -> float | None:
+    seconds = _seconds(runs)
+    return percentile(seconds, 0.95) if seconds else None
+
+
+def _mean_seconds(runs: Sequence[RunM6]) -> float | None:
+    return _mean(_seconds(runs))
+
+
+def m6(runs: Sequence[RunM6], *, resamples: int = RESAMPLES, seed: int = BOOTSTRAP_SEED) -> Doc:
+    """Seconds per turn (mean, p50, p95, max) and tokens per second (mean over
+    calls, overall and per phase) per condition, the mean and p95 with their
+    bootstrap intervals, and the p95 target of CLAUDE.md section 10.5."""
+    conditions: dict[str, Doc] = {}
+    for c, group in _by_condition(runs).items():
+        seconds = _seconds(group)
+        rates = [rate for r in group for rate in r.rates]
+        mean_iv = bootstrap(group, _mean_seconds, resamples=resamples, seed=seed)
+        p95_iv = bootstrap(group, _p95, resamples=resamples, seed=seed)
+        conditions[c] = {
+            "runs": len(group),
+            "turns": len(seconds),
+            "seconds": {
+                "mean": _mean(seconds),
+                "mean_interval": list(mean_iv) if mean_iv else None,
+                "p50": percentile(seconds, 0.5) if seconds else None,
+                "p95": _p95(group),
+                "p95_interval": list(p95_iv) if p95_iv else None,
+                "max": max(seconds) if seconds else None,
+            },
+            "tokens_per_second": {
+                "calls": len(rates),
+                "calls_without_eval_ms": sum(r.zero_eval for r in group),
+                "mean": _mean([v for _, v in rates]),
+                "phases": {
+                    phase: {"calls": len(values), "mean": _mean(values)}
+                    for phase in PHASES
+                    if (values := [v for p, v in rates if p == phase])
+                },
+            },
+        }
+    target = None
+    if M6_TARGET_CONDITION in conditions:
+        s = conditions[M6_TARGET_CONDITION]["seconds"]
+        upper = s["p95_interval"][1] if s["p95_interval"] else None
+        target = {
+            "condition": M6_TARGET_CONDITION,
+            "limit_seconds": M6_TARGET_S,
+            "p95": s["p95"],
+            "p95_upper": upper,
+            "met": s["p95"] is not None
+            and s["p95"] < M6_TARGET_S
+            and upper is not None
+            and upper < M6_TARGET_S,
+        }
+    return {
+        "bootstrap": _bootstrap_doc(resamples, seed),
+        "runs": len(runs),
+        "conditions": conditions,
+        "target": target,
+    }
+
+
 # --- the dataset ---------------------------------------------------------------
 
 
@@ -269,10 +650,15 @@ class DatasetError(ValueError):
     """The logs on disk are not the dataset the manifest and checksums name."""
 
 
-def load_d_runs(runs_dir: Path, manifest: Path, checksums: Path | None) -> dict[RunKey, list[Doc]]:
-    """The condition D logs `manifest` plans, in plan order, checked against a
-    `sha256sum` file of the dataset when one is given."""
-    planned = [key for key in load_plan(manifest)[0] if key[0] == CONDITION]
+def load_planned_runs(
+    runs_dir: Path,
+    manifest: Path,
+    checksums: Path | None,
+    conditions: Sequence[str] = (CONDITION,),
+) -> dict[RunKey, list[Doc]]:
+    """The logs `manifest` plans in `conditions`, in plan order, checked against
+    a `sha256sum` file of the dataset when one is given."""
+    planned = [key for key in load_plan(manifest)[0] if key[0] in conditions]
     paths = {key: log_path(runs_dir, *key) for key in planned}
     missing = [run_id(*key) for key, path in paths.items() if not path.is_file()]
     if missing:
@@ -376,6 +762,157 @@ def render_m2(report: Doc) -> str:
     )
 
 
+def _num(value: float | None, digits: int = 2) -> str:
+    return "–" if value is None else f"{value:.{digits}f}"
+
+
+def _span(interval: Sequence[float] | None, digits: int = 2) -> str:
+    if interval is None:
+        return "–"
+    low, high = interval
+    return f"{_num(low, digits)} to {_num(high, digits)}"
+
+
+def _bootstrap_line(b: Doc) -> str:
+    return (
+        f"Intervals: {b['confidence']:.0%} percentile bootstrap over whole runs, "
+        f"{b['resamples']:,} resamples, seed {b['seed']}"
+    )
+
+
+def _label(condition: str) -> str:
+    return "**All**" if condition == "all" else condition
+
+
+def render_m4(report: Doc) -> str:
+    """The results block of docs/m4_rule_violations.md."""
+    conditions = report["conditions"]
+    real = [c for c in conditions if c != "all"]
+    rows = [
+        f"| {_label(c)} | {d['runs']} | {d['narrated']} | {d['high']} | {d['state_audit']} | "
+        f"**{_num(d['m4']['value'])}** | {_span(d['m4']['interval'])} | {d['low']} | "
+        f"{_num(d['low_per_100'])} |"
+        for c, d in conditions.items()
+    ]
+    kinds = [
+        f"| `{kind}` | "
+        + " | ".join(
+            "{} / {} / {}".format(
+                *(by_condition.get(c, {}).get(col, 0) for col in ("high", "low", "state_audit"))
+            )
+            for c in real
+        )
+        + " |"
+        for kind, by_condition in report["kinds"].items()
+    ]
+    lines = [
+        f"Conditions {', '.join(real)}, {report['runs']} runs, "
+        f"{conditions['all']['narrated']} narrated turns. {_bootstrap_line(report['bootstrap'])}; "
+        "the All row is stratified by condition.",
+        "",
+        "### M4 per condition",
+        "",
+        "M4 = (`rule_violation` high + `state_audit`) per 100 narrated turns (decision 56).",
+        "",
+        "| Condition | Runs | Narrated turns | `rule_violation` high | `state_audit` | "
+        "**M4 per 100 turns** | 95% interval | `rule_violation` low | Low per 100 turns |",
+        "|---|---|---|---|---|---|---|---|---|",
+        *rows,
+        "",
+        "### Candidates by rule",
+        "",
+        "Each cell is `rule_violation` high / `rule_violation` low / `state_audit`.",
+        "",
+        f"| Rule | {' | '.join(real)} |",
+        "|---|" + "---|" * len(real),
+        *(kinds or [f"| none |{' – |' * len(real)}"]),
+        "",
+        "### Confirmed by the human pass (M1 sample)",
+        "",
+    ]
+    labels = report["labels"]
+    if labels is None:
+        lines.append(
+            "Not computed: run with `--labels results/m1_labels.jsonl` once the 9.5 labels "
+            "are on this machine."
+        )
+        return "\n".join(lines)
+    lines += [
+        f"Annotator {labels['annotator']}, {labels['runs']} runs of the M1 sample (decision 61). "
+        "Confirmed = `RULE` candidates the annotator confirmed plus `RULE` breaks added.",
+        "",
+        "| Condition | Runs | Narrated turns | Shown high / low | Confirmed high / low | Added | "
+        "**Confirmed per 100 turns** | 95% interval | Precision high | Precision low |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+        *(
+            f"| {_label(c)} | {d['runs']} | {d['narrated']} | {d['shown_high']} / "
+            f"{d['shown_low']} | {d['confirmed_high']} / {d['confirmed_low']} | {d['added']} | "
+            f"**{_num(d['rate']['value'])}** | {_span(d['rate']['interval'])} | "
+            f"{_pct(d['precision_high'])} | {_pct(d['precision_low'])} |"
+            for c, d in labels["conditions"].items()
+        ),
+    ]
+    return "\n".join(lines)
+
+
+def render_m6(report: Doc) -> str:
+    """The results block of docs/m6_latency.md."""
+    conditions = report["conditions"]
+    turns_total = sum(d["turns"] for d in conditions.values())
+    seconds = [
+        f"| {c} | {d['runs']} | {d['turns']} | {_num(s['mean'])} | {_span(s['mean_interval'])} | "
+        f"{_num(s['p50'])} | **{_num(s['p95'])}** | {_span(s['p95_interval'])} | "
+        f"{_num(s['max'])} |"
+        for c, d in conditions.items()
+        for s in [d["seconds"]]
+    ]
+
+    def phase(t: Doc, name: str) -> str:
+        p = t["phases"].get(name)
+        return "–" if p is None else f"{_num(p['mean'], 1)} ({p['calls']:,})"
+
+    rates = [
+        f"| {c} | {t['calls']:,} | **{_num(t['mean'], 1)}** | "
+        + " | ".join(phase(t, name) for name in PHASES)
+        + " |"
+        for c, d in conditions.items()
+        for t in [d["tokens_per_second"]]
+    ]
+    skipped = sum(d["tokens_per_second"]["calls_without_eval_ms"] for d in conditions.values())
+    lines = [
+        f"Conditions {', '.join(conditions)}, {report['runs']} runs, {turns_total} turns "
+        f"(failed turns included). {_bootstrap_line(report['bootstrap'])}.",
+        "",
+    ]
+    target = report["target"]
+    if target is not None:
+        verdict = "met" if target["met"] else "not met"
+        lines += [
+            f"**Target: p95 under {target['limit_seconds']:.0f} s per turn in condition "
+            f"{target['condition']}. p95 = {_num(target['p95'])} s, upper 95% bound "
+            f"{_num(target['p95_upper'])} s: {verdict}.**",
+            "",
+        ]
+    lines += [
+        "### Seconds per turn",
+        "",
+        "| Condition | Runs | Turns | Mean | 95% interval | p50 | **p95** | 95% interval | Max |",
+        "|---|---|---|---|---|---|---|---|---|",
+        *seconds,
+        "",
+        "### Tokens per second",
+        "",
+        "Mean over model calls of `completion_tokens / eval_ms`; calls per cell in brackets.",
+        "",
+        f"| Condition | Calls | Mean | {' | '.join(n.capitalize() for n in PHASES)} |",
+        "|---|---|---|---|---|---|",
+        *rates,
+        "",
+        f"Calls with no `eval_ms` logged, left out: {skipped}.",
+    ]
+    return "\n".join(lines)
+
+
 def write_results(doc: Path, block: str) -> None:
     text = doc.read_text(encoding="utf-8")
     start, end = text.index(RESULTS_START), text.index(RESULTS_END)
@@ -413,7 +950,7 @@ def m2_command(
 ) -> None:
     """M2: invalid tool-call and recovery rates, condition D (WBS 10.3)."""
     try:
-        logs = load_d_runs(runs, manifest, checksums)
+        logs = load_planned_runs(runs, manifest, checksums)
     except DatasetError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
@@ -431,6 +968,94 @@ def m2_command(
     if doc is not None:
         write_results(doc, block)
     typer.echo(block)
+
+
+RunsOpt = Annotated[Path, typer.Option(help="The runs directory.")]
+ManifestOpt = Annotated[Path, typer.Option(help="The batch manifest of the dataset.")]
+ChecksumsOpt = Annotated[
+    Path | None, typer.Option(help="sha256sum file the logs must match (decision 60).")
+]
+DocOpt = Annotated[Path | None, typer.Option(help="Document whose results block is rewritten.")]
+ResamplesOpt = Annotated[int, typer.Option(help="Bootstrap resamples.", min=1)]
+ALL_CONDITIONS = ("A", "B", "C", "D")
+
+
+def _load(runs: Path, manifest: Path, checksums: Path | None) -> dict[RunKey, list[Doc]]:
+    try:
+        return load_planned_runs(runs, manifest, checksums, ALL_CONDITIONS)
+    except DatasetError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+
+
+def _emit(
+    report: Doc, block: str, manifest: Path, checksums: Path | None, out: Path, doc: Path | None
+) -> None:
+    report = {
+        "dataset": {
+            "manifest": manifest.as_posix(),
+            "checksums": checksums.as_posix() if checksums else None,
+        },
+        **report,
+    }
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    if doc is not None:
+        write_results(doc, block)
+    typer.echo(block)
+
+
+@app.command("m4")
+def m4_command(
+    runs: RunsOpt = Path("runs"),
+    manifest: ManifestOpt = Path("experiments/main_grid.json"),
+    checksums: ChecksumsOpt = None,
+    labels: Annotated[
+        Path | None, typer.Option(help="M1 label file (9.5) for the confirmed table.")
+    ] = None,
+    annotator: Annotated[str, typer.Option(help="Whose M1 labels are counted.")] = "SD",
+    out: Annotated[Path, typer.Option(help="Where the report is written as JSON.")] = Path(
+        "results/m4.json"
+    ),
+    doc: DocOpt = None,
+    resamples: ResamplesOpt = RESAMPLES,
+) -> None:
+    """M4: rule-violation rate per condition, all four conditions (WBS 10.4)."""
+    logs = _load(runs, manifest, checksums)
+    scenarios: dict[str, Scenario] = load_plan(manifest)[1]
+    narrated = {key: list(turns(scenarios[key[1]], records)) for key, records in logs.items()}
+    labelled = None
+    if labels is not None:
+        try:
+            sample = {key: narrated[key] for key in draw_runs(list(narrated))}
+            labelled = label_runs(sample, read_labels(labels, annotator))
+        except DatasetError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(1) from exc
+    report = m4(
+        [m4_run(key, ts) for key, ts in narrated.items()],
+        labelled,
+        annotator=annotator if labelled is not None else None,
+        resamples=resamples,
+    )
+    _emit(report, render_m4(report), manifest, checksums, out, doc)
+
+
+@app.command("m6")
+def m6_command(
+    runs: RunsOpt = Path("runs"),
+    manifest: ManifestOpt = Path("experiments/main_grid.json"),
+    checksums: ChecksumsOpt = None,
+    out: Annotated[Path, typer.Option(help="Where the report is written as JSON.")] = Path(
+        "results/m6.json"
+    ),
+    doc: DocOpt = None,
+    resamples: ResamplesOpt = RESAMPLES,
+) -> None:
+    """M6: seconds per turn and tokens per second, all four conditions (WBS 10.4)."""
+    logs = _load(runs, manifest, checksums)
+    report = m6([m6_run(key, records) for key, records in logs.items()], resamples=resamples)
+    _emit(report, render_m6(report), manifest, checksums, out, doc)
 
 
 if __name__ == "__main__":

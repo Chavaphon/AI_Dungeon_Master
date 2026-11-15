@@ -95,6 +95,10 @@ python -m adm.eval.annotate m3 --annotator CI --draft results/m3_draft_claude.js
 # M2 invalid tool-call and recovery rates, WBS 10.3: condition D, run-level bootstrap intervals
 python -m adm.eval.metrics m2 --checksums experiments/main_grid.sha256 --doc docs/m2_tool_calls.md
 
+# M4 rule violations and M6 latency, WBS 10.4: all conditions; --labels adds the M1 sample's confirmed breaks
+python -m adm.eval.metrics m4 --checksums experiments/main_grid.sha256 --doc docs/m4_rule_violations.md --labels results/m1_labels.jsonl
+python -m adm.eval.metrics m6 --checksums experiments/main_grid.sha256 --doc docs/m6_latency.md
+
 # M1 divergence annotation, WBS 9.5 and 9.6: 64 whole runs, checker candidates shown (resumable)
 python -m adm.eval.annotate m1 --annotator SD --draft results/m1_draft_claude.jsonl  # review the AI draft
 python -m adm.eval.annotate m1 --annotator SS --overlap
@@ -1074,6 +1078,10 @@ Added at WBS 9.7 (reasons in `docs/decisions.md`):
 Added at WBS 10.3 (reasons in `docs/decisions.md`):
 
 63. M2's headline is rejected turns over turns (a turn with any `ok: false` attempt; a `{"tool": null}` reply is not a rejection), with rejected attempts over turns beside it. A rejected turn with no `turn_failure` is recovered, narration-only included. Its intervals use the shared run-level bootstrap in `adm/eval/metrics.py`, the one module besides `engine/dice.py` that may import `random` (`docs/m2_tool_calls.md`).
+
+Added at WBS 10.4 (reasons in `docs/decisions.md`):
+
+64. M4's headline is item 56's automated figure on all 192 runs, per narrated turn, with the low-confidence candidates apart; one annotator's confirmed `RULE` labels on the M1 sample are reported beside it as its human check. M6 counts every turn, failed ones included, and tokens per second is the mean over calls; the D p95 target is met only if its 95% interval's upper bound is under 10 s (`docs/m4_rule_violations.md`, `docs/m6_latency.md`).
 
 ## 16. Open questions for the team
 
