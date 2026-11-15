@@ -101,7 +101,9 @@ python -m adm.eval.metrics m6 --checksums experiments/main_grid.sha256 --doc doc
 
 # M1 divergence annotation, WBS 9.5 and 9.6: 64 whole runs, checker candidates shown (resumable)
 python -m adm.eval.annotate m1 --annotator SD --draft results/m1_draft_claude.jsonl  # review the AI draft
-python -m adm.eval.annotate m1 --annotator SS --overlap
+python -m adm.eval.annotate m1 --annotator SS --overlap --draft results/m1_overlap_draft_claude.jsonl
+python -m adm.eval.m1_agreement --labels results/m1_labels.jsonl --labels results/m1_labels_SS.jsonl  # WBS 9.6: the overlap pairs up
+python -m adm.eval.m1_rates --checksums experiments/main_grid.sha256 --doc docs/m1_rates.md  # WBS 10.1: M1 per condition and H1
 ```
 
 ### 2.1 Dependencies
@@ -182,6 +184,8 @@ adm/
     metrics.py        # M1-M6 computation
     annotate.py       # blind, condition-shuffled annotation CLI
     m1.py             # M1 sample (64 whole runs), overlap, order and turn display for annotate m1
+    m1_agreement.py   # M1 overlap: pairing check and Krippendorff's alpha between annotators
+    m1_rates.py       # M1 per condition with run-level intervals, the ratios to A and H1
     validate.py       # run logs: schema, script coverage, hash replay
     integrity.py      # main grid before annotation: completeness, crashes, seeds, checksums
   cli.py
@@ -1069,7 +1073,7 @@ Added at WBS 9.3 (reasons in `docs/decisions.md`):
 
 60. Before annotation, `adm/eval/integrity.py` checks every main-grid run on the copy the annotators read: a log in its place that passes the run-log validator, a last ledger attempt `complete` with no transport retry, one model for every run, and the manifest's seeds in every cell. A run that fails is a gap, fixed by fetching the copy again or playing the run again (9.10); turn failures and empty narrations are data. `experiments/main_grid.sha256` pins the bytes of the 192 checked logs, and every later reader checks its copy against it (`docs/run_integrity.md`).
 
-61. M1 is annotated on whole runs: per scenario, one seed of 2001–2003 in sha256 order, with all four conditions at it, 64 runs and about 2,100 narrated turns. Each turn shows the 9.4 checker candidates, numbered, blind to condition; the annotator confirms the true ones and adds what none covers, by rubric v1.0. The second annotator's overlap is a fifth of each condition's runs, 16 in all (`adm/eval/m1.py`, `python -m adm.eval.annotate m1`). SD's labels start from an AI draft reviewed turn by turn (`--draft`; each line keeps the draft and whether it was accepted or edited); the overlap is labelled without one (decision log 2026-11-12).
+61. M1 is annotated on whole runs: per scenario, one seed of 2001–2003 in sha256 order, with all four conditions at it, 64 runs and about 2,100 narrated turns. Each turn shows the 9.4 checker candidates, numbered, blind to condition; the annotator confirms the true ones and adds what none covers, by rubric v1.0. The second annotator's overlap is a fifth of each condition's runs, 16 in all (`adm/eval/m1.py`, `python -m adm.eval.annotate m1`). SD's labels start from an AI draft reviewed turn by turn (`--draft`; each line keeps the draft and whether it was accepted or edited); the overlap starts from its own AI draft, made separately and reviewed by SS, so its alpha is between two reviewed AI drafts and is reported as such; `python -m adm.eval.m1_agreement` checks that the two annotators' overlap lines pair up (decision log 2026-11-12, 2026-11-15).
 
 Added at WBS 9.7 (reasons in `docs/decisions.md`):
 
@@ -1082,6 +1086,9 @@ Added at WBS 10.3 (reasons in `docs/decisions.md`):
 Added at WBS 10.4 (reasons in `docs/decisions.md`):
 
 64. M4's headline is item 56's automated figure on all 192 runs, per narrated turn, with the low-confidence candidates apart; one annotator's confirmed `RULE` labels on the M1 sample are reported beside it as its human check. M6 counts every turn, failed ones included, and tokens per second is the mean over calls; the D p95 target is met only if its 95% interval's upper bound is under 10 s (`docs/m4_rule_violations.md`, `docs/m6_latency.md`).
+Added at WBS 10.1 (reasons in `docs/decisions.md`):
+
+65. M1 is the first annotator's labels on the whole 9.5 sample: per turn, confirmed candidates plus added labels in the four rubric categories (`RULE` is M4), over narrated turns, pooled per condition as 100 × divergences / turns. H1 is the D/A ratio of those rates with the shared bootstrap; the B/A and C/A ratios and the ratio without `PHANTOM` are given beside it. The overlap labels are for agreement only (`adm/eval/m1_rates.py`, `docs/m1_rates.md`).
 
 ## 16. Open questions for the team
 

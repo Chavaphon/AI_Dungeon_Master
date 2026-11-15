@@ -696,9 +696,6 @@ def m1(
         raise typer.Exit(1) from exc
     drafts: dict[str, Doc] = {}
     if draft is not None:
-        if overlap:
-            console.print("[red]The overlap is annotated without a draft (WBS 9.6).[/red]")
-            raise typer.Exit(1)
         try:
             drafts = m1_sample.load_draft(read_lines(draft), items)
         except m1_sample.DraftError as exc:

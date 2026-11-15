@@ -313,13 +313,28 @@ def test_a_draft_is_shown_and_accepted_or_edited(tmp_path: Path, runs: Path) -> 
     assert edited["draft"]["confirmed"] == list(range(1, len(second.candidates) + 1))
 
 
-def test_a_draft_is_refused_for_the_overlap_or_when_it_does_not_fit(
-    tmp_path: Path, runs: Path
-) -> None:
+def test_a_draft_that_does_not_fit_is_refused(tmp_path: Path, runs: Path) -> None:
     items = _items(runs)
     draft_path = tmp_path / "draft.jsonl"
     draft_path.write_text(json.dumps(_draft_lines(items)[0]) + "\n", encoding="utf-8")
-    code, out = _m1(tmp_path, runs, "", "--draft", str(draft_path), "--overlap")
-    assert code == 1 and "without a draft" in out
     code, out = _m1(tmp_path, runs, "", "--draft", str(draft_path))
     assert code == 1 and "no draft line" in out
+    code, out = _m1(tmp_path, runs, "", "--draft", str(draft_path), "--overlap")
+    assert code == 1 and "no draft line" in out
+
+
+def test_the_overlap_annotator_reviews_a_draft_too(tmp_path: Path, runs: Path) -> None:
+    # Decision log 2026-11-15: the 9.6 overlap starts from its own AI draft, reviewed by SS.
+    items = _items(runs, "SS")
+    draft_path = tmp_path / "draft.jsonl"
+    draft_path.write_text(
+        "".join(json.dumps(d) + "\n" for d in _draft_lines(items)), encoding="utf-8"
+    )
+    args = ["m1", "--annotator", "SS", "--overlap", "--draft", str(draft_path)]
+    args += ["--runs", str(runs), "--scenarios", str(SCENARIOS)]
+    args += ["--results", str(tmp_path / "results")]
+    result = CliRunner().invoke(annotate.app, args, input="\nq\n")
+    assert result.exit_code == 0, result.output
+    (line,) = _lines(tmp_path / "results" / "m1_labels.jsonl")
+    assert line["annotator"] == "SS" and line["review"] == "accepted"
+    assert line["turn_id"] == items[0].turn_id
