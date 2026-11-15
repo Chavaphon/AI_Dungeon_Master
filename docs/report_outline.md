@@ -1,6 +1,6 @@
 # Final report outline
 
-WBS 11.1 · Owner: SD · Drafted 2026-11-15 · Status: **proposed, to be agreed by CI and SS on the PR** · CLAUDE.md wins on any conflict.
+WBS 11.1 · Owner: SD · Drafted 2026-11-15 · Status: **agreed by SD, CI and SS, 2026-11-15** · CLAUDE.md wins on any conflict.
 
 The section list of the final report (deliverable D10, due 22 Nov), with a named owner for each section. Done when: "Section list with a named owner each" (TASK_CHECKLIST.md, 11.1). Owners follow the writing tasks of the WBS. Each section lists what it must contain, the tasks and docs it draws on, and who reviews it in 11.6, so that every section is read by someone who did not write it (D10 acceptance).
 
@@ -102,10 +102,10 @@ States the local-model and no-player-study limits plainly (11.4 done-when). At l
 
 ## Agreement
 
-To be completed on the PR before merge.
+Agreed in the team chat on 2026-11-15, as reported by SD.
 
 | Member | Sections owned | Agreed |
 |---|---|---|
 | SD | Abstract, 5, 6, 7, 8 | yes |
-| CI | 3, 4, Appendix B | |
-| SS | 1, 2, Appendix A | |
+| CI | 3, 4, Appendix B | yes (team chat) |
+| SS | 1, 2, Appendix A | yes (team chat) |
