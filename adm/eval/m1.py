@@ -40,6 +40,15 @@ the turn, numbered. No condition, run id or seed.
 `candidates` are the checker's candidates of the turn, each confirmed or not;
 `added` are the divergences and rule breaks the annotator found that no
 candidate covers, with the phrase copied from the narration and its span.
+
+**A draft** (`load_draft`, decision log 2026-11-12, WBS 9.5 pre-labels) is one
+JSON line per sampled turn, `{"turn_id", "confirmed", "added", "note"}`, written
+by an AI from the same blind view. With `--draft`, each turn shows it, and the
+annotator accepts it (Enter) or edits the turn from scratch. The line then also
+carries `draft` (the draft as shown) and `review` (`accepted` or `edited`), so
+how much the annotator changed is reported. A draft is checked before use:
+every sampled turn once, candidate numbers in range, categories known, and
+every added phrase found in the narration.
 """
 
 from __future__ import annotations
@@ -202,10 +211,89 @@ def find_phrase(narration: str, phrase: str) -> list[int]:
     return [at, at + len(phrase)]
 
 
+class DraftError(ValueError):
+    """A draft that does not fit the sample it is meant for."""
+
+
+def load_draft(lines: Sequence[Doc], items: Sequence[M1Turn]) -> dict[str, Doc]:
+    """The draft by turn id, checked against the sampled turns, with each added
+    phrase's span. Raises `DraftError` listing every problem."""
+    by_id = {item.turn_id: item for item in items}
+    errors: list[str] = []
+    draft: dict[str, Doc] = {}
+    for n, line in enumerate(lines, 1):
+        tid = line.get("turn_id")
+        item = by_id.get(tid)  # type: ignore[arg-type]
+        if item is None:
+            errors.append(f"line {n}: {tid!r} is not a sampled turn")
+            continue
+        if tid in draft:
+            errors.append(f"line {n}: {tid} appears twice")
+            continue
+        confirmed = line.get("confirmed", [])
+        if not all(isinstance(c, int) and 1 <= c <= len(item.candidates) for c in confirmed):
+            errors.append(f"{tid}: candidate numbers {confirmed} out of range")
+            continue
+        added = []
+        for a in line.get("added", []):
+            category = a.get("category")
+            if category not in CATEGORIES.values():
+                errors.append(f"{tid}: unknown category {category!r}")
+                continue
+            try:
+                span = find_phrase(item.turn.narration, str(a.get("phrase", "")))
+            except ValueError:
+                errors.append(f"{tid}: phrase {a.get('phrase')!r} is not in the narration")
+                continue
+            added.append({"category": category, "phrase": str(a["phrase"]).strip(), "span": span})
+        draft[tid] = {
+            "confirmed": sorted(set(confirmed)),
+            "added": added,
+            "note": str(line.get("note", "")),
+        }
+    missing = [tid for tid in by_id if tid not in draft]
+    if missing:
+        errors.append(f"{len(missing)} sampled turns have no draft line, e.g. {missing[:3]}")
+    if errors:
+        raise DraftError("; ".join(errors[:20]) + (" ..." if len(errors) > 20 else ""))
+    return draft
+
+
+def render_draft(item: M1Turn, draft: Doc) -> str:
+    """The draft of one turn, under the turn."""
+    lines = ["Draft (AI pre-label):"]
+    confirmed = draft["confirmed"]
+    lines.append(
+        "  confirms: "
+        + (", ".join(f"[{n}] {item.candidates[n - 1]['category']}" for n in confirmed) or "none")
+    )
+    for a in draft["added"]:
+        lines.append(f"  adds:     {a['category']} {a['phrase']!r}")
+    if not draft["added"]:
+        lines.append("  adds:     none")
+    if draft["note"]:
+        lines.append(f"  note:     {draft['note']}")
+    return "\n".join(lines)
+
+
+def parse_accept(answer: str) -> bool:
+    """Enter accepts the draft; `e` edits the turn."""
+    answer = answer.strip().lower()
+    if answer not in {"", "e"}:
+        raise ValueError("Press Enter to accept the draft, or type e to edit.")
+    return answer == ""
+
+
 def record(
-    item: M1Turn, annotator: str, confirmed: set[int], added: Sequence[Doc], note: str
+    item: M1Turn,
+    annotator: str,
+    confirmed: set[int],
+    added: Sequence[Doc],
+    note: str,
+    draft: Doc | None = None,
+    review: str | None = None,
 ) -> Doc:
-    return {
+    line = {
         "turn_id": item.turn_id,
         "run_id": item.run_id,
         "input_index": item.input_index,
@@ -216,3 +304,7 @@ def record(
         "added": list(added),
         "note": note,
     }
+    if draft is not None:
+        line["draft"] = draft
+        line["review"] = review
+    return line
