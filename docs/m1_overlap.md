@@ -19,7 +19,7 @@ The second annotator's divergence labels for M1 (CLAUDE.md §10.4) on the 20% ov
 | Labels file | `results/m1_labels_SS.jsonl` (gitignored; for the team Drive `results/`), sha256 `dd0a2c8dd263710abe7cf1db249d1b3c05927142283694765de032230dd90285` |
 | Final labels | **86** candidates confirmed, **260** labels added: `CONTRADICT` 113, `PHANTOM` 89, `RULE` 46, `RESOURCE` 11, `RELATION` 1; 219 turns with at least one label; 17 notes by SS |
 | SS's side of the pairing | every overlap turn once, each shown with the checker candidates the sample gives now |
-| Agreement | computable once SD's `m1_labels.jsonl` is beside it: §3 step 3 |
+| Agreement | **computable**: `m1_agreement` pairs all 511 turns with SD's `results/m1_labels.jsonl` (sha256 `53d74b6b…1138e`, the 9.5 file); pooled alpha **0.894**, §6 |
 
 Counts per condition are left to 10.1 and 10.5.
 
@@ -57,3 +57,18 @@ Counts per condition are left to 10.1 and 10.5.
 - **The alpha is between two reviewed AI drafts.** The first-annotator labels are the 9.5 AI draft, accepted by SD without change. The overlap labels start from a separate draft by the same model. The alpha therefore measures agreement between two reviewed drafts, likely higher than two independent humans would reach, and is not human inter-rater reliability (decision log 2026-11-15, point 4).
 - **Review share.** SS changed 17 of 511 turns (14 edited, 3 relabelled), 3.3%; the other 494 are the draft unchanged. The report gives this, as it gives SD's 0 of 2,124.
 - **Review time.** The draft file was written at 12:41 and the labels file last at 13:20 on 2026-11-15, so the review of 511 turns took at most about 40 minutes, about 5 seconds a turn. The report should say the review was quick, so that the labels are read as close to the draft.
+
+## 6. Agreement
+
+`python -m adm.eval.m1_agreement --labels results/m1_labels.jsonl --labels results/m1_labels_SS.jsonl`, 2026-11-15. The unit is one turn and one rubric category, valued by the number of divergences (decision 58); `RULE` is M4 and is left out.
+
+| 511 turns | SD | SS | Alpha | Metric | Meets 0.6 |
+|---|---|---|---|---|---|
+| `PHANTOM` | 137 | 148 | 0.888 | interval | yes |
+| `CONTRADICT` | 134 | 136 | 0.888 | interval | yes |
+| `RESOURCE` | 11 | 11 | 0.797 | interval | yes |
+| `RELATION` | 2 | 2 | 1.000 | interval | yes |
+| **All four, pooled** | 284 | 297 | 0.894 | interval | yes |
+| Turn has any divergence | 202 | 203 | 0.865 | nominal | yes |
+
+78 of the 2,044 units differ. **Read with §5:** both sets of labels are reviewed drafts by the same model, SD changed none and SS changed 17 turns, so this alpha is mostly the agreement of two AI drafts with each other. It is not evidence that two independent humans would agree at 0.6. `RELATION` rests on 2 divergences, so its 1.000 says little. 10.5 reports these figures with this caveat.
