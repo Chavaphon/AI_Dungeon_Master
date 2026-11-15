@@ -27,7 +27,8 @@ Pooled rates are ratios of sums over runs. Every 95% interval is a percentile bo
 | Dataset | The 192 runs of `experiments/main_grid.json` (16 scenarios × 4 conditions × seeds 2001–2003), the logs pinned by `experiments/main_grid.sha256` (decision 60). The G2 smoke logs in `runs/D/long0*/` are not planned by the manifest and are not read. |
 | Copy read | CI's machine, `runs/A` to `runs/D`. The command refuses to run unless every planned log is present and matches its checksum; all 192 do. A–C logs are also checked against the replayed ground truth's state hashes, as in the checker. |
 | Command | `python -m adm.eval.metrics m4 --checksums experiments/main_grid.sha256 --doc docs/m4_rule_violations.md`, and `--labels results/m1_labels.jsonl` for the confirmed table |
-| Output | `results/m4.json` (gitignored; for the team Drive under `results/`), and the block in §3, written by the command. Two runs give byte-identical output: sha256 `d1cc798624e56a1c14e8452c87a9d4d012d5912ea3522c4e1d869eb869d525e0` (without `--labels`). |
+| Output | `results/m4.json` (gitignored; for the team Drive under `results/`), and the block in §3, written by the command. Two runs give byte-identical output: sha256 `c3e0fed313650f9c13b16da9e747da765b86aa8123c4b71c4019eb7295d3a46d` (with `--labels`; `d1cc7986…9d525e0` without) |
+| Labels | `results/m1_labels.jsonl`, SD's 9.5 pass from the team Drive: 2,124 lines, one per narrated turn of the 64 sample runs, all annotator SD; sha256 `53d74b6bd68400064fa83d8da1f60cc90087ece80918aba13f453362bb11138e`. The 9.6 overlap lines (SS) are not in it and would be ignored if they were. |
 | Cross-check | The candidate counts equal those of the 9.4 pass (`docs/automated_pass.md` §4: A 6 / 36, B 8 / 41, C 6 / 48, D 6 / 34, `state_audit` 0; by rule 121, 54 and 10), which ran the same checker over the Drive copy of the same bytes. |
 
 ## 3. Results
@@ -59,16 +60,26 @@ Each cell is `rule_violation` high / `rule_violation` low / `state_audit`.
 
 ### Confirmed by the human pass (M1 sample)
 
-Not computed: run with `--labels results/m1_labels.jsonl` once the 9.5 labels are on this machine.
+Annotator SD, 64 runs of the M1 sample (decision 61). Confirmed = `RULE` candidates the annotator confirmed plus `RULE` breaks added.
+
+| Condition | Runs | Narrated turns | Shown high / low | Confirmed high / low | Added | **Confirmed per 100 turns** | 95% interval | Precision high | Precision low |
+|---|---|---|---|---|---|---|---|---|---|
+| A | 16 | 535 | 3 / 12 | 0 / 8 | 50 | **10.84** | 7.50 to 15.34 | 0.0% | 66.7% |
+| B | 16 | 535 | 5 / 11 | 1 / 7 | 40 | **8.97** | 6.58 to 11.98 | 20.0% | 63.6% |
+| C | 16 | 535 | 4 / 15 | 1 / 13 | 32 | **8.60** | 6.65 to 11.00 | 25.0% | 86.7% |
+| D | 16 | 519 | 3 / 4 | 0 / 3 | 36 | **7.51** | 5.01 to 10.93 | 0.0% | 75.0% |
+| **All** | 64 | 2124 | 15 / 42 | 2 / 31 | 158 | **8.99** | 7.60 to 10.62 | 13.3% | 73.8% |
 <!-- results:end -->
 
 ## 4. Reading
 
 **The state never breaks a rule, in any condition.** `state_audit` is zero on all 6,366 narrated turns: no HP outside its range, no slot or quantity below zero, no action out of turn and no combat with no encounter, in D's own state and in A–C's replayed ground truth. This is invariant 5 and the validator's preconditions holding on the whole main grid, and it is why M4 rests wholly on what the narration says.
 
-**Narrated rule breaks are rare and about equally rare in every condition.** M4 is 0.37 to 0.50 per 100 narrated turns, 26 high-confidence candidates over 6,366 turns, and the four intervals overlap almost wholly. Counts this small cannot separate the conditions, and no test of a difference was fixed before scoring (CLAUDE.md §10.5 tests H1 on M1, not M4), so none is drawn here.
+**The automated M4 undercounts narrated rule breaks by about twentyfold.** M4 as decision 56 defines it is 0.37 to 0.50 per 100 narrated turns, 26 high-confidence candidates over 6,366 turns. On the 2,124 turns of the M1 sample, SD confirmed 8.99 rule breaks per 100 turns (7.60 to 10.62): 7.51 to 10.84 per condition. The two figures are not measuring the same thing well. The automated one is reported because CLAUDE.md §10.4 and decision 56 name it, but the confirmed one is the better estimate of how often the narration breaks a rule, and **M4 should be read from the confirmed table**.
 
-**These are candidates, not confirmed breaks.** On the 30 validation turns, 1 of the checker's 3 `RULE` candidates was right, and its one high-confidence `after_encounter_end` was a past-tense mention (`docs/checker_validation.md` §2). The confirmed table above, from the M1 sample's labels, is the check on how many of the 26 are real; until it is computed, read M4 as an upper bound for the high-confidence kinds it covers, and not a bound at all for breaks the checker cannot see (its recall on validation was 0.35 over all categories).
+**The checker's high-confidence set is mostly wrong, and most real breaks are not in it at all.** Of 15 high-confidence `RULE` candidates shown on the sample, SD confirmed 2 (13%), both an NPC attack narrated out of turn ("crab's claws", s06). Its low-confidence ones fared better, 31 of 42 (74%): nearly all are the player character attacking ("You swing", "you strike", "You lunge") after the encounter ended or out of turn, which the checker marks low because the input may have asked for it (decision 56). Then 158 of the 191 confirmed breaks (83%) were added by hand, matching no candidate. SD left no notes and an added label carries no rule kind, so they cannot be split exactly; by their wording most are attacks whose subject is a weapon or a spell rather than "you" plus a verb ("Your battleaxe bites deep into the second goblin's chest", "A blast of flame erupts from the tip of your dagger", "The blade bites deep"), which the checker's subject patterns do not catch, and a few are heals narrated with no slot left ("his wounds begin to close"). The validation sample predicted this: 1 of 3 `RULE` candidates right, recall 0.35 overall (`docs/checker_validation.md` §2).
+
+**The conditions are close on the confirmed measure too.** D is lowest at 7.51 and A highest at 10.84, but the four intervals overlap, and no test of a difference in M4 was fixed before scoring (CLAUDE.md §10.5 tests H1 on M1, not M4), so none is drawn. That D is not near zero matters more: in 519 turns D's narration still describes 39 rule breaks, though the engine refuses every one of them. The engine keeps the *state* clean; it does not keep the *narration* from describing an attack the state never saw.
 
 **Fights that end before the script does produce most of them.** `after_encounter_end` is 121 of the 185 candidates, 18 of the 26 high-confidence ones. Scripted inputs do not adapt to how an encounter goes (decision 23), so an attack can arrive after the last hostile is down; A–C narrate the attack the input asks for with nothing to stop them, and D's narration still gives 35 candidates (5 high), attacks described in turns that began after the encounter ended, when the engine refuses any combat action. This is the pattern behind most of M2's rejections (`docs/m2_tool_calls.md` §4).
 
