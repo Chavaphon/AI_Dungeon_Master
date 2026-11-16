@@ -1083,9 +1083,12 @@ Added at WBS 10.3 (reasons in `docs/decisions.md`):
 
 63. M2's headline is rejected turns over turns (a turn with any `ok: false` attempt; a `{"tool": null}` reply is not a rejection), with rejected attempts over turns beside it. A rejected turn with no `turn_failure` is recovered, narration-only included. Its intervals use the shared run-level bootstrap in `adm/eval/metrics.py`, the one module besides `engine/dice.py` that may import `random` (`docs/m2_tool_calls.md`).
 
+Added at WBS 10.4 (reasons in `docs/decisions.md`):
+
+64. M4's headline is item 56's automated figure on all 192 runs, per narrated turn, with the low-confidence candidates apart; one annotator's confirmed `RULE` labels on the M1 sample are reported beside it as its human check. M6 counts every turn, failed ones included, and tokens per second is the mean over calls; the D p95 target is met only if its 95% interval's upper bound is under 10 s (`docs/m4_rule_violations.md`, `docs/m6_latency.md`).
 Added at WBS 10.1 (reasons in `docs/decisions.md`):
 
-64. M1 is the first annotator's labels on the whole 9.5 sample: per turn, confirmed candidates plus added labels in the four rubric categories (`RULE` is M4), over narrated turns, pooled per condition as 100 × divergences / turns. H1 is the D/A ratio of those rates with the shared bootstrap; the B/A and C/A ratios and the ratio without `PHANTOM` are given beside it. The overlap labels are for agreement only (`adm/eval/m1_rates.py`, `docs/m1_rates.md`).
+65. M1 is the first annotator's labels on the whole 9.5 sample: per turn, confirmed candidates plus added labels in the four rubric categories (`RULE` is M4), over narrated turns, pooled per condition as 100 × divergences / turns. H1 is the D/A ratio of those rates with the shared bootstrap; the B/A and C/A ratios and the ratio without `PHANTOM` are given beside it. The overlap labels are for agreement only (`adm/eval/m1_rates.py`, `docs/m1_rates.md`).
 
 Added at WBS 10.4 (reasons in `docs/decisions.md`):
 
