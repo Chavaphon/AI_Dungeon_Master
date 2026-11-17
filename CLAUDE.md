@@ -104,6 +104,7 @@ python -m adm.eval.annotate m1 --annotator SD --draft results/m1_draft_claude.js
 python -m adm.eval.annotate m1 --annotator SS --overlap --draft results/m1_overlap_draft_claude.jsonl
 python -m adm.eval.m1_agreement --labels results/m1_labels.jsonl --labels results/m1_labels_SS.jsonl  # WBS 9.6: the overlap pairs up
 python -m adm.eval.m1_rates --checksums experiments/main_grid.sha256 --doc docs/m1_rates.md  # WBS 10.1: M1 per condition and H1
+python -m adm.eval.m1_growth --checksums experiments/main_grid.sha256 --doc docs/m1_growth.md  # WBS 10.2: M1 growth against turn index, RQ2
 ```
 
 ### 2.1 Dependencies
@@ -186,6 +187,7 @@ adm/
     m1.py             # M1 sample (64 whole runs), overlap, order and turn display for annotate m1
     m1_agreement.py   # M1 overlap: pairing check and Krippendorff's alpha between annotators
     m1_rates.py       # M1 per condition with run-level intervals, the ratios to A and H1
+    m1_growth.py      # M1 growth against turn index (RQ2): long-session slopes, differences from A, bins
     validate.py       # run logs: schema, script coverage, hash replay
     integrity.py      # main grid before annotation: completeness, crashes, seeds, checksums
   cli.py
@@ -1093,6 +1095,10 @@ Added at WBS 10.1 (reasons in `docs/decisions.md`):
 Added at WBS 10.4 (reasons in `docs/decisions.md`):
 
 65. M4's headline is item 56's automated figure on all 192 runs, per narrated turn, with the low-confidence candidates apart; one annotator's confirmed `RULE` labels on the M1 sample are reported beside it as its human check. M6 counts every turn, failed ones included, and tokens per second is the mean over calls; the D p95 target is met only if its 95% interval's upper bound is under 10 s (`docs/m4_rule_violations.md`, `docs/m6_latency.md`).
+
+Added at WBS 10.2 (reasons in `docs/decisions.md`):
+
+66. RQ2 is the pooled least-squares slope of per-turn M1 divergences (the 10.1 count and labels) on the scripted position, `input_index + 1`, per condition, on the four long sessions; it is reported as the change in divergences per 100 turns per 10 turns played, with the shared run-level bootstrap and the difference from A. The slope without `PHANTOM`, the short-scenario slopes (context, no interval) and the rate in bins of 10 positions (the last from 41 to the end) are given beside it (`adm/eval/m1_growth.py`, `docs/m1_growth.md`).
 
 ## 16. Open questions for the team
 
