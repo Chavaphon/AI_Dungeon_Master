@@ -59,7 +59,8 @@ class RatingError(ValueError):
 
 
 def _review(lines: Sequence[Doc]) -> dict[str, int]:
-    counts = Counter(str(ln.get("review") or "none") for ln in lines)
+    # a line with no `review` was relabelled with --redo, without the draft shown
+    counts = Counter(str(ln.get("review") or "relabelled") for ln in lines)
     return dict(sorted(counts.items()))
 
 
