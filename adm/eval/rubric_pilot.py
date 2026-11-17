@@ -43,14 +43,18 @@ TARGET = 0.6  # CLAUDE.md section 10.4
 RESULTS_START = "<!-- results:start -->"
 RESULTS_END = "<!-- results:end -->"
 
-Metric = Literal["nominal", "interval"]
+Metric = Literal["nominal", "ordinal", "interval"]
 
 
 def alpha(units: Sequence[Sequence[float | None]], metric: Metric = "interval") -> float | None:
     """Krippendorff's alpha. Each unit lists one value per annotator, `None` where
     that annotator gave none. Units with fewer than two values are not pairable
     and are dropped. Returns `None` when alpha is undefined: no pairable values,
-    or every pairable value the same (no expected disagreement)."""
+    or every pairable value the same (no expected disagreement).
+
+    The ordinal metric (used for the M5 ratings, WBS 10.5) weighs a
+    disagreement between ranks c and k by how many pairable values lie between
+    them: (sum of n_g for g from c to k, minus (n_c + n_k) / 2) squared."""
     coincidence: Counter[tuple[float, float]] = Counter()
     for unit in units:
         values = [v for v in unit if v is not None]
@@ -67,8 +71,21 @@ def alpha(units: Sequence[Sequence[float | None]], metric: Metric = "interval") 
     if n <= 1:
         return None
 
+    ranks = sorted(totals)
+    cumulative = {}
+    running = 0.0
+    for g in ranks:
+        running += totals[g]
+        cumulative[g] = running
+
     def delta(c: float, k: float) -> float:
-        return float(c != k) if metric == "nominal" else (c - k) ** 2
+        if metric == "nominal":
+            return float(c != k)
+        if metric == "ordinal":
+            low, high = min(c, k), max(c, k)
+            between = cumulative[high] - cumulative[low] + totals[low]
+            return (between - (totals[c] + totals[k]) / 2) ** 2
+        return (c - k) ** 2
 
     observed = sum(w * delta(c, k) for (c, k), w in coincidence.items()) / n
     expected = sum(totals[c] * totals[k] * delta(c, k) for c in totals for k in totals) / (

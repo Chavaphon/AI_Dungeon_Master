@@ -50,7 +50,7 @@ def test_alpha_is_undefined_with_no_variation_or_no_pairs():
 def test_alpha_matches_the_krippendorff_package():
     kd = pytest.importorskip("krippendorff")
     rng = random.Random(8011)
-    for metric in ("nominal", "interval"):
+    for metric in ("nominal", "ordinal", "interval"):
         coders = [[rng.choice([0, 0, 0, 1, 2]) for _ in range(40)] for _ in range(2)]
         coders[1] = [v if rng.random() < 0.7 else rng.choice([0, 1, 2]) for v in coders[0]]
         units = [list(c) for c in zip(*coders, strict=True)]
