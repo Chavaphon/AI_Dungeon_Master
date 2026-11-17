@@ -1,6 +1,6 @@
 # M1 growth against turn index (RQ2)
 
-WBS 10.2 · Owner: SD · CLAUDE.md wins on any conflict.
+WBS 10.2 · Owner: SD · Computed 2026-11-17 · CLAUDE.md wins on any conflict.
 
 RQ2 of CLAUDE.md §10.5: the slope of divergences per turn against turn number, per condition, with a bootstrap interval; the long sessions carry it. Done when: "Answers RQ2" (TASK_CHECKLIST.md, 10.2).
 
@@ -53,12 +53,12 @@ Turn index: scripted position (input_index + 1). Slope: change in divergences pe
 
 Pooled over the condition's long-session runs; for the growth-curve figure (10.6).
 
-| Condition | 1–10 | 11–20 | 21–30 | 31–40 | 41–50 |
+| Condition | 1–10 | 11–20 | 21–30 | 31–40 | 41+ |
 |---|---|---|---|---|---|
-| A | 67.5 | 30.0 | 52.5 | 27.5 | 55.0 |
-| B | 42.5 | 45.0 | 72.5 | 42.5 | 57.5 |
-| C | 47.5 | 40.0 | 30.0 | 40.0 | 62.5 |
-| D | 40.0 | 38.5 | 55.0 | 38.5 | 74.4 |
+| A | 67.5 | 30.0 | 52.5 | 27.5 | 52.1 |
+| B | 42.5 | 45.0 | 72.5 | 42.5 | 50.0 |
+| C | 47.5 | 40.0 | 30.0 | 40.0 | 56.2 |
+| D | 40.0 | 38.5 | 55.0 | 38.5 | 70.2 |
 
 ### Short scenarios, for context
 
@@ -71,3 +71,22 @@ Slope over the 12 short scenarios, no interval: their scripts differ by position
 | C | 12 | +6.8 |
 | D | 12 | +10.2 |
 <!-- results:end -->
+
+The command gives byte-identical `results/m1_growth.json` on a second run: sha256 `ec9207b837f8da0af98f9f2273bcc0d3aa2c71ec5f63fa486bc637b23cef8652`.
+
+## 4. Reading
+
+- **RQ2: no condition's divergences grow measurably over a 52-turn session.** Every slope's 95% interval contains 0. D has the steepest point estimate, +5.7 per 100 turns for every 10 turns played (−2.3 to +15.4), and A the flattest, −3.3 (−15.4 to +8.2).
+- **D does not drift more slowly than A.** The prediction behind grounding was that state in the prompt, and the engine in D, would hold the narration steady as the session grows. The difference D − A is +9.0 (−5.7 to +24.4): if anything D's point estimate rises faster, but the interval contains 0, so this is not a finding. B − A (+4.5) and C − A (+4.8) are the same: no difference from A.
+- **Without `PHANTOM` the picture does not change.** D's slope is +4.4 (−2.6 to +11.0) and D − A +5.7 (−4.7 to +17.0).
+- **The script, not the session length, moves the rate.** The per-bin rates go up and down together across conditions (A, for example, is 67.5 in turns 1–10 and 27.5 in turns 31–40), and per-run slopes follow the scenario more than the condition: all four `long03_river_market` runs fall (−20.8 to −4.5), and three of four `long01_border_road` runs rise. Busy stretches of a script (combat, many named characters) produce more divergences in every condition.
+- **The last stretch is highest in C and D** (56.2 and 70.2 per 100 turns in positions 41 onwards, against A's 52.1), the pattern a growth effect would show, but one bin of four runs is not evidence. 10.6 plots the bins; 10.7 can look at those turns.
+- **Short scenarios agree in direction only.** Their slopes (A +0.1, B −2.8, C +6.8, D +10.2) have no interval and differ in script by position, so they are context, not a test.
+
+## 5. Limitations, for the report
+
+- **Four runs per condition.** Each long session is played once per condition in the M1 sample (one seed), so the bootstrap draws from 4 runs per stratum and the intervals are wide and coarse. A moderate growth effect would not show.
+- **Position is confounded with the script.** Every condition gets the same input at the same position, so the differences between conditions are fair, but each condition's own slope also reflects what the script asks for at each point, not only how long the session has run.
+- **Labels as in 10.1.** The labels are an AI draft accepted unchanged by SD (`docs/m1_annotation.md` §3; `docs/m1_rates.md` §5).
+- **D has 3 fewer long-session turns** (205 against 208): its failed turns are not narrated by the model and leave gaps at their positions.
+- **A correction after the first run.** The bins were first written as 1–10 to 41–50, and the long sessions have 52 inputs, so positions 51 and 52 were dropped from the last bin. It now runs to the end (decision log, 2026-11-17). The slopes and differences were unchanged by the correction.
