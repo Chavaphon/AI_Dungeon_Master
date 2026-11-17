@@ -10,7 +10,7 @@ categories; `RULE` is M4). A failed condition D turn is not narrated by the
 model and is not in the sample.
 
 **The turn index** is the scripted position, `input_index + 1`, from 1 to 50 in
-a long session. It names the same scripted input in every condition, so a failed
+a long session (52 inputs). It names the same scripted input in every condition, so a failed
 D turn does not shift D's later turns against A's (decision 23). `turn_number`
 differs from it only in D, after a failed turn.
 
@@ -18,7 +18,7 @@ differs from it only in D, after a failed turn.
 divergence count on the position, pooled over the turns of its runs. It is
 reported as the change in the rate (divergences per 100 turns) for every 10
 turns played: 1,000 x the slope per turn. **RQ2** (CLAUDE.md section 10.5) is
-carried by the four long sessions, 4 runs per condition, all 50 inputs long. A
+carried by the four long sessions, 4 runs per condition, all 52 inputs long. A
 condition's divergences grow with the session when its slope's 95% interval lies
 above 0. The difference from A (B-A, C-A, D-A) is given with its interval.
 
@@ -29,7 +29,8 @@ resample draws each condition's runs separately.
 **Fixed beforehand**, with the rest: the long-session slopes also without
 `PHANTOM` (as in 10.1); the slopes of the 12 short scenarios as context, with no
 interval, since their scripts differ by position; and the long-session rate in
-five bins of 10 positions, for the growth-curve figure (10.6).
+bins of 10 positions (the last from 41 to the end), for the growth-curve
+figure (10.6).
 """
 
 from __future__ import annotations
@@ -63,7 +64,8 @@ Doc = dict[str, Any]
 
 PER_TURNS = 10  # the slope is reported per 10 turns played
 SCALE = 100 * PER_TURNS  # ... of the rate per 100 turns
-BINS = ((1, 10), (11, 20), (21, 30), (31, 40), (41, 50))
+# Bins of 10 positions; the last runs to the end of the session (52 inputs).
+BINS: tuple[tuple[int, int | None], ...] = ((1, 10), (11, 20), (21, 30), (31, 40), (41, None))
 
 
 @dataclass(frozen=True)
@@ -154,7 +156,7 @@ def binned(runs: Sequence[RunTurns]) -> list[Doc]:
         turns = divergences = 0
         for r in runs:
             for x, counts in r.points:
-                if low <= x <= high:
+                if low <= x and (high is None or x <= high):
                     turns += 1
                     divergences += _y(counts, RUBRIC)
         out.append(
@@ -284,7 +286,7 @@ def render(report: Doc) -> str:
             f"{'yes' if d['excludes_zero'] else 'no'} | "
             f"{_num(d['without_phantom']['value'])} | {_ci(d['without_phantom'])} |"
         )
-    header = " | ".join(f"{lo}–{hi}" for lo, hi in BINS)
+    header = " | ".join(f"{lo}–{hi}" if hi else f"{lo}+" for lo, hi in BINS)
     lines += [
         "",
         "### Long sessions: rate per 100 turns by position",

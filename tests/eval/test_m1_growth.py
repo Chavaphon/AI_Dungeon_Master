@@ -95,11 +95,12 @@ def test_categories_and_difference_from_a() -> None:
 
 
 def test_bins_pool_the_rate_by_position() -> None:
-    r = run("A", [1] * 10 + [0] * 40)
+    r = run("A", [1] * 10 + [0] * 40 + [1, 1])  # 52 inputs, as the long sessions
     bins = m1_growth.binned([r])
-    assert [b["positions"] for b in bins] == [[1, 10], [11, 20], [21, 30], [31, 40], [41, 50]]
+    assert [b["positions"] for b in bins] == [[1, 10], [11, 20], [21, 30], [31, 40], [41, None]]
     assert bins[0] == {"positions": [1, 10], "turns": 10, "divergences": 10, "rate": 100.0}
     assert bins[1]["rate"] == 0
+    assert bins[4]["turns"] == 12 and bins[4]["divergences"] == 2  # 51 and 52 kept
     assert m1_growth.binned([])[0]["rate"] is None
 
 
@@ -127,4 +128,4 @@ def test_report_uses_long_sessions_for_rq2_and_is_reproducible() -> None:
     assert "A" not in report["differences"]
     assert report == m1_growth.growth_report(_grid(), resamples=200)
     block = m1_growth.render(report)
-    assert "| D − A |" in block and "41–50" in block
+    assert "| D − A |" in block and "41+" in block

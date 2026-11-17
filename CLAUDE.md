@@ -1098,7 +1098,7 @@ Added at WBS 10.4 (reasons in `docs/decisions.md`):
 
 Added at WBS 10.2 (reasons in `docs/decisions.md`):
 
-66. RQ2 is the pooled least-squares slope of per-turn M1 divergences (the 10.1 count and labels) on the scripted position, `input_index + 1`, per condition, on the four long sessions; it is reported as the change in divergences per 100 turns per 10 turns played, with the shared run-level bootstrap and the difference from A. The slope without `PHANTOM`, the short-scenario slopes (context, no interval) and the rate in five bins of 10 positions are given beside it (`adm/eval/m1_growth.py`, `docs/m1_growth.md`).
+66. RQ2 is the pooled least-squares slope of per-turn M1 divergences (the 10.1 count and labels) on the scripted position, `input_index + 1`, per condition, on the four long sessions; it is reported as the change in divergences per 100 turns per 10 turns played, with the shared run-level bootstrap and the difference from A. The slope without `PHANTOM`, the short-scenario slopes (context, no interval) and the rate in bins of 10 positions (the last from 41 to the end) are given beside it (`adm/eval/m1_growth.py`, `docs/m1_growth.md`).
 
 ## 16. Open questions for the team
 
