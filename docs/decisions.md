@@ -870,3 +870,11 @@ Attendees: SS, CI, SD · Note-taker: CI
 5. The annotation limitations are carried into the report as recorded: SD accepted all 2,124 M1 drafts unchanged; the M1 alpha (0.894) is between two reviewed AI drafts; CI's first M3 pass was set aside and redone (238 of 242 drafts accepted); SD's M5 ratings took about 7 minutes; tone in M5 is at the ceiling. — CLAUDE.md §10.5 and the entries above require disclosure; 11.2 and 11.4 own the wording. — Nothing changed; `docs/report_outline.md` §7 already lists them.
 
 **Open, carried to next week:** 12.9 handover note on track for 22 Nov — CI · 12.11 Sponsor User sessions, whether they finish before the blackout — CI
+
+## 2026-11-17 — Sponsor User sessions end after one day each (WBS 12.11)
+
+Decided by: CI · Supersedes: none
+
+**Decision:** #192's "done when" and `docs/sponsor_feedback.md` §4 planned one session a day for 3 to 5 days per sponsor. Each of the five Sponsor Users played one session (P1 to P4 on 12–13 Nov, P5 on 17 Nov), and the summary in §6 is written from those five sheets, which closes #192. All five played the same engine, orchestration, CLI, prompts, model configuration and scenarios: the builds `dab6ff4`, `24c896f`, `174b076` and `1603d16` differ only in `adm/eval`, docs and tests. §6.7 records no follow-up issue: every report is model behaviour that M1 or M3 already measures, a mechanic out of scope by design, or `modify_inventory` working as specified.
+**Reason:** CLAUDE.md §2.3 needs a decision entry for a re-scoped task. Week 7 is the last week before the blackout, and the sessions are informal feedback, not a study (CLAUDE.md §14); more days would add colour, not results. The five sheets already cover every heading of the summary. A provenance rule for items would change the frozen tool contract after the main run, so it is not opened as an issue.
+**Changed:** `docs/sponsor_feedback.md` §4 (one line) and §6 (the summary; "Anything else" added as §6.6, follow-ups now §6.7). The feedback sheets stay out of git. CLAUDE.md, the schemas, the prompts and the code are unchanged. No new dependencies.
