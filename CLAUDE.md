@@ -108,6 +108,7 @@ python -m adm.eval.agreement --m1-labels results/m1_labels.jsonl --m1-labels res
 python -m adm.eval.m1_growth --checksums experiments/main_grid.sha256 --doc docs/m1_growth.md  # WBS 10.2: M1 growth against turn index, RQ2
 python -m adm.eval.figures --doc docs/figures.md  # WBS 10.6: the three M1 report figures, from results/m1.json and m1_growth.json (needs .[analysis])
 python -m adm.eval.catalogue --checksums experiments/main_grid.sha256 --doc docs/failure_catalogue.md  # WBS 10.7: ten illustrative failures, drawn by a fixed rule
+python -m adm.eval.exhibit --checksums experiments/main_grid.sha256 --doc docs/exhibit_a_vs_d.md  # WBS 10.8: the A-versus-D defence slide (needs .[analysis])
 ```
 
 ### 2.1 Dependencies
@@ -194,6 +195,7 @@ adm/
     m1_growth.py      # M1 growth against turn index (RQ2): long-session slopes, differences from A, bins
     figures.py        # report figures: M1 rate by condition, growth curves, error taxonomy
     catalogue.py      # the catalogue of ten illustrative failures: slots, hash-order draw, excerpts, state snapshots
+    exhibit.py        # the side-by-side A versus D exhibit: paired combat inputs, two rows, the slide
     validate.py       # run logs: schema, script coverage, hash replay
     integrity.py      # main grid before annotation: completeness, crashes, seeds, checksums
   cli.py
@@ -1117,6 +1119,10 @@ Added at WBS 10.6 (reasons in `docs/decisions.md`):
 Added at WBS 10.7 (reasons in `docs/decisions.md`):
 
 69. The failure catalogue is ten slots fixed before the draw: seven M1 divergences across the rubric categories and conditions, one narrated M4 rule break, one M2 tool call out of retries and one M3 call that misreads the request. Within a slot the first eligible turn in sha256 order is taken, one slot per turn, skipping turns the 9.6 overlap contests; each entry has its transcript excerpt and a state snapshot. It illustrates and estimates nothing (`adm/eval/catalogue.py`, `docs/failure_catalogue.md`).
+
+Added at WBS 10.8 (reasons in `docs/decisions.md`):
+
+70. The A-versus-D exhibit pairs A's and D's narrated turns at one scripted combat input and seed of the M1 sample, in two rows fixed before the draw: what the engine fixes (A has a `CONTRADICT` or `RULE` label, D none) and what it does not (D has a `CONTRADICT` label despite its facts), each the first qualifying pair in sha256 order. The slide carries the 10.1 result, so neither row reads as the finding (`adm/eval/exhibit.py`, `docs/exhibit_a_vs_d.md`).
 
 ## 16. Open questions for the team
 
