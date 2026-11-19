@@ -106,6 +106,7 @@ python -m adm.eval.m1_agreement --labels results/m1_labels.jsonl --labels result
 python -m adm.eval.m1_rates --checksums experiments/main_grid.sha256 --doc docs/m1_rates.md  # WBS 10.1: M1 per condition and H1
 python -m adm.eval.agreement --m1-labels results/m1_labels.jsonl --m1-labels results/m1_labels_SS.jsonl --m5-ratings results/m5_ratings.jsonl --m5-ratings results/m5_ratings_SS.jsonl --checksums experiments/main_grid.sha256 --doc docs/agreement.md  # WBS 10.5: alpha and Objective 3
 python -m adm.eval.m1_growth --checksums experiments/main_grid.sha256 --doc docs/m1_growth.md  # WBS 10.2: M1 growth against turn index, RQ2
+python -m adm.eval.figures --doc docs/figures.md  # WBS 10.6: the three M1 report figures, from results/m1.json and m1_growth.json (needs .[analysis])
 ```
 
 ### 2.1 Dependencies
@@ -190,6 +191,7 @@ adm/
     m1_rates.py       # M1 per condition with run-level intervals, the ratios to A and H1
     agreement.py      # Krippendorff alpha for M1 (overlap) and M5 (ordinal), Objective 3
     m1_growth.py      # M1 growth against turn index (RQ2): long-session slopes, differences from A, bins
+    figures.py        # report figures: M1 rate by condition, growth curves, error taxonomy
     validate.py       # run logs: schema, script coverage, hash replay
     integrity.py      # main grid before annotation: completeness, crashes, seeds, checksums
   cli.py
@@ -1105,6 +1107,10 @@ Added at WBS 10.2 (reasons in `docs/decisions.md`):
 Added at WBS 10.5 (reasons in `docs/decisions.md`):
 
 67. Agreement is Krippendorff's alpha: M1 on the 9.6 overlap with the unit and metrics of decision 58, and M5 ordinal per item over all 64 excerpts. Objective 3 is met when the pooled M1 alpha is at least 0.6; every other alpha is checked against 0.6 and reported. No interval for alpha. The shared `alpha` has an ordinal metric (`adm/eval/agreement.py`, `docs/agreement.md`).
+
+Added at WBS 10.6 (reasons in `docs/decisions.md`):
+
+68. The report's three M1 figures draw only values the 10.1 and 10.2 reports hold, with their intervals, and compute no statistic; the two reports must share labels, logs and bootstrap. A condition is named by axis position or panel title, never by colour alone. They are PNG and SVG in `docs/report/figures/`, byte-reproducible with one matplotlib, and matplotlib is imported only to draw (`adm/eval/figures.py`, `docs/figures.md`).
 
 ## 16. Open questions for the team
 

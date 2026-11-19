@@ -1,2 +1,3 @@
 config/prompts/*.txt text eol=lf
 *.sha256 text eol=lf
+docs/report/figures/*.svg text eol=lf
