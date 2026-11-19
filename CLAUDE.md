@@ -105,6 +105,7 @@ python -m adm.eval.annotate m1 --annotator SS --overlap --draft results/m1_overl
 python -m adm.eval.m1_agreement --labels results/m1_labels.jsonl --labels results/m1_labels_SS.jsonl  # WBS 9.6: the overlap pairs up
 python -m adm.eval.m1_rates --checksums experiments/main_grid.sha256 --doc docs/m1_rates.md  # WBS 10.1: M1 per condition and H1
 python -m adm.eval.agreement --m1-labels results/m1_labels.jsonl --m1-labels results/m1_labels_SS.jsonl --m5-ratings results/m5_ratings.jsonl --m5-ratings results/m5_ratings_SS.jsonl --checksums experiments/main_grid.sha256 --doc docs/agreement.md  # WBS 10.5: alpha and Objective 3
+python -m adm.eval.m5_scores --m5-ratings results/m5_ratings.jsonl --m5-ratings results/m5_ratings_SS.jsonl --doc docs/m5_scores.md  # WBS 11.3: M5 per condition and H2
 python -m adm.eval.m1_growth --checksums experiments/main_grid.sha256 --doc docs/m1_growth.md  # WBS 10.2: M1 growth against turn index, RQ2
 python -m adm.eval.figures --doc docs/figures.md  # WBS 10.6: the three M1 report figures, from results/m1.json and m1_growth.json (needs .[analysis])
 python -m adm.eval.catalogue --checksums experiments/main_grid.sha256 --doc docs/failure_catalogue.md  # WBS 10.7: ten illustrative failures, drawn by a fixed rule
@@ -192,6 +193,7 @@ adm/
     m1_agreement.py   # M1 overlap: pairing check and Krippendorff's alpha between annotators
     m1_rates.py       # M1 per condition with run-level intervals, the ratios to A and H1
     agreement.py      # Krippendorff alpha for M1 (overlap) and M5 (ordinal), Objective 3
+    m5_scores.py      # M5 per condition and H2: D - A per item, each rater alone, paired by scenario
     m1_growth.py      # M1 growth against turn index (RQ2): long-session slopes, differences from A, bins
     figures.py        # report figures: M1 rate by condition, growth curves, error taxonomy
     catalogue.py      # the catalogue of ten illustrative failures: slots, hash-order draw, excerpts, state snapshots
@@ -1123,6 +1125,8 @@ Added at WBS 10.7 (reasons in `docs/decisions.md`):
 Added at WBS 10.8 (reasons in `docs/decisions.md`):
 
 70. The A-versus-D exhibit pairs A's and D's narrated turns at one scripted combat input and seed of the M1 sample, in two rows fixed before the draw: what the engine fixes (A has a `CONTRADICT` or `RULE` label, D none) and what it does not (D has a `CONTRADICT` label despite its facts), each the first qualifying pair in sha256 order. The slide carries the 10.1 result, so neither row reads as the finding (`adm/eval/exhibit.py`, `docs/exhibit_a_vs_d.md`).
+
+71. M5 per condition is the mean over its 16 excerpts of the two raters' mean rating. H2 and RQ3 are the D − A difference per item with the shared run-level bootstrap; D is worse on an item when the interval lies wholly below 0, and H2 is contradicted if D is worse on any item. Each rater alone, the interval paired by scenario and the short and long means are given beside it (`adm/eval/m5_scores.py`, `docs/m5_scores.md`).
 
 ## 16. Open questions for the team
 
