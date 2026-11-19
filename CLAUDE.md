@@ -107,6 +107,7 @@ python -m adm.eval.m1_rates --checksums experiments/main_grid.sha256 --doc docs/
 python -m adm.eval.agreement --m1-labels results/m1_labels.jsonl --m1-labels results/m1_labels_SS.jsonl --m5-ratings results/m5_ratings.jsonl --m5-ratings results/m5_ratings_SS.jsonl --checksums experiments/main_grid.sha256 --doc docs/agreement.md  # WBS 10.5: alpha and Objective 3
 python -m adm.eval.m1_growth --checksums experiments/main_grid.sha256 --doc docs/m1_growth.md  # WBS 10.2: M1 growth against turn index, RQ2
 python -m adm.eval.figures --doc docs/figures.md  # WBS 10.6: the three M1 report figures, from results/m1.json and m1_growth.json (needs .[analysis])
+python -m adm.eval.catalogue --checksums experiments/main_grid.sha256 --doc docs/failure_catalogue.md  # WBS 10.7: ten illustrative failures, drawn by a fixed rule
 ```
 
 ### 2.1 Dependencies
@@ -192,6 +193,7 @@ adm/
     agreement.py      # Krippendorff alpha for M1 (overlap) and M5 (ordinal), Objective 3
     m1_growth.py      # M1 growth against turn index (RQ2): long-session slopes, differences from A, bins
     figures.py        # report figures: M1 rate by condition, growth curves, error taxonomy
+    catalogue.py      # the catalogue of ten illustrative failures: slots, hash-order draw, excerpts, state snapshots
     validate.py       # run logs: schema, script coverage, hash replay
     integrity.py      # main grid before annotation: completeness, crashes, seeds, checksums
   cli.py
@@ -1111,6 +1113,10 @@ Added at WBS 10.5 (reasons in `docs/decisions.md`):
 Added at WBS 10.6 (reasons in `docs/decisions.md`):
 
 68. The report's three M1 figures draw only values the 10.1 and 10.2 reports hold, with their intervals, and compute no statistic; the two reports must share labels, logs and bootstrap. A condition is named by axis position or panel title, never by colour alone. They are PNG and SVG in `docs/report/figures/`, byte-reproducible with one matplotlib, and matplotlib is imported only to draw (`adm/eval/figures.py`, `docs/figures.md`).
+
+Added at WBS 10.7 (reasons in `docs/decisions.md`):
+
+69. The failure catalogue is ten slots fixed before the draw: seven M1 divergences across the rubric categories and conditions, one narrated M4 rule break, one M2 tool call out of retries and one M3 call that misreads the request. Within a slot the first eligible turn in sha256 order is taken, one slot per turn, skipping turns the 9.6 overlap contests; each entry has its transcript excerpt and a state snapshot. It illustrates and estimates nothing (`adm/eval/catalogue.py`, `docs/failure_catalogue.md`).
 
 ## 16. Open questions for the team
 
