@@ -230,7 +230,15 @@ def segments(narration: str, found: Sequence[Mark]) -> list[tuple[str, bool]]:
         out += [(narration[at:start], False), (narration[start:end], True)]
         at = end
     out.append((narration[at:], False))
-    return [(" ".join(t.split()), b) for t, b in out if t.strip()]
+    return [(_squash(t), b) for t, b in out if t.strip()]
+
+
+def _squash(text: str) -> str:
+    """Runs of whitespace as one space, keeping a space at either end, so the
+    slide knows where a bold phrase meets punctuation."""
+    head = " " if text[:1].isspace() else ""
+    tail = " " if text[-1:].isspace() else ""
+    return head + " ".join(text.split()) + tail
 
 
 # --- the slide -----------------------------------------------------------------
@@ -284,17 +292,19 @@ class _Pen:
         fw, fh = self.fig.bbox.width, self.fig.bbox.height
         line = size * 1.4 * self.fig.dpi / 72 / fh
         space = size * 0.3 * self.fig.dpi / 72 / fw
-        cx = x
+        cx, gap = x, False
         for text, bold in runs:
-            for word in text.split():
-                weight = "bold" if bold else "normal"
-                t = self.fig.text(cx, y, word, fontsize=size, color=color, va="top")
-                t.set_fontweight(weight)
+            gap = gap or text[:1].isspace()
+            for k, word in enumerate(text.split()):
+                start = cx + (space if (gap or k) and cx > x else 0)
+                t = self.fig.text(start, y, word, fontsize=size, color=color, va="top")
+                t.set_fontweight("bold" if bold else "normal")
                 w = t.get_window_extent(renderer).width / fw
-                if cx > x and cx + w > x + width:
-                    cx, y = x, y - line
-                    t.set_position((cx, y))
-                cx += w + space
+                if start > x and start + w > x + width:
+                    start, y = x, y - line
+                    t.set_position((start, y))
+                cx, gap = start + w, False
+            gap = text[-1:].isspace()
         return y - line
 
     def rule(self, y: float) -> None:

@@ -151,9 +151,9 @@ def test_each_side_shows_its_truth_and_d_its_facts() -> None:
 def test_segments_bold_each_labelled_span() -> None:
     marks = (Mark("CONTRADICT", "falls dead", DEAD, "added"),)
     assert exhibit.segments(NARRATION, marks) == [
-        ("The rat", False),
+        ("The rat ", False),
         ("falls dead", True),
-        ("at your feet.", False),
+        (" at your feet.", False),
     ]
 
 
