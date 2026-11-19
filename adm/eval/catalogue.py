@@ -218,7 +218,8 @@ def facts(record: Doc) -> tuple[Doc, ...]:
             if s["step"] == "npc_action" and s["when"] == when and s["result"].get("ok")
         ]
 
-    call = [v["narration_facts"] for v in record["validation"] if v.get("ok") is True]
+    # a {"tool": null} reply is valid but has no facts (narration-only turn)
+    call = [v["narration_facts"] for v in record["validation"] if v.get("narration_facts")]
     return tuple(npc("before_call") + call[-1:] + npc("after_call"))
 
 
