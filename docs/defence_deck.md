@@ -99,7 +99,7 @@ The demo is the last part of the talk, after the takeaway, so that the talk's ar
 - **Before the audience arrives:** `docs/live_demo.md` §2 in full: GPU freed, the pinned Ollama 0.35.1 serving, the version and digest checked, a warm-up run, fresh seeds written down, and the fallback run recorded.
 - **On the slide:** what to watch (the engine's result line, the result line against the narration, a refused Fireball) and the command, with seed 9101.
 - **In the notes:** the input script of `docs/live_demo.md` §3, cut to six inputs to fit 2:45, and what to avoid.
-- **If it fails:** switch to the fallback run recorded in §2 step 9, or the demo video (WBS 12.12). Either keeps the talk inside 15 minutes.
+- **If it fails:** switch to the fallback run recorded in §2 step 9. It keeps the talk inside 15 minutes.
 
 ## 6. Files
 
