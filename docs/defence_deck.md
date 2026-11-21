@@ -1,10 +1,10 @@
 # Defence deck, in talk order
 
-WBS 11.7 · Owner: CI · Built 2026-11-19 · Slide 8 replaced 2026-11-21 (WBS 11.9) · CLAUDE.md wins on any conflict.
+WBS 11.7 · Owner: CI · Built 2026-11-19 · Slide 8 replaced 2026-11-21 (WBS 11.9) · Slide 5 replaced 2026-11-21 (WBS 11.8) · CLAUDE.md wins on any conflict.
 
 The deck for the defence on 2 December (deliverable D11). Done when: "Problem, difficulty, design (framed via SPECIFY / HARNESS / VERIFY / CONTROL), build, evaluation, risks" (TASK_CHECKLIST.md, 11.7). The talk follows that order, not the proposal's, and ends with the live demo.
 
-**File:** `docs/defence/deck.pptx`, 16:9, 15 main slides and 5 backup slides, speaker notes on every slide. From here on it is edited in PowerPoint; 11.8 replaces slide 5, and 11.9 has replaced slide 8 (§4).
+**File:** `docs/defence/deck.pptx`, 16:9, 15 main slides and 5 backup slides, speaker notes on every slide. From here on it is edited in PowerPoint; 11.8 has replaced slide 5 and 11.9 slide 8 (§4).
 
 ## 1. The talk
 
@@ -48,7 +48,7 @@ No slide computes anything. Every figure is copied from the report's Results (`d
 | 1 | 192 runs, 6,420 turn records | `docs/run_integrity.md`; report §4 |
 | 2 | Condition A turns: the lantern and the ledger | `runs/dry_run/A/s01_cellar/3001.jsonl` (seed 3001, not a main-grid run), as quoted in the progress update; inventory and quest from `scenarios/s01_cellar.json` |
 | 4 | 7 tools, 19 rejection codes | CLAUDE.md §6.1, §6.3 |
-| 5 | Two calls, temperatures 0.0 and 0.7, retry budget 2, K = 8 | CLAUDE.md §2.2, §7, §7.1, §8 |
+| 5 | Two calls, temperatures 0.0 and 0.7, retry budget 2, K = 8; the failure, no-tool, read and write paths | CLAUDE.md §2.2, §7, §7.1, §8; `docs/architecture_diagram.md` §1 |
 | 6 | The four decisions | report §3.9, Table |
 | 7 | 60 of 60 rule-suite cases | `docs/rule_suite.md` |
 | 7 | Every rejection code reached by a test; parser tested on recorded malformed output | CLAUDE.md §13 |
@@ -87,10 +87,10 @@ No slide computes anything. Every figure is copied from the report's Results (`d
 
 | Slide | Now | Replaced by |
 |---|---|---|
-| 5 | A draft of the loop: two model calls, the rejection loop, the return to the player | **11.8** (SS): the loop-corrected architecture diagram. Keep the title and the teal-model / orange-engine colours so that slides 4 and 6 still match. |
+| 5 | **Done in 11.8** (SS, 2026-11-21): the loop-corrected architecture diagram, `docs/report/figures/fig_turn_loop.svg`, the same file as report Figure 3.1. It adds the failed-turn path to the audit log, the no-tool path, and the state with its one writer (`docs/architecture_diagram.md` §2). Title, kicker, caption line and colours unchanged; the speaker notes walk the new paths. | — |
 | 8 | **Done in 11.9** (CI, 2026-11-21): one grid, the four conditions as columns and the six metrics as rows, each cell the sample that metric was measured on in that condition; D's column is orange, M1's row is tinted as the headline, and a merged grey cell marks M2 and M3 as D-only. Below it, the shared design (48 runs per condition) and H1. Kicker and title unchanged. | — |
 
-Slide 5's speaker notes say it is a draft. 11.10 (two timed rehearsals) checks the 15 minutes against a stopwatch and prepares answers to the top ten questions; one is already in slide 10's notes ("Did you pick these?").
+11.10 (two timed rehearsals) checks the 15 minutes against a stopwatch and prepares answers to the top ten questions; one is already in slide 10's notes ("Did you pick these?").
 
 ## 5. The demo, at the end
 
@@ -105,6 +105,8 @@ The demo is the last part of the talk, after the takeaway, so that the talk's ar
 
 | File | sha256 |
 |---|---|
-| `docs/defence/deck.pptx` | `5743be99fb19a46908f5bfe8735c8a171afdec5fc3460c6e789611167309ae29` |
+| `docs/defence/deck.pptx` | `e1d6afbfd86e5cd0602c5de6e4cfd47ef98ed296dc2291692a61b22946642889` |
 
 The deck was generated with pptxgenjs and checked by rendering every slide in PowerPoint. It is not regenerated from code: later changes are made in PowerPoint, and this hash is updated with them. The one exception is 11.9: no PowerPoint edits had been made yet, so slide 8 was replaced by rebuilding from the 11.7 build script with only slide 8's block changed. The text, shapes and speaker notes of the other 19 slides were compared against the 11.7 deck and are identical, and slide 8 was rendered in PowerPoint and inspected.
+
+11.8 is the first PowerPoint edit. On slide 5 the draft diagram's 21 shapes were deleted, the SVG was inserted in their place (820 pt wide, with alt text), the caption line was moved below it, and the speaker notes were rewritten; the slide was then rendered and inspected. Saving from PowerPoint re-serialises the file, so the other 19 slides were compared against the 11.9 deck: their text and speaker notes are identical apart from XML escaping (`&apos;` written as `'`), and slide 8, whose merged cells gained empty paragraphs, was rendered and looks unchanged.

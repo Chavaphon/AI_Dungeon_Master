@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 874 334" width="874" height="334" font-family="Calibri, Carlito, 'Segoe UI', Arial, sans-serif">
+  <title>The condition D turn loop: two model calls per turn</title>
+  <desc>WBS 11.8. One player turn in condition D. Model call 1 proposes a tool call, the engine parses and validates it, a rejected call goes back to call 1 (two retries at most), and a turn that runs out of retries fails with no narration. A legal call is executed by the rules engine, the only writer of the game state, and model call 2 narrates the engine's facts. Every turn, failed or not, appends one record to the audit log, and the next turn starts from the player. Source: CLAUDE.md sections 7, 7.1, 8 and 9.1.</desc>
+  <defs>
+    <marker id="a-slate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748B"/></marker>
+    <marker id="a-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#C2410C"/></marker>
+    <marker id="a-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#B91C1C"/></marker>
+  </defs>
+  <rect x="0" y="0" width="874" height="334" fill="#FFFFFF"/>
+
+  <!-- edges: main loop -->
+  <g fill="none" stroke="#64748B" stroke-width="1.5">
+    <path d="M196,94 H237" marker-end="url(#a-slate)"/>
+    <path d="M400,94 H441" marker-end="url(#a-slate)"/>
+    <path d="M604,94 H645" marker-end="url(#a-slate)"/>
+    <path d="M728,124 V161" marker-end="url(#a-slate)"/>
+    <path d="M728,224 V280 H607" marker-end="url(#a-slate)"/>
+    <path d="M444,294 H403" marker-end="url(#a-slate)"/>
+    <path d="M240,294 H199" marker-end="url(#a-slate)"/>
+    <path d="M116,264 V127" marker-end="url(#a-slate)"/>
+  </g>
+  <!-- edges: read only, and the no-tool path -->
+  <g fill="none" stroke="#64748B" stroke-width="1.5" stroke-dasharray="5 4">
+    <path d="M444,194 H320 V127" marker-end="url(#a-slate)"/>
+    <path d="M808,104 H846 V310 H607" marker-end="url(#a-slate)"/>
+  </g>
+  <!-- edge: the engine writes the state -->
+  <path d="M648,194 H607" fill="none" stroke="#C2410C" stroke-width="2" marker-end="url(#a-orange)"/>
+  <!-- edge: retry -->
+  <path d="M688,64 V46 H524 V61" fill="none" stroke="#C2410C" stroke-width="2" marker-end="url(#a-orange)"/>
+  <!-- edge: turn failure -->
+  <path d="M768,64 V8 H14 V294 H33" fill="none" stroke="#B91C1C" stroke-width="1.75" stroke-dasharray="6 4" marker-end="url(#a-red)"/>
+
+  <!-- edge labels -->
+  <g font-size="10.5" fill="#475569">
+    <text x="736" y="147">legal call</text>
+    <text x="626" y="186" text-anchor="middle" fill="#C2410C" font-weight="bold" font-size="10">writes</text>
+    <text x="330" y="163">read only</text>
+    <text x="667" y="274" text-anchor="middle">facts only</text>
+    <text x="726" y="326" text-anchor="middle">{"tool": null} twice: narration only</text>
+    <text x="124" y="199">next turn</text>
+  </g>
+  <g font-size="11" text-anchor="middle">
+    <text x="606" y="25" fill="#C2410C" font-weight="bold">rejected or unparseable</text>
+    <text x="606" y="39" fill="#C2410C">error + valid options, try again (2 retries)</text>
+    <text x="238" y="26" fill="#B91C1C" font-weight="bold">out of retries: the turn fails</text>
+    <text x="238" y="40" fill="#B91C1C">no narration, game does not advance, player rephrases</text>
+  </g>
+
+  <!-- nodes: neutral (player and orchestration) -->
+  <g fill="#F3F1F7">
+    <rect x="36" y="64" width="160" height="60" rx="6"/>
+    <rect x="240" y="64" width="160" height="60" rx="6"/>
+    <rect x="240" y="264" width="160" height="60" rx="6"/>
+  </g>
+  <!-- nodes: the model -->
+  <g fill="#0F766E">
+    <rect x="444" y="64" width="160" height="60" rx="6"/>
+    <rect x="444" y="264" width="160" height="60" rx="6"/>
+  </g>
+  <!-- nodes: the engine -->
+  <g fill="#C2410C">
+    <rect x="648" y="64" width="160" height="60" rx="6"/>
+    <rect x="648" y="164" width="160" height="60" rx="6"/>
+  </g>
+  <!-- data the engine owns -->
+  <g fill="#FFFFFF" stroke="#C2410C" stroke-width="2">
+    <rect x="445" y="165" width="158" height="58" rx="6"/>
+    <rect x="37" y="265" width="158" height="58" rx="6"/>
+  </g>
+
+  <!-- node text -->
+  <g text-anchor="middle" fill="#1C1B22">
+    <text x="116" y="89" font-size="13" font-weight="bold">Player</text>
+    <text x="116" y="106" font-size="11">types a free-text action</text>
+
+    <text x="320" y="82" font-size="13" font-weight="bold">Assemble context</text>
+    <text x="320" y="98" font-size="11">state, 7 tools, summary</text>
+    <text x="320" y="112" font-size="11">and the last 8 turns</text>
+
+    <text x="320" y="289" font-size="13" font-weight="bold">Safety filter, render</text>
+    <text x="320" y="306" font-size="11">result lines, then narration</text>
+
+    <text x="524" y="189" font-size="13" font-weight="bold">Game state</text>
+    <text x="524" y="206" font-size="11">only the engine writes it</text>
+
+    <text x="116" y="282" font-size="13" font-weight="bold">Audit log</text>
+    <text x="116" y="298" font-size="11">one record per turn,</text>
+    <text x="116" y="312" font-size="11">failed turns too</text>
+  </g>
+  <g text-anchor="middle" fill="#FFFFFF">
+    <text x="524" y="89" font-size="13" font-weight="bold">Model call 1 · temp 0.0</text>
+    <text x="524" y="106" font-size="11">proposes one tool call</text>
+
+    <text x="524" y="289" font-size="13" font-weight="bold">Model call 2 · temp 0.7</text>
+    <text x="524" y="306" font-size="11">narrates the facts only</text>
+
+    <text x="728" y="89" font-size="13" font-weight="bold">Parse and validate</text>
+    <text x="728" y="106" font-size="11">schema, then game rules</text>
+
+    <text x="728" y="182" font-size="13" font-weight="bold">Rules engine</text>
+    <text x="728" y="198" font-size="11">seeded dice, NPC turns,</text>
+    <text x="728" y="212" font-size="11">writes the state with a diff</text>
+  </g>
+</svg>
