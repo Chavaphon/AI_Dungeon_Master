@@ -110,6 +110,7 @@ python -m adm.eval.m1_growth --checksums experiments/main_grid.sha256 --doc docs
 python -m adm.eval.figures --doc docs/figures.md  # WBS 10.6: the three M1 report figures, from results/m1.json and m1_growth.json (needs .[analysis])
 python -m adm.eval.catalogue --checksums experiments/main_grid.sha256 --doc docs/failure_catalogue.md  # WBS 10.7: ten illustrative failures, drawn by a fixed rule
 python -m adm.eval.exhibit --checksums experiments/main_grid.sha256 --doc docs/exhibit_a_vs_d.md  # WBS 10.8: the A-versus-D defence slide (needs .[analysis])
+python -m adm.eval.release --checksums experiments/main_grid.sha256 --doc docs/release.md  # WBS 11.11: the dataset archive for the release-v1.0 GitHub release, from pinned files
 ```
 
 ### 2.1 Dependencies
@@ -198,6 +199,7 @@ adm/
     figures.py        # report figures: M1 rate by condition, growth curves, error taxonomy
     catalogue.py      # the catalogue of ten illustrative failures: slots, hash-order draw, excerpts, state snapshots
     exhibit.py        # the side-by-side A versus D exhibit: paired combat inputs, two rows, the slide
+    release.py        # the code and data release: pinned files, licence and attribution checks, the archive
     validate.py       # run logs: schema, script coverage, hash replay
     integrity.py      # main grid before annotation: completeness, crashes, seeds, checksums
   cli.py
@@ -1127,6 +1129,10 @@ Added at WBS 10.8 (reasons in `docs/decisions.md`):
 70. The A-versus-D exhibit pairs A's and D's narrated turns at one scripted combat input and seed of the M1 sample, in two rows fixed before the draw: what the engine fixes (A has a `CONTRADICT` or `RULE` label, D none) and what it does not (D has a `CONTRADICT` label despite its facts), each the first qualifying pair in sha256 order. The slide carries the 10.1 result, so neither row reads as the finding (`adm/eval/exhibit.py`, `docs/exhibit_a_vs_d.md`).
 
 71. M5 per condition is the mean over its 16 excerpts of the two raters' mean rating. H2 and RQ3 are the D − A difference per item with the shared run-level bootstrap; D is worse on an item when the interval lies wholly below 0, and H2 is contradicted if D is worse on any item. Each rater alone, the interval paired by scenario and the short and long means are given beside it (`adm/eval/m5_scores.py`, `docs/m5_scores.md`).
+
+Added at WBS 11.11 (reasons in `docs/decisions.md`):
+
+72. The data release is one archive attached to the `release-v1.0` GitHub release, never committed: the 192 main-grid logs, the batch ledger and every annotation file a reported number comes from, AI drafts included, each checked against its recorded sha256, with `LICENSE`, `NOTICE` and `SHA256SUMS`. Derived outputs are recomputed, not released. It is built only when every file and the licence and attribution check out, and a team member publishes it (`adm/eval/release.py`, `docs/release.md`, Appendix A).
 
 ## 16. Open questions for the team
 
