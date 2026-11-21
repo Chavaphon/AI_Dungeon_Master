@@ -1,10 +1,10 @@
 # Defence deck, in talk order
 
-WBS 11.7 · Owner: CI · Built 2026-11-19 · CLAUDE.md wins on any conflict.
+WBS 11.7 · Owner: CI · Built 2026-11-19 · Slide 8 replaced 2026-11-21 (WBS 11.9) · CLAUDE.md wins on any conflict.
 
 The deck for the defence on 2 December (deliverable D11). Done when: "Problem, difficulty, design (framed via SPECIFY / HARNESS / VERIFY / CONTROL), build, evaluation, risks" (TASK_CHECKLIST.md, 11.7). The talk follows that order, not the proposal's, and ends with the live demo.
 
-**File:** `docs/defence/deck.pptx`, 16:9, 15 main slides and 5 backup slides, speaker notes on every slide. From here on it is edited in PowerPoint; 11.8 and 11.9 replace slides 5 and 8 (§4).
+**File:** `docs/defence/deck.pptx`, 16:9, 15 main slides and 5 backup slides, speaker notes on every slide. From here on it is edited in PowerPoint; 11.8 replaces slide 5, and 11.9 has replaced slide 8 (§4).
 
 ## 1. The talk
 
@@ -54,8 +54,14 @@ No slide computes anything. Every figure is copied from the report's Results (`d
 | 7 | Every rejection code reached by a test; parser tested on recorded malformed output | CLAUDE.md §13 |
 | 7 | 0 state rule breaks in 6,366 narrated turns | report §5.6, Table 5.9 |
 | 7 | 192 runs, 6,420 records, all valid, checksummed | `docs/run_integrity.md` |
-| 8 | Conditions A to D | CLAUDE.md §9 |
-| 8 | M1: 64 runs, 2,124 turns; M2: 1,605 turns; M3: 242 turns (15%); M4: 192 runs; M5: 64 excerpts; M6: 6,420 turns (1,605 per condition) | report §5.1, Tables 5.7, 5.8, 5.9, 5.10, §5.7 |
+| 8 | Conditions A to D, as the grid's columns | CLAUDE.md §9 |
+| 8 | 48 runs per condition, 192 runs, 6,420 turn records | CLAUDE.md §10.5; `docs/run_integrity.md` |
+| 8 | M1 narrated turns: A, B, C 535, D 519 (16 runs each) | report Table 5.2 |
+| 8 | M2: D 1,605 turns | report Table 5.7 |
+| 8 | M3: D 242 sampled turns (15%) | report Table 5.8 |
+| 8 | M4 narrated turns: A, B, C 1,605, D 1,551 | report Table 5.9 (automated, all 192 runs) |
+| 8 | M5: 16 excerpts per condition | report §5.7; `docs/m5_scores.md` |
+| 8 | M6 turns: 1,605 per condition | report Table 5.10 |
 | 8 | H1 | CLAUDE.md §10.5 |
 | 9 | A 55.9, D 57.4, D/A 1.03 (0.74 to 1.48); C 44.5, C/A 0.80; D/A without `PHANTOM` 1.20 | report Tables 5.2 and 5.3; Figure 5.1 |
 | 10 | The two A-versus-D rows and the measured line | `docs/exhibit_a_vs_d.md` §2; Figure 5.4, with the figure's own heading cropped off (the slide title replaces it) |
@@ -82,9 +88,9 @@ No slide computes anything. Every figure is copied from the report's Results (`d
 | Slide | Now | Replaced by |
 |---|---|---|
 | 5 | A draft of the loop: two model calls, the rejection loop, the return to the player | **11.8** (SS): the loop-corrected architecture diagram. Keep the title and the teal-model / orange-engine colours so that slides 4 and 6 still match. |
-| 8 | A draft evaluation slide: the condition matrix, the six metrics with their samples, and H1 | **11.9** (CI): conditions × metrics × sample size, readable in ten seconds. Keep the kicker, since slide 7's bridge asks it. |
+| 8 | **Done in 11.9** (CI, 2026-11-21): one grid, the four conditions as columns and the six metrics as rows, each cell the sample that metric was measured on in that condition; D's column is orange, M1's row is tinted as the headline, and a merged grey cell marks M2 and M3 as D-only. Below it, the shared design (48 runs per condition) and H1. Kicker and title unchanged. | — |
 
-The speaker notes of both slides say they are drafts. 11.10 (two timed rehearsals) checks the 15 minutes against a stopwatch and prepares answers to the top ten questions; one is already in slide 10's notes ("Did you pick these?").
+Slide 5's speaker notes say it is a draft. 11.10 (two timed rehearsals) checks the 15 minutes against a stopwatch and prepares answers to the top ten questions; one is already in slide 10's notes ("Did you pick these?").
 
 ## 5. The demo, at the end
 
@@ -99,6 +105,6 @@ The demo is the last part of the talk, after the takeaway, so that the talk's ar
 
 | File | sha256 |
 |---|---|
-| `docs/defence/deck.pptx` | `4d62ac3262c5047e8f474677f0fb329670a386b313d2c0e5e815dd92f30fe1fd` |
+| `docs/defence/deck.pptx` | `5743be99fb19a46908f5bfe8735c8a171afdec5fc3460c6e789611167309ae29` |
 
-The deck was generated once with pptxgenjs and checked by rendering every slide in PowerPoint. It is not regenerated from code: later changes are made in PowerPoint, and this hash is updated with them.
+The deck was generated with pptxgenjs and checked by rendering every slide in PowerPoint. It is not regenerated from code: later changes are made in PowerPoint, and this hash is updated with them. The one exception is 11.9: no PowerPoint edits had been made yet, so slide 8 was replaced by rebuilding from the 11.7 build script with only slide 8's block changed. The text, shapes and speaker notes of the other 19 slides were compared against the 11.7 deck and are identical, and slide 8 was rendered in PowerPoint and inspected.
