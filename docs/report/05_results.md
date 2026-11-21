@@ -2,7 +2,7 @@
 
 <!-- WBS 11.3 · Owner: SD · Reviewer (11.6): CI · Outline: docs/report_outline.md §5 · Draft 2026-11-19 -->
 
-This section reports the six metrics and the answers to the research questions. Section 5.1 answers RQ1 and tests H1, Section 5.2 answers RQ2, and Section 5.3 breaks the divergences down by category, with illustrative failures. Sections 5.4 to 5.6 report the tool-call, intent-fidelity, rule-violation and latency measures, Section 5.7 answers RQ3 and tests H2, and Section 5.8 gives inter-rater agreement and Objective 3. Every figure is taken from the record named beside it, each of which holds the command that computes it from the checksummed logs (`experiments/main_grid.sha256`). The data, conditions and analysis are those of Section 4. Unless stated otherwise, every 95% interval is a percentile bootstrap over whole runs, with 10,000 resamples, stratified by condition and seeded with 20261101 (Section 4.9). What the results mean is discussed in Section 6, and the threats to their validity in Section 7. The most important threat bears on every M1 figure below: the M1 labels are an AI draft that one annotator accepted without change (Section 4.6).
+This section reports the six metrics and the answers to the research questions. Section 5.1 answers RQ1 and tests H1, Section 5.2 answers RQ2, and Section 5.3 breaks the divergences down by category, with illustrative failures. Sections 5.4 to 5.6 report the tool-call, intent-fidelity, rule-violation and latency measures, Section 5.7 answers RQ3 and tests H2, and Section 5.8 gives inter-rater agreement and Objective 3. Every figure is taken from the record named beside it, each of which holds the command that computes it from the checksummed logs (`experiments/main_grid.sha256`). The data, conditions and analysis are those of Section 4. Unless stated otherwise, every 95% interval is a percentile bootstrap (Efron & Tibshirani, 1993) over whole runs, with 10,000 resamples, stratified by condition and seeded with 20261101 (Section 4.9). What the results mean is discussed in Section 6, and the threats to their validity in Section 7. The most important threat bears on every M1 figure below: the M1 labels are an AI draft that one annotator accepted without change (Section 4.6).
 
 **Table 5.1. The answers in brief.**
 
@@ -145,7 +145,7 @@ M2 covers condition D only: all 48 runs, 1,605 turns and 2,594 tool-call attempt
 
 ## 5.5 M3: intent fidelity
 
-M3 is the share of sampled condition D turns whose executed call does what the player asked. The sample is 242 turns, 15% of the 1,551 D turns that did not fail (Section 4.7). The 95% interval is a Wilson interval on the sampled turns, as the protocol fixes (`docs/intent_fidelity.md` §5). Wilson intervals are computed from the counts in `docs/m3_annotation.md` §2.
+M3 is the share of sampled condition D turns whose executed call does what the player asked. The sample is 242 turns, 15% of the 1,551 D turns that did not fail (Section 4.7). The 95% interval is a Wilson (1927) interval on the sampled turns, as the protocol fixes (`docs/intent_fidelity.md` §5). Wilson intervals are computed from the counts in `docs/m3_annotation.md` §2.
 
 **Table 5.8. M3** (`docs/m3_annotation.md` §2).
 
@@ -224,7 +224,7 @@ M5 is rated on 64 excerpts, one per scenario and condition. Both raters rated ev
 
 ## 5.8 Inter-rater agreement and Objective 3
 
-Agreement is Krippendorff's alpha, with a target of at least 0.6 (Section 4.9). For M1 it is computed on the 20% overlap, 16 runs and 511 turns. For M5 it is computed on all 64 excerpts. Objective 3 is met when the pooled M1 alpha is at least 0.6 (`docs/agreement.md` §1).
+Agreement is Krippendorff's alpha (Hayes & Krippendorff, 2007), with a target of at least 0.6 (Section 4.9). For M1 it is computed on the 20% overlap, 16 runs and 511 turns. For M5 it is computed on all 64 excerpts. Objective 3 is met when the pooled M1 alpha is at least 0.6 (`docs/agreement.md` §1).
 
 **Table 5.13. M1 agreement on the overlap: counts of divergences per annotator, and alpha** (`docs/agreement.md` §3).
 
