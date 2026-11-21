@@ -229,3 +229,6 @@ sponsor_runs/
 
 # Files produced by Claude sessions (local only)
 Claude outputs/
+
+# The release archive's own files, if it is unpacked into a checkout (WBS 11.11)
+/dataset/

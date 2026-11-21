@@ -30,6 +30,8 @@ python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345 --runs 
 
 Code, scenarios and released data are under the MIT License (`LICENSE`). The rules are adapted from the System Reference Document 5.1 under CC-BY-4.0, and the model is used under the Llama 3.1 Community License; see `NOTICE`.
 
+The code and the main-grid dataset are released at the git tag `release-v1.0`: the dataset is one archive attached to that GitHub release, checked against its sha256 in `docs/release.md`. How to check it, replay it and recompute every result is in `docs/report/appendix_a_release.md`.
+
 ## Shared storage
 
 Run artefacts and transcripts do not go in git: `runs/` and `results/` are gitignored (CLAUDE.md §3). The team copy lives in one Google Drive folder on the KMUTT account (WBS 1.5):
@@ -116,4 +118,5 @@ No test calls the model or needs Ollama running; orchestration tests use a recor
 | `tests/eval/test_figures.py` | The figures draw the 10.1 rates and ratios to A, the 10.2 bins and slopes and the per-category rates with counts, in condition order; reports of different labels or bootstraps, or missing a condition, interval or bin, are refused; input hashes ignore line endings; with matplotlib, the six files are written and a second run gives the same bytes |
 | `tests/eval/test_catalogue.py` | A turn's labels are its confirmed candidates and added labels; a slot takes only its condition, category and source, and skips a turn the 9.6 overlap contests; the draw takes the first unused turn in hash order, and stops when a slot or an M3 turn cannot be found; each slot is filled by its own turn; attempts, facts in play order, the qualified state snapshot and the bolded narration follow the record |
 | `tests/eval/test_exhibit.py` | Only combat inputs where D executed the expected tool pair up, and only when both A and D narrated; row 1 needs a `CONTRADICT` or `RULE` label in A and none in D, row 2 a `CONTRADICT` in D; the draw takes the first in hash order on different inputs and stops when a row is empty; each side shows its named combatants' truth and D its facts; the measured 10.1 result is on the slide; with matplotlib the slide's bytes repeat |
+| `tests/eval/test_release.py` | `LICENSE` and `NOTICE` carry the MIT licence, the SRD 5.1 attribution and the Llama 3.1 notice, and a notice without them is refused; every annotation has its own full pin; the logs come from the checksum file; a missing or changed file is named, and one under another file's name is pointed out; the archive is refused with every problem, holds its files byte for byte with `SHA256SUMS` and repeats byte for byte |
 | `tests/engine/test_dice.py` | `adm/engine/dice.py` parses only the `XdY+Z` of CLAUDE.md §4.2, reproduces a pinned sequence from a seed, keeps the right die under advantage and disadvantage, and returns rolls that match `roll_result` in the tool contract |
