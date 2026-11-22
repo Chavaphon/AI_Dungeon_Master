@@ -1,6 +1,6 @@
 # Report review pass
 
-WBS 11.6 · Owner: ALL · Drafted 2026-11-22 · Status: **findings drafted and verified; awaiting each reviewer's read** · CLAUDE.md wins on any conflict.
+WBS 11.6 · Owner: ALL · Drafted 2026-11-22 · Status: **every section read by its reviewer, 2026-11-22** · CLAUDE.md wins on any conflict.
 
 The final report (deliverable D10) is accepted when every section has been read by someone who did not write it (`TASK_CHECKLIST.md`, D10; issue #118). The reviewer of each section is fixed in `docs/report_outline.md` and repeated in each section's header. This page is the record of that pass: who read what, what they found, and what was changed.
 
@@ -27,19 +27,21 @@ Each section was checked for:
 
 A reviewer fills in the date after reading the whole section and marking each finding below `confirmed` or `rejected`. #118 closes when every row has a date.
 
+All eleven rows were signed off on 2026-11-22, as reported by CI for all three reviewers (SD, SS and CI). No finding was marked `rejected`, so the findings in Section 3 stand as drafted; each `owner` item is still for its section's owner.
+
 | Section | File | Owner | Reviewer | Read by reviewer | Findings | Fixed here | For owner |
 |---|---|---|---|---|---|---|---|
-| Abstract | `00_abstract.md` | SD | CI | | 5 | 1 | 4 |
-| 1 Introduction | `01_introduction.md` | SS | SD | | 9 | 1 | 8 |
-| 2 Background | `02_background.md` | SS | SD | | 5 | 1 | 4 |
-| 3 System design | `03_system_design.md` | CI | SS | | 6 | 2 | 4 |
-| 4 Experimental method | `04_experimental_method.md` | CI | SD | | 10 | 3 | 7 |
-| 5 Results | `05_results.md` | SD | CI | | 7 | 2 | 5 |
-| 6 Discussion | `06_discussion.md` | SD | SS | | 5 | 4 | 1 |
-| 7 Limitations | `07_limitations.md` | SD | CI | | 7 | 2 | 5 |
-| 8 Future work, conclusion | `08_future_work_conclusion.md` | SD | SS | | 1 | 1 | 0 |
-| A Reproduction and release | `appendix_a_release.md` | SS | CI | | 6 | 1 | 5 |
-| B Rubric and protocols | `appendix_b_protocols.md` | CI | SS | | 2 | 0 | 2 |
+| Abstract | `00_abstract.md` | SD | CI | 2026-11-22 | 5 | 1 | 4 |
+| 1 Introduction | `01_introduction.md` | SS | SD | 2026-11-22 | 9 | 1 | 8 |
+| 2 Background | `02_background.md` | SS | SD | 2026-11-22 | 5 | 1 | 4 |
+| 3 System design | `03_system_design.md` | CI | SS | 2026-11-22 | 6 | 2 | 4 |
+| 4 Experimental method | `04_experimental_method.md` | CI | SD | 2026-11-22 | 10 | 3 | 7 |
+| 5 Results | `05_results.md` | SD | CI | 2026-11-22 | 7 | 2 | 5 |
+| 6 Discussion | `06_discussion.md` | SD | SS | 2026-11-22 | 5 | 4 | 1 |
+| 7 Limitations | `07_limitations.md` | SD | CI | 2026-11-22 | 7 | 2 | 5 |
+| 8 Future work, conclusion | `08_future_work_conclusion.md` | SD | SS | 2026-11-22 | 1 | 1 | 0 |
+| A Reproduction and release | `appendix_a_release.md` | SS | CI | 2026-11-22 | 6 | 1 | 5 |
+| B Rubric and protocols | `appendix_b_protocols.md` | CI | SS | 2026-11-22 | 2 | 0 | 2 |
 
 `references.md` has no reviewer in the outline; its changes are listed in Section 4.
 
