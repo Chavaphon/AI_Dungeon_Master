@@ -98,4 +98,4 @@ Shorter answers, for questions that are likely but less central.
 
 ## 4. Fix before rehearsing
 
-- **Slide 14's speaker notes** still end with "or the demo video (WBS 12.12)". The demo video was dropped (#245), so the only fallback is the recorded run of `docs/live_demo.md` §2 step 9. Delete the phrase in PowerPoint and update the deck's sha256 in `docs/defence_deck.md` §6, as 11.8 did.
+- **Slide 14's speaker notes** still end with "or the demo video (WBS 12.12)". The demo video was dropped (#245), so the only fallback is the recorded run of `docs/live_demo.md` §2 step 9. Delete the phrase in PowerPoint and update the deck's sha256 in `docs/defence_deck.md` §6, as 11.8 did. **Done in 12.9** (2026-11-22), in the notes XML; the new sha256 and how it was made are in `docs/defence_deck.md` §6.

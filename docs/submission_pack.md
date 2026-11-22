@@ -2,7 +2,7 @@
 
 WBS 11.12 · Owner: SD · Checked 2026-11-21, re-checked 2026-11-22 after 11.6 to 11.10 merged, release published 2026-11-22 · Milestone 3 is due 22 Nov 2026.
 
-This page lists everything in the submission pack, where each item lives, and whether it passed the checks. Done when: "MILESTONE 3; nothing carried into December" (TASK_CHECKLIST.md, 11.12). **Status: complete.** Every task in 11.0 is closed, the `release-v1.0` release and the `rubric-v1.0` tag are published, and the published archive was checked (Section 3). Two items are left with their owners (Section 4).
+This page lists everything in the submission pack, where each item lives, and whether it passed the checks. Done when: "MILESTONE 3; nothing carried into December" (TASK_CHECKLIST.md, 11.12). **Status: complete.** Every task in 11.0 is closed, the `release-v1.0` release and the `rubric-v1.0` tag are published, and the published archive was checked (Section 3). Two items were left with their owners, and both were done before the blackout in 12.9 (Section 4).
 
 ## 1. Contents
 
@@ -11,7 +11,7 @@ This page lists everything in the submission pack, where each item lives, and wh
 | Final report, in reading order | `docs/report/`: `00_abstract.md`, `01_introduction.md` to `08_future_work_conclusion.md`, `references.md`, `appendix_a_release.md`, `appendix_b_protocols.md` | D10 | All sections written and signed off in the review pass (11.6, `docs/report_review.md` §2) |
 | Report figures | `docs/report/figures/` (PNG and SVG) | D10 | 3.1 (11.8) and 5.1 to 5.4 present |
 | Defence deck | `docs/defence/deck.pptx`, described in `docs/defence_deck.md` | D11 | Built (11.7), slides 5 and 8 replaced (11.8, 11.9); its sha256 matches `docs/defence_deck.md` §6 |
-| Rehearsals and questions | `docs/defence_questions.md`; rehearsals tracked by the team outside the repository | D11 | Top ten questions answered (11.10). One deck fix still open (Section 3) |
+| Rehearsals and questions | `docs/defence_questions.md`; rehearsals tracked by the team outside the repository | D11 | Top ten questions answered (11.10). The one deck fix was made in 12.9 (Section 4) |
 | Code release | public repository, `LICENSE` (MIT), `NOTICE` (SRD 5.1 and Llama 3.1) | D12 | Present |
 | Data release | [`release-v1.0`](https://github.com/Chavaphon/AI_Dungeon_Master/releases/tag/release-v1.0) GitHub release, `adm-dataset-v1.0.zip` (`docs/release.md` §4) | D12 | Published; the downloaded asset's sha256 matches §4 |
 | Specifications v1.0 | tag `spec-v1.0` | D1 | Present |
@@ -50,9 +50,9 @@ Published on 2026-11-22, by `docs/release.md` §3, from SD's machine:
 
 ## 4. Left with their owners
 
-Neither blocks a deliverable's existence; both are edits to what is already submitted.
+Neither blocks a deliverable's existence; both are edits to what is already submitted. Both were done on 2026-11-22 in the handover pull request (WBS 12.9, #125).
 
-| Item | Owner | Task |
-|---|---|---|
-| Slide 14's speaker notes still name "the demo video (WBS 12.12)", which was dropped (#245). Delete the phrase in PowerPoint and update the sha256 in `docs/defence_deck.md` §6 (`docs/defence_questions.md` §4) | CI | #119 (11.7) |
-| The `owner` findings of the review pass (`docs/report_review.md` §3): gaps, wording and questions left to each section's owner | each owner | #118 (11.6) |
+| Item | Owner | Task | Done |
+|---|---|---|---|
+| Slide 14's speaker notes still name "the demo video (WBS 12.12)", which was dropped (#245). Delete the phrase in PowerPoint and update the sha256 in `docs/defence_deck.md` §6 (`docs/defence_questions.md` §4) | CI | #119 (11.7) | Done; new sha256 in `docs/defence_deck.md` §6 |
+| The `owner` findings of the review pass (`docs/report_review.md` §3): gaps, wording and questions left to each section's owner | each owner | #118 (11.6) | 41 of 45 done, 4 open with SS (`docs/report_review.md` §5) |

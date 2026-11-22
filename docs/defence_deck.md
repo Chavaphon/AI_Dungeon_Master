@@ -105,8 +105,10 @@ The demo is the last part of the talk, after the takeaway, so that the talk's ar
 
 | File | sha256 |
 |---|---|
-| `docs/defence/deck.pptx` | `e1d6afbfd86e5cd0602c5de6e4cfd47ef98ed296dc2291692a61b22946642889` |
+| `docs/defence/deck.pptx` | `e5e4e1a264dee9000ecbdaec4e1dc8e3736cc460d63b881b79e435e312a1cc4a` |
 
 The deck was generated with pptxgenjs and checked by rendering every slide in PowerPoint. It is not regenerated from code: later changes are made in PowerPoint, and this hash is updated with them. The one exception is 11.9: no PowerPoint edits had been made yet, so slide 8 was replaced by rebuilding from the 11.7 build script with only slide 8's block changed. The text, shapes and speaker notes of the other 19 slides were compared against the 11.7 deck and are identical, and slide 8 was rendered in PowerPoint and inspected.
 
 11.8 is the first PowerPoint edit. On slide 5 the draft diagram's 21 shapes were deleted, the SVG was inserted in their place (820 pt wide, with alt text), the caption line was moved below it, and the speaker notes were rewritten; the slide was then rendered and inspected. Saving from PowerPoint re-serialises the file, so the other 19 slides were compared against the 11.9 deck: their text and speaker notes are identical apart from XML escaping (`&apos;` written as `'`), and slide 8, whose merged cells gained empty paragraphs, was rendered and looks unchanged.
+
+12.9 (2026-11-22) removed "or the demo video (WBS 12.12)" from the end of slide 14's speaker notes, which now end "…switch to the recorded fallback run (live_demo.md §2 step 9)." (`docs/defence_questions.md` §4). The edit was made in `ppt/notesSlides/notesSlide14.xml` with Python's `zipfile`, not in PowerPoint, so nothing was re-serialised: every other member of the file is byte-identical to the 11.8 deck, in the same order and with the same compression. Speaker notes are not shown on the slide, so nothing visible changed. The deck's 11.8 sha256 was `e1d6afbf…642889`.
