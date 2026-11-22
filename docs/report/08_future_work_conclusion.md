@@ -14,7 +14,7 @@ Each item below follows from a result or a limitation in this report.
   - restrict the narrator to describing only the entities the facts name.
 
   Each can be added as a new condition on the same ladder.
-- **Automated `RESOURCE` checks, and a better checker.** The checker's weak recall, and its lack of any `RESOURCE` check, are why every M1 figure needed hand labels (Section 7.3). Better checks would let M1 cover the whole grid rather than a quarter of it.
+- **Automated `RESOURCE` checks, and a better checker.** The checker's weak recall, and its lack of any `RESOURCE` check, are why every M1 figure needed hand labels (Section 7.3). Better checks would let M1 cover the whole grid rather than a third of it.
 - **Independent human annotators.** Both M1 annotators started from AI drafts. Second annotators for M1 and M3 who label from scratch would turn the agreement figures into genuine human inter-rater reliability (Section 7.2).
 - **A better M5 instrument.** Rater training on anchor excerpts, and enough time per excerpt, would help M5 reach agreement. So might a paired comparison of the four conditions' excerpts, which would ask raters to rank rather than score.
 - **Intent-aware retries.** The forced re-prompt, and the pressure to return a valid call, produced invented inventory changes (Sections 5.5 and 6.2). A retry that allows "no call" as a legitimate end, or that checks a call's effect against the request, would test whether CONTROL can be tightened without costing intent fidelity.

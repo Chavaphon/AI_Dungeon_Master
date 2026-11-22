@@ -95,7 +95,7 @@ The last bin, positions 41 to 52, is highest in D (70.2, against A 52.1, B 50.0 
 
 **D's profile is close to A's.** D's `PHANTOM` rate is 30.1 against A's 33.1, and its `CONTRADICT` rate 22.7 against 20.9. D's narrator writes after the engine has resolved the turn, yet it invents entities and misstates hit points about as often as condition A, which has no state at all. D has the highest `RESOURCE` (2.5) and `RELATION` (2.1) rates, but both rest on 13 and 11 divergences, and every interval overlaps A's.
 
-**Ten illustrative failures.** Table 5.6 lists the catalogue of ten failures. Each was drawn by hash order from a slot fixed before the draw (Section 4; `docs/failure_catalogue.md` §1), and each is given in full with its transcript and a state snapshot in `docs/failure_catalogue.md` §2. The catalogue illustrates and does not estimate. The labels it quotes are the AI draft that SD accepted (Section 4.6).
+**Ten illustrative failures.** Table 5.6 lists the catalogue of ten failures. Each was drawn by hash order from a slot fixed before the draw (`docs/failure_catalogue.md` §1), and each is given in full with its transcript and a state snapshot in `docs/failure_catalogue.md` §2. The catalogue illustrates and does not estimate. The labels it quotes are the AI draft that SD accepted (Section 4.6).
 
 **Table 5.6. Catalogue of ten failures** (`docs/failure_catalogue.md` §2, §3.1).
 
@@ -220,7 +220,7 @@ M5 is rated on 64 excerpts, one per scenario and condition. Both raters rated ev
 
 **C is below A on tone.** C − A is −0.41 (−0.69 to −0.12), the only headline interval in M5 that excludes 0. It does not test a hypothesis, since H2 concerns D, and it rests mostly on one rater: SD gives C 3.94 against A's 4.56, while SS rates every condition near 5 (`docs/m5_scores.md` §3).
 
-**The raters disagree on direction.** SS puts D above A on coherence, tone and engagement, while SD puts D below A on coherence, vividness and tone (Table 5.12). The two agree only on vividness. Since agreement on every M5 item is below chance (Section 5.8), the pooled differences cannot be read as properties of the narration alone. Section 7 returns to this.
+**The raters disagree on direction.** SS puts D above A on coherence, tone and engagement, while SD puts D below A on coherence, vividness and tone (Table 5.12). The two agree in direction only on vividness, where both put D below A, and engagement, where both put D above. Since agreement on every M5 item is below chance (Section 5.8), the pooled differences cannot be read as properties of the narration alone. Section 7 returns to this.
 
 ## 5.8 Inter-rater agreement and Objective 3
 

@@ -53,7 +53,7 @@ The hypotheses, the latency target and the analysis were fixed on 1 November 202
 | H2 | Condition D's narrative quality is no worse than condition A's | The 95% interval of the D minus A difference in mean rating, reported per item |
 | — | Condition D answers within 10 seconds per turn at the 95th percentile | Turn latency on the main grid |
 
-Every interval is a percentile bootstrap that resamples whole runs, with 10,000 resamples stratified by condition. RQ2 is answered by the slope of divergences against turn number in each condition, which the long sessions carry, and RQ3 by H2's difference for each rating item.
+Every interval except M3's, a Wilson interval (Section 4.7), is a percentile bootstrap that resamples whole runs, with 10,000 resamples stratified by condition. RQ2 is answered by the slope of divergences against the scripted position in each condition, which the long sessions carry, and RQ3 by H2's difference for each rating item.
 
 ## 1.5 An agentic-engineering framing
 
