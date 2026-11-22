@@ -28,6 +28,8 @@ Liu, X., et al. (2024). AgentBench: Evaluating LLMs as agents. In *The Twelfth I
 
 Madaan, A., et al. (2023). Self-Refine: Iterative refinement with self-feedback. In *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)*.
 
+Ollama. (n.d.). *Ollama* (Version 0.35.1) [Computer software]. https://github.com/ollama/ollama
+
 Schick, T., Dwivedi-Yu, J., Dessì, R., Raileanu, R., Lomeli, M., Hambro, E., Zettlemoyer, L., Cancedda, N., & Scialom, T. (2023). Toolformer: Language models can teach themselves to use tools. In *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)*.
 
 Wang, L., et al. (2024). A survey on large language model based autonomous agents. *Frontiers of Computer Science, 18*(6), 186345.
