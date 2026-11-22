@@ -53,7 +53,7 @@ The second command (Section 4.3, `docs/run_integrity.md`) exits 0 only when all 
 
 ## A.5 Replaying the state without the model
 
-Every turn record holds the state's hash before and after the turn, and its state diff. The run-log validator replays each log's diffs from the scenario's initial state and checks every hash on the way, together with the audit-log schema and script coverage:
+Every turn record holds the state's hash before and after the turn, and its state diff. The run-log validator replays condition D's logs from their diffs and A to C's from the scripted replay, checking every hash on the way, together with the audit-log schema and script coverage:
 
 ```bash
 python -m adm.eval.validate --runs runs --manifest experiments/main_grid.json
