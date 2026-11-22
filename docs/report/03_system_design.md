@@ -24,7 +24,7 @@ Conditions A to C use one model call per turn and no tools; they are described i
 
 ## 3.2 The rules engine
 
-The game is a deliberately small ruleset, inspired by the D&D 5e System Reference Document 5.1 but not compatible with it. Everything below is implemented exactly; nothing else is.
+The game is a deliberately small ruleset, inspired by the D&D 5e System Reference Document 5.1 (Wizards of the Coast, 2023) but not compatible with it. Everything below is implemented exactly; nothing else is.
 
 **Characters.** Each combatant has six ability scores from 1 to 20, fixed by the scenario. The ability modifier is `floor((score − 10) / 2)`, rounded down so that a score of 7 gives −2. The proficiency bonus is a flat +2 for everyone, since the game has no levels. Armour class, weapon attack bonuses, weapon damage bonuses, the spell attack bonus and the spellcasting modifier are **stored** in the scenario, not derived from other values, which removes a class of arithmetic errors from the engine. A combatant that cannot cast has all three spell fields (`spell_attack_bonus`, `spellcasting_modifier`, `spell_slots_1`) empty. Hit points are clamped to the range 0 to `max_hp` after every write.
 
@@ -199,7 +199,7 @@ Every state change is therefore traceable to a validated call or a named engine 
 
 ## 3.8 Model and hardware
 
-**Model.** One open-weight instruct model serves every call: `llama3.1:8b` at Q4_K_M quantisation, pinned by its digest (`sha256:46e0c10c…ca666e`) and served by Ollama 0.35.1 with a context of 8,192 tokens. All of these, K and both temperatures are frozen in one configuration file, and the model name appears nowhere else in the code. No paid API or hosted model is used.
+**Model.** One open-weight instruct model serves every call: `llama3.1:8b` (Grattafiori et al., 2024) at Q4_K_M quantisation, pinned by its digest (`sha256:46e0c10c…ca666e`) and served by Ollama 0.35.1 (Ollama, n.d.) with a context of 8,192 tokens. All of these, K, the narration temperature and both reply caps are frozen in one configuration file (`config/model.json`), and the model name appears nowhere else in the code; the 0.0 temperature of the tool-call and summary calls is fixed in the client. No paid API or hosted model is used.
 
 It was chosen from a shortlist of three models of at most 9.7 billion parameters that fit the GPU (`docs/model_shortlist.md`, `docs/model_selection.md`), for four reasons in order of weight:
 

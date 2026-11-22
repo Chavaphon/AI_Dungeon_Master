@@ -24,7 +24,7 @@ The results of Section 5 hold under the conditions described in this section, an
 
 - **SD's ratings were fast and narrow.** The second rater's 64 ratings took about 7 minutes, about 7 seconds per excerpt, against a planned 3.5 minutes each. Most were 3 or 4 (`docs/m5_rating_sd.md` §3).
 - **SS's tone ratings were at the ceiling.** The first rater gave tone 5 for 58 of 64 excerpts (`docs/m5_rating_ss.md` §3).
-- **The two raters do not agree on direction.** H2 and RQ3 therefore rest on ratings the raters do not share, and their differences may reflect the rater rather than the condition (Section 6.1).
+- **The two raters disagree on direction for two of the four items.** H2 and RQ3 therefore rest on ratings the raters do not share, and their differences may reflect the rater rather than the condition (Section 6.1).
 
 **Builders as raters.** All annotation and rating was done by the team that built the system. Blinding to condition was kept throughout, but the raters knew the hypotheses and the design.
 
@@ -36,7 +36,7 @@ The results of Section 5 hold under the conditions described in this section, an
 
 **Deliberate simplifications of the rules.** The game is a small subset of D&D. An unconscious combatant cannot be attacked, and the encounter ends when the last hostile drops, with no death saves (CLAUDE.md §4.8). There are seven tools and no mechanics for movement, romance or summoning. Narration that is correct for tabletop D&D can therefore be a divergence or a rule break here. Attacking a downed foe is the clearest example, and it is common in the data (Section 5.6).
 
-**Sample size and power.** Annotation was by hand, so M1 covers 64 of the 192 runs, one seed per scenario. Each condition has 16 runs, and 4 for RQ2. The intervals are honest about this and wide: a halving of the rate would have shown, but a modest effect would not (Section 5.1). The same holds for M5, with 16 excerpts per condition.
+**Sample size and power.** Annotation was by hand, so M1 covers 64 of the 192 runs, one seed per scenario. Each condition has 16 runs, and 4 for RQ2. The intervals are honest about this and wide: a halving of the rate would have shown, but a modest effect would not (Sections 5.1 and 6.1). The same holds for M5, with 16 excerpts per condition.
 
 **Analysis rules added after 1 November.** The hypotheses, the latency target and the bootstrap were fixed before any scoring. Several reading rules came later, but each was fixed before the figures it governs were read:
 
