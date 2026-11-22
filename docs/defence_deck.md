@@ -90,7 +90,7 @@ No slide computes anything. Every figure is copied from the report's Results (`d
 | 5 | **Done in 11.8** (SS, 2026-11-21): the loop-corrected architecture diagram, `docs/report/figures/fig_turn_loop.svg`, the same file as report Figure 3.1. It adds the failed-turn path to the audit log, the no-tool path, and the state with its one writer (`docs/architecture_diagram.md` §2). Title, kicker, caption line and colours unchanged; the speaker notes walk the new paths. | — |
 | 8 | **Done in 11.9** (CI, 2026-11-21): one grid, the four conditions as columns and the six metrics as rows, each cell the sample that metric was measured on in that condition; D's column is orange, M1's row is tinted as the headline, and a merged grey cell marks M2 and M3 as D-only. Below it, the shared design (48 runs per condition) and H1. Kicker and title unchanged. | — |
 
-11.10 (two timed rehearsals) checks the 15 minutes against a stopwatch and prepares answers to the top ten questions; one is already in slide 10's notes ("Did you pick these?").
+11.10 (two timed rehearsals) checks the 15 minutes against a stopwatch and prepares answers to the top ten questions. The questions and answers are in `docs/defence_questions.md`, with "Did you pick these?" (slide 10's notes) among the reserves; the rehearsal timings are kept by the team outside the repository.
 
 ## 5. The demo, at the end
 
