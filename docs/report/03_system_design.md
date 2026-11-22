@@ -16,24 +16,9 @@ One rule governs the design (Section 1.2): the language model never writes to ga
 
 Each player turn in condition D is a loop with two model calls, shown in Figure 3.1. The first call proposes one tool call, at temperature 0.0. The engine validates it. A rejected call goes back to the model with a structured error, and the model may try twice more. An accepted call is executed, and the second model call, at temperature 0.7, narrates the result from the engine's facts alone.
 
-*Figure 3.1. The condition D turn loop. Two model calls per turn; the retry edge returns to the first. (Text version; to be replaced by the WBS 11.8 diagram.)*
+![The condition D turn loop](figures/fig_turn_loop.png)
 
-```mermaid
-flowchart TD
-    IN[Player input] --> CTX[Assemble context:<br/>preamble, state, tools,<br/>summary, last K turns]
-    CTX --> M1[Model call 1, temperature 0.0:<br/>propose one tool call]
-    M1 --> P{Parse and validate}
-    P -- "rejected or unparseable,<br/>retries left (budget 2)" --> ERR[Structured error,<br/>valid_options] --> M1
-    P -- "budget spent" --> FAIL[Turn failure:<br/>logged, game does not advance,<br/>player asked to rephrase]
-    P -- "valid call" --> EX[Engine executes:<br/>state diff, rolls,<br/>NPC turns, narration_facts]
-    P -- "no tool needed<br/>(after one re-prompt)" --> NO[Narration-only turn]
-    EX --> M2[Model call 2, temperature 0.7:<br/>narrate the facts]
-    NO --> M2
-    M2 --> SF[Safety filter] --> OUT[Show narration;<br/>append turn record to audit log]
-    FAIL --> LOG[Append turn record to audit log]
-    OUT --> IN
-    LOG --> IN
-```
+*Figure 3.1. The condition D turn loop, with two model calls per turn. Teal boxes are the model, orange boxes the engine, and outlined boxes the data the engine owns. A rejected or unparseable call goes back to model call 1 with its error, at most twice. A turn that runs out of retries fails: it has no narration call, does not advance the game, and is still logged. The model reads the state only in its prompt; the engine is its only writer. Model call 2 receives the engine's facts, not the state. Every turn, failed or not, appends one record to the audit log before the next turn starts.*
 
 Conditions A to C use one model call per turn and no tools; they are described in Section 4.1.
 
