@@ -86,7 +86,7 @@ The model's whole capability is seven tools. One JSON Schema file defines them, 
 | `update_npc_relationship` | `npc_id`, `direction` (`up` or `down`), `justification` (at least 10 characters) | no |
 | `update_quest` | `quest_id`, `transition` (`start`, `advance`, `complete`, `fail`) | no |
 
-The model replies with one JSON object, `{"tool": "<name>", "arguments": {...}}`, or `{"tool": null}` if the input has no mechanical effect. `modify_inventory` changes one owner's inventory per call, and its owner may be unconscious, so that the player can loot a defeated creature. A delta of 0 is a malformed call. There is no transfer between inventories.
+The model replies with one JSON object, `{"tool": "<name>", "arguments": {...}}`, or `{"tool": null}` if the input has no mechanical effect. `modify_inventory` changes one owner's inventory per call, and its owner may be unconscious. A delta of 0 is a malformed call. There is no transfer between inventories.
 
 **Results.** Every tool returns the same envelope. A success holds `ok: true`, the tool's name, its **`narration_facts`**, the state diff (each changed path with its old and new value) and the rolls. The narration facts use display names, never identifiers, and they are the only part of the result the narration call sees. Every fact about hit points carries the target's HP **band**, computed by the engine:
 
@@ -158,7 +158,7 @@ The loop cannot tell when an input clearly needs a tool, so the first `{"tool": 
 Every prompt is assembled the same way, with the stable part first so that it stays identical from turn to turn:
 
 1. the system prompt for the condition (Appendix B.1);
-2. the current state as JSON (conditions B, C and D);
+2. the current state as JSON (conditions B and C, and condition D's tool call);
 3. the tool definitions (condition D's tool call only);
 4. the rolling summary of older turns;
 5. the last K turns, oldest first, as a `Player:` / `DM:` transcript;
@@ -210,7 +210,7 @@ It was chosen from a shortlist of three models of at most 9.7 billion parameters
 
 Its known weakness was tool choice: 80% of its benchmark calls named the right tool. The four misses were valid calls for the wrong action, mostly relationship and quest updates sent as no call or as a check. The validator cannot see such misses; they are what M3 measures (Section 4.7).
 
-**Hardware.** One laptop runs everything: an Intel Core Ultra 7 255H, 23.4 GiB of RAM, and an NVIDIA GeForce RTX 5060 Laptop GPU with 8 GiB of memory, on Windows 11 (`docs/hardware.md`). Nothing else used the GPU during the experiment.
+**Hardware.** One laptop runs everything: an Intel Core Ultra 7 255H, 23.4 GiB of RAM, and an NVIDIA GeForce RTX 5060 Laptop GPU with 8 GiB of memory, on Windows 11 (`docs/hardware.md`). Nothing else was allowed to use the Ollama server during a batch.
 
 ## 3.9 SPECIFY, HARNESS, VERIFY, CONTROL: the four design decisions
 

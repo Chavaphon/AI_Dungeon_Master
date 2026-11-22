@@ -25,6 +25,7 @@ The rules are not compatible with Dungeons & Dragons 5th edition, and are not de
 | `results/m3_intent.jsonl` | M3 verdicts, CI, 242 turns | `docs/m3_annotation.md` |
 | `results/m5_ratings.jsonl`, `results/m5_ratings_SS.jsonl`, `results/m5_key.json` | M5 ratings by SD and SS, and the key from excerpt to run | `docs/m5_rating_sd.md`, `docs/m5_rating_ss.md`, `docs/decisions.md` |
 | `results/m1_draft_claude.jsonl`, `results/m1_overlap_draft_claude.jsonl`, `results/m3_draft_claude.jsonl` | The AI drafts the annotators reviewed (Sections 4.6 and 4.7) | the same documents |
+| `dataset/README.md`, `dataset/LICENSE`, `dataset/NOTICE` | The archive's notes (also the release notes), the MIT licence and the SRD 5.1 and Llama 3.1 notices | `dataset/SHA256SUMS` |
 | `dataset/SHA256SUMS` | The sha256 of every other file in the archive | the archive's sha256 |
 
 Annotators are named by initials. There is no player data: the player inputs are the scenarios' scripted inputs. The logs end their lines in CRLF, as written, and their checksums are of those bytes, so the archive must be unpacked as binary files.
@@ -75,7 +76,7 @@ python -c "import json, sys; from adm.engine.replay import log_differences; r = 
 
 ## A.7 Recomputing the results
 
-Each command reads the logs, checks them against `experiments/main_grid.sha256` where it takes `--checksums`, and rewrites the results block of its document. The bootstrap is seeded (20261101, 10,000 resamples), so a rerun gives the same values.
+Each command with `--checksums` reads the logs and checks them against `experiments/main_grid.sha256` first; `m5_scores` reads the ratings and `figures` the M1 outputs, not the logs. Each command with `--doc` rewrites the results block of that document; the checker writes only its JSON Lines file, and M3 has no command. The bootstrap is seeded (20261101, 10,000 resamples), so a rerun gives the same values.
 
 | Result (Section 5) | Command | Writes |
 |---|---|---|
@@ -83,13 +84,13 @@ Each command reads the logs, checks them against `experiments/main_grid.sha256` 
 | M1 per condition, H1 | `python -m adm.eval.m1_rates --checksums experiments/main_grid.sha256 --doc docs/m1_rates.md` | `docs/m1_rates.md`, `results/m1.json` |
 | M1 growth, RQ2 | `python -m adm.eval.m1_growth --checksums experiments/main_grid.sha256 --doc docs/m1_growth.md` | `docs/m1_growth.md`, `results/m1_growth.json` |
 | M2 | `python -m adm.eval.metrics m2 --checksums experiments/main_grid.sha256 --doc docs/m2_tool_calls.md` | `docs/m2_tool_calls.md` |
-| M3 | counted from `results/m3_intent.jsonl`, with a Wilson interval | `docs/m3_annotation.md` §2 |
+| M3 | counted from `results/m3_intent.jsonl`: x = 170 faithful of n = 242. The 95% Wilson interval is (p + z²/2n ± z·√(p(1−p)/n + z²/4n²)) / (1 + z²/n), with p = x/n and z = 1.96 | `docs/m3_annotation.md` §2 |
 | M4 | `python -m adm.eval.metrics m4 --checksums experiments/main_grid.sha256 --doc docs/m4_rule_violations.md --labels results/m1_labels.jsonl` | `docs/m4_rule_violations.md` |
 | M5, H2, RQ3 | `python -m adm.eval.m5_scores --m5-ratings results/m5_ratings.jsonl --m5-ratings results/m5_ratings_SS.jsonl --doc docs/m5_scores.md` | `docs/m5_scores.md` |
 | M6, the latency target | `python -m adm.eval.metrics m6 --checksums experiments/main_grid.sha256 --doc docs/m6_latency.md` | `docs/m6_latency.md` |
 | Agreement, Objective 3 | `python -m adm.eval.agreement --m1-labels results/m1_labels.jsonl --m1-labels results/m1_labels_SS.jsonl --m5-ratings results/m5_ratings.jsonl --m5-ratings results/m5_ratings_SS.jsonl --checksums experiments/main_grid.sha256 --doc docs/agreement.md` | `docs/agreement.md` |
 | Figures 5.1 to 5.3 | `python -m adm.eval.figures --doc docs/figures.md` (after M1 and growth) | `docs/report/figures/` |
 | Failure catalogue | `python -m adm.eval.catalogue --checksums experiments/main_grid.sha256 --doc docs/failure_catalogue.md` | `docs/failure_catalogue.md` |
-| A versus D exhibit | `python -m adm.eval.exhibit --checksums experiments/main_grid.sha256 --doc docs/exhibit_a_vs_d.md` | `docs/exhibit_a_vs_d.md`, `docs/report/figures/fig_a_vs_d.*` |
+| A versus D exhibit | `python -m adm.eval.exhibit --checksums experiments/main_grid.sha256 --doc docs/exhibit_a_vs_d.md` (after M1) | `docs/exhibit_a_vs_d.md`, `docs/report/figures/fig_a_vs_d.*` |
 
 Values are what to compare. A document rewritten on another operating system can differ in its line endings, and a JSON output in its bytes, while every value matches.

@@ -53,7 +53,7 @@ The final pack is assembled and checked by SD in 11.12.
 - The four conditions and invariant 7: they differ only in prompt template and tool wiring (CLAUDE.md §9). The replayed ground truth for A to C.
 - Scenarios: 12 short and 4 long sessions (`docs/scenario_format.md`). Grid: 16 × 4 × seeds 2001 to 2003, 192 runs, 6,420 records (`docs/main_run.md`, `docs/long_run.md`, `docs/run_integrity.md`).
 - Metrics M1 to M6 (CLAUDE.md §10.4), with the evaluation slide's table of conditions × metrics × sample size (11.9).
-- Annotation: the rubric v1.0 and its pilot (`docs/rubric.md`, `docs/rubric_pilot.md`); the automated checker and its validation (`docs/checker_validation.md`, `docs/automated_pass.md`); the M1 sample and procedure, **with the AI-draft disclosure sentence of `docs/m1_annotation.md` §3 verbatim**; M3 (`docs/intent_fidelity.md`, `docs/m3_annotation.md`, including its AI-draft disclosure); M5 (`docs/narrative_quality.md`).
+- Annotation: the rubric v1.0 and its pilot (`docs/rubric.md`, `docs/rubric_pilot.md`); the automated checker and its validation (`docs/checker_validation.md`, `docs/automated_pass.md`); the M1 sample and procedure, **with the AI-draft disclosure sentence verbatim, as fixed in the decision log on 2026-11-15 (it supersedes `docs/m1_annotation.md` §3)**; M3 (`docs/intent_fidelity.md`, `docs/m3_annotation.md`, including its AI-draft disclosure); M5 (`docs/narrative_quality.md`).
 - Analysis: run-level percentile bootstrap, 10,000 resamples, stratified by condition, using the shared `bootstrap()` (CLAUDE.md §10.5).
 
 ## 5. Results (SD)

@@ -55,13 +55,13 @@ Because the source is a state file rather than prose, part of the check can be a
 
 ## 2.6 Rating narrative quality and agreement
 
-Consistency is only half of what a DM is for. If grounding made the prose flat, a lower divergence rate would be a poor trade. The proposal planned a player study, using instruments such as the Player Experience Inventory (Abeele et al., 2020) or the Game Experience Questionnaire (IJsselsteijn et al., 2013), but it was withdrawn: the examination blackouts left no time to run one properly. Narrative quality is instead rated from transcripts, blind to condition, on coherence, vividness and tone, plus one engagement item ("would you want to keep reading?"). This is not player experience, and the report makes no claim about enjoyment or immersion in actual play.
+Consistency is only half of what a DM is for. If grounding made the prose flat, a lower divergence rate would be a poor trade. The proposal planned a player study, using instruments such as the Player Experience Inventory (Vanden Abeele et al., 2020) or the Game Experience Questionnaire (IJsselsteijn et al., 2013), but it was withdrawn: the examination blackouts left no time to run one properly. Narrative quality is instead rated from transcripts, blind to condition, on coherence, vividness and tone, plus one engagement item ("would you want to keep reading?"). This is not player experience, and the report makes no claim about enjoyment or immersion in actual play.
 
 Ratings and annotations from more than one person are only meaningful if the people agree. We report Krippendorff's alpha, which handles any number of coders, ordinal and interval data, and missing values, and has been argued for as a standard reliability measure for coding data (Hayes & Krippendorff, 2007). The target is alpha ≥ 0.6. Section 4 describes how the annotation was done, including where an AI model drafted labels that a team member then reviewed, and Section 7 states what that does to the agreement figures.
 
 ## 2.7 Rules base
 
-The mechanics are derived from the System Reference Document 5.1 (Wizards of the Coast, 2023), released under the Creative Commons Attribution 4.0 licence. The game is inspired by it but is deliberately not compatible with it, and is not described as fifth edition. The cuts were made so that every rule could be tested and every state change validated:
+The mechanics are inspired by the System Reference Document 5.1 (Wizards of the Coast, 2023), released under the Creative Commons Attribution 4.0 licence. The game is deliberately not compatible with it, and is not described as fifth edition. The cuts were made so that every rule could be tested and every state change validated:
 - **Combat:** no map, movement, range or positioning, and three actions only (attack, cast a spell, dodge).
 - **Spells and skills:** two spells only (Fire Bolt and Cure Wounds) and three skills (strength, perception, stealth).
 - **Stored numbers:** attack bonuses and armour class are stored, not derived, and the proficiency bonus is a flat +2.

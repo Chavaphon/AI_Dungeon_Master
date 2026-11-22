@@ -4,8 +4,6 @@
 
 All works cited in Sections 1 to 8, in APA style.
 
-Abeele, V. V., Spiel, K., Nacke, L., Johnson, D., & Gerling, K. (2020). Development and validation of the Player Experience Inventory: A scale to measure player experiences at the level of functional and psychosocial consequences. *International Journal of Human-Computer Studies, 135*, 102370.
-
 Callison-Burch, C., Tomar, G. S., Martin, L. J., Ippolito, D., Bailis, S., & Reitter, D. (2022). Dungeons and Dragons as a dialog challenge for artificial intelligence. In *Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing* (pp. 9379–9393). https://doi.org/10.18653/v1/2022.emnlp-main.637
 
 Dhuliawala, S., Komeili, M., Xu, J., Raileanu, R., Li, X., Celikyilmaz, A., & Weston, J. (2024). Chain-of-Verification reduces hallucination in large language models. In *Findings of the Association for Computational Linguistics: ACL 2024* (pp. 3563–3578). https://doi.org/10.18653/v1/2024.findings-acl.212
@@ -31,6 +29,8 @@ Madaan, A., et al. (2023). Self-Refine: Iterative refinement with self-feedback.
 Ollama. (n.d.). *Ollama* (Version 0.35.1) [Computer software]. https://github.com/ollama/ollama
 
 Schick, T., Dwivedi-Yu, J., Dessì, R., Raileanu, R., Lomeli, M., Hambro, E., Zettlemoyer, L., Cancedda, N., & Scialom, T. (2023). Toolformer: Language models can teach themselves to use tools. In *Advances in Neural Information Processing Systems 36 (NeurIPS 2023)*.
+
+Vanden Abeele, V., Spiel, K., Nacke, L., Johnson, D., & Gerling, K. (2020). Development and validation of the Player Experience Inventory: A scale to measure player experiences at the level of functional and psychosocial consequences. *International Journal of Human-Computer Studies, 135*, 102370.
 
 Wang, L., et al. (2024). A survey on large language model based autonomous agents. *Frontiers of Computer Science, 18*(6), 186345.
 
