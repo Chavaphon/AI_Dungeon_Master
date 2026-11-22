@@ -62,5 +62,24 @@ Only a team member publishes; nothing is published by an agent.
 ## 4. The archive
 
 <!-- results:start -->
-Not built yet: four files are on the Drive only (§3, step 1). This block is rewritten by the build.
+| Archive | Size | Members | sha256 |
+|---|---|---|---|
+| `dist/adm-dataset-v1.0.zip` | 2,351,815 bytes | 206 | `0a2450fa02f2cc01f3d2d7649ef415dcc2237db836664147d29ad745956fa040` |
+
+The 192 logs match `experiments/main_grid.sha256`; the other files match their pins:
+
+| File | What it is | sha256 | Pinned in |
+|---|---|---|---|
+| `results/batch/attempts.jsonl` | Batch runner's attempt ledger, one line per main-grid run (7.6, 9.3) | `b0340b8f8ceda0563ab61d5d38234a87a89ec48392dc578257f1a54dee189f03` | decision log, 2026-11-20 |
+| `results/m1_labels.jsonl` | M1 divergence labels, SD, 64 runs (9.5) | `53d74b6bd68400064fa83d8da1f60cc90087ece80918aba13f453362bb11138e` | docs/m1_annotation.md |
+| `results/m1_draft_claude.jsonl` | AI draft SD reviewed for the M1 labels | `ad2a46bf43fe659d13d8eff8c9a01b5a3a9a0da970c182998a1b10d660a5c8c3` | docs/m1_annotation.md |
+| `results/m1_labels_SS.jsonl` | M1 overlap labels, SS, 16 runs (9.6) | `dd0a2c8dd263710abe7cf1db249d1b3c05927142283694765de032230dd90285` | docs/m1_overlap.md |
+| `results/m1_overlap_draft_claude.jsonl` | AI draft SS reviewed for the overlap labels | `6b7999245f753db1f1e6d979784f4c951830f3ef17c089bc5f02504387669d84` | docs/m1_overlap.md |
+| `results/m3_intent.jsonl` | M3 intent-fidelity verdicts, CI, 242 turns (9.7) | `3561a33dd9b474372bc28bc6ef7b83d288b44d593d1d2389c1ec310c1c2ee8f5` | docs/m3_annotation.md |
+| `results/m3_draft_claude.jsonl` | AI draft CI reviewed for the M3 verdicts | `8ab5e81b72e4c1d50cbce3d8365d93e78b04096a9e933f0f0970e46f64e51c52` | docs/m3_annotation.md |
+| `results/m5_key.json` | M5 key: each excerpt's run and window (8.15) | `2323457f4989117e1c1949eb80b362a1d424a39b4a8b0387845b345775676e34` | decision log, 2026-11-20 |
+| `results/m5_ratings.jsonl` | M5 ratings, SD, 64 excerpts (9.9) | `e4d987f6ca49539323c479dd54446d5f6ef0be03baa3613c0593c61127dfc45b` | docs/m5_rating_sd.md |
+| `results/m5_ratings_SS.jsonl` | M5 ratings, SS, 64 excerpts (9.8) | `52a7a8b34e0f3d3f10f2e97fd53d371e478c6c35be2812c2cf9f6ace72a42208` | docs/m5_rating_ss.md |
+
+Every member's sha256 is in `dataset/SHA256SUMS` inside the archive.
 <!-- results:end -->
