@@ -26,7 +26,7 @@ The honest reading is that this study did not detect a cost to narrative quality
 
 ## 6.2 What the engine changes, and what it does not
 
-**The engine changed the state completely.** In condition D every mechanical outcome came from dice and rules. No hit point went out of range, no slot or quantity went below zero, and no combatant acted out of turn: the state audit is zero on all 1,551 narrated D turns, as it is on the replayed ground truth of A to C (Section 5.6). The engine refused 573 illegal proposals and logged all 54 turns it could not save (Section 5.4). The failure catalogue shows the same thing turn by turn: in every condition D entry the state stayed legal, even when the model's call or narration did not (Section 5.3). For the job it was given, keeping the game's state correct, the HARNESS works.
+**The engine changed the state completely.** In condition D every mechanical outcome came from dice and rules. No hit point went out of range, no slot or quantity went below zero, and no combatant acted out of turn: the state audit is zero on all 1,551 narrated D turns, as it is on the replayed ground truth of A to C (Section 5.6). The engine refused 573 tool-call attempts and logged all 54 turns it could not save (Section 5.4). The failure catalogue shows the same thing turn by turn: in every condition D entry the state stayed legal, even when the model's call or narration did not (Section 5.3). For the job it was given, keeping the game's state correct, the HARNESS works.
 
 **It did not change the narration.** D's `PHANTOM` and `CONTRADICT` rates (30.1 and 22.7) are close to A's (33.1 and 20.9) (Table 5.5). D's narration still describes 7.5 rule breaks per 100 turns that the engine never executed (Table 5.9). Three mechanisms in the design and data help explain why a correct state did not produce correct prose.
 
@@ -61,7 +61,7 @@ The human layer, though, began from AI drafts that were accepted almost without 
 
 Five friends each played one informal session of a development build (`docs/sponsor_feedback.md`). They were not a study and none of what they said is a result. Their remarks are included here only because they echo the measured findings in a player's words.
 
-- Players found the edges of the harness at once. One meditated into "wind bending power", one became a demi-god, and one "was able to destroy the landscape". None of these has a tool, so the narration ran with nothing from the engine to hold it back. This is the unharnessed narration of Section 6.3, met in play.
+- Players found the edges of the harness at once. One meditated into "wind bending power", one became a demi-god, and one "was able to destroy the landscape". None of these has a tool, so the model most likely proposed no call and the narration ran with nothing from the engine to hold it back (the sponsor logs were not read). This is the unharnessed narration of Section 6.3, met in play.
 - Two players said the result line, which is built from the audit record, sometimes disagreed with the story. Since the line comes from the state, the narration was the part in the wrong. The line made the divergence visible to the player.
 - Valid calls for the wrong action appeared too. "Kill myself" became the loss of the character's sword, and running downstairs gained a torch. These are the misread intents that M3 samples.
 - Three of the five found the result line useful, and two called the game "very fun". One player said the story "make sense and follow what I input".

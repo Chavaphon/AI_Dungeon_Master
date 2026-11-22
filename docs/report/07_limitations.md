@@ -14,11 +14,11 @@ The results of Section 5 hold under the conditions described in this section, an
 
 **M1 labels are an AI draft accepted unchanged.** The first annotator's labels on all 2,124 turns of the M1 sample were drafted by an AI model from the blind view. SD accepted every one of them without edits (`docs/m1_annotation.md` §3). Every M1 rate, ratio and slope is therefore the drafting model's reading of rubric v1.0, confirmed by one person. The drafter never saw the condition, so the drafts are not expected to favour one condition over another, but this is not an independent human count. The same applies to the confirmed `RULE` breaks in M4 (Table 5.9).
 
-**The M1 alpha is between two reviewed AI drafts.** The overlap labels began from a separate draft by the same model, and SS changed 17 of its 511 turns in a review of about 40 minutes (`docs/m1_overlap.md` §5). The alpha of 0.894 is therefore likely higher than two independent human annotators would reach, and it is not human inter-rater reliability. The Objective 3 rule was also fixed when this alpha was already known (Section 5.8).
+**The M1 alpha is between two reviewed AI drafts.** The overlap labels began from a separate draft by the same model, and SS changed 17 of its 511 turns in a review of at most about 40 minutes (`docs/m1_overlap.md` §5). The alpha of 0.894 is therefore likely higher than two independent human annotators would reach, and it is not human inter-rater reliability. The Objective 3 rule was also fixed when this alpha was already known (Section 5.8).
 
-**Two inconsistencies within the M1 labels.** About 32 turns name an item that appears only in the player's input, and these were scored inconsistently across the drafting batches. 259 borderline calls were accepted as drafted (`docs/m1_annotation.md` §3). The analysis without `PHANTOM` was fixed beforehand to guard against the first, and it did not change the conclusion (Section 5.1).
+**Two weaknesses within the M1 labels.** About 32 turns name an item that appears only in the player's input, and these were scored inconsistently across the drafting batches. 259 borderline calls were accepted as drafted (`docs/m1_annotation.md` §3). The analysis without `PHANTOM` was fixed beforehand to guard against the first, and it did not change the conclusion (Section 5.1).
 
-**M3 has a single annotator, starting from an AI draft.** CI reviewed the AI-drafted verdicts and changed the reason code on 4 of 242, and no verdict (`docs/m3_annotation.md` §3). As agreed at the Week 5 checkpoint, there is no second annotator, so M3 has no agreement statistic.
+**M3 has a single annotator, starting from an AI draft.** CI reviewed the AI-drafted verdicts, changed no verdict, and changed the reason code on 4 of the 242 drafts (`docs/m3_annotation.md` §3). As agreed at the Week 5 checkpoint, there is no second annotator, so M3 has no agreement statistic.
 
 **The M5 instrument did not reach agreement.** Ordinal alpha was below zero on every item (Table 5.14), and several things weaken the ratings:
 
@@ -34,15 +34,16 @@ The results of Section 5 hold under the conditions described in this section, an
 
 **The ground truth for conditions A to C is the replayed script state.** Conditions A to C keep no state, so their narration is scored against the state the script's expected calls produce when replayed with the run's seed (Section 4.1). That state is not necessarily the one the narration implied. If A's narration has an attack miss where the replay has it hit, every later turn is scored against the replay's version. This is a principled choice, since there is no other authoritative state for A to C, but it means A to C are measured against a story they did not tell.
 
-**Deliberate simplifications of the rules.** The game is a small subset of D&D. An unconscious combatant cannot be attacked, and the encounter ends when the last hostile drops, with no death saves (CLAUDE.md §4.8). There are seven tools and no mechanics for movement, romance or summoning. Narration that is correct for tabletop D&D can therefore be a divergence or a rule break here. Attacking a downed foe is the clearest example, and it is common in the data (Section 5.6).
+**Deliberate simplifications of the rules.** The game is a small subset of D&D. An unconscious combatant cannot be attacked, and the encounter ends when the last hostile drops, with no death saves (CLAUDE.md §4.8). There are seven tools and no mechanics for movement, romance or summoning. Narration that is correct for tabletop D&D can therefore be a divergence or a rule break here. Attacking a foe who is already down is the clearest example: attacks narrated after the encounter had ended make up 121 of the 185 automated M4 candidates (Section 5.6).
 
 **Sample size and power.** Annotation was by hand, so M1 covers 64 of the 192 runs, one seed per scenario. Each condition has 16 runs, and 4 for RQ2. The intervals are honest about this and wide: a halving of the rate would have shown, but a modest effect would not (Sections 5.1 and 6.1). The same holds for M5, with 16 excerpts per condition.
 
-**Analysis rules added after 1 November.** The hypotheses, the latency target and the bootstrap were fixed before any scoring. Several reading rules came later, but each was fixed before the figures it governs were read:
+**Analysis rules added after 1 November.** The hypotheses, the latency target and the bootstrap were fixed before any scoring. Several reading rules came later. All but one were fixed before the figures they govern were read:
 
 - the sensitivity ratios without `PHANTOM`, 15 November;
 - the latency interval rule, 13 November;
 - the RQ2 slope definition, 17 November;
+- the Objective 3 rule, 17 November, the one exception: it was fixed when the M1 alpha was already known (Section 5.8);
 - the H2 reading rule, 19 November.
 
 Each is recorded in the decision log with its date (`docs/decisions.md`). The H2 rule was fixed after the M5 agreement figures were known, but before any condition mean was computed.

@@ -45,7 +45,7 @@ D has 16 fewer turns than the other conditions because its failed turns are not 
 
 **No condition differs from A.** Every interval in Table 5.2 overlaps every other, and every ratio's interval in Table 5.3 contains 1. C has the lowest rate (44.5, C/A 0.80), but its interval of 0.53 to 1.21 also contains 1, so this is not a finding.
 
-**The sensitivity analysis does not change this.** The ratios without `PHANTOM` were fixed beforehand to guard against the inconsistent scoring of input-named items (Section 7). Without `PHANTOM`, D/A is 1.20 (0.74 to 1.97).
+**The sensitivity analysis does not change this.** The ratios without `PHANTOM` were fixed beforehand to guard against the inconsistent scoring of input-named items (Section 7.2). Without `PHANTOM`, D/A is 1.20 (0.74 to 1.97).
 
 **The rate is not driven by a few runs.** The five runs with the most divergences hold 18% of them, and they come from A, B and C as well as D. The median per-run rate tells the same story: A 49.0, B 58.1, C 41.5, D 56.2 (`docs/m1_rates.md` §4).
 
@@ -95,7 +95,7 @@ The last bin, positions 41 to 52, is highest in D (70.2, against A 52.1, B 50.0 
 
 **D's profile is close to A's.** D's `PHANTOM` rate is 30.1 against A's 33.1, and its `CONTRADICT` rate 22.7 against 20.9. D's narrator writes after the engine has resolved the turn, yet it invents entities and misstates hit points about as often as condition A, which has no state at all. D has the highest `RESOURCE` (2.5) and `RELATION` (2.1) rates, but both rest on 13 and 11 divergences, and every interval overlaps A's.
 
-**Ten illustrative failures.** Table 5.6 lists the catalogue of ten failures. Each was drawn by hash order from a slot fixed before the draw (`docs/failure_catalogue.md` §1), and each is given in full with its transcript and a state snapshot in `docs/failure_catalogue.md` §2. The catalogue illustrates and does not estimate. The labels it quotes are the AI draft that SD accepted (Section 4.6).
+**Ten illustrative failures.** Table 5.6 lists the catalogue of ten failures. Each was drawn by hash order from a slot fixed before the draw (`docs/failure_catalogue.md` §1), and each is given in full with its transcript and a state snapshot in `docs/failure_catalogue.md` §2. The catalogue illustrates and does not estimate. The M1 and M4 labels it quotes are the AI draft that SD accepted (Section 4.6); the M3 verdict is CI's (Section 4.7).
 
 **Table 5.6. Catalogue of ten failures** (`docs/failure_catalogue.md` §2, §3.1).
 
@@ -145,7 +145,7 @@ M2 covers condition D only: all 48 runs, 1,605 turns and 2,594 tool-call attempt
 
 ## 5.5 M3: intent fidelity
 
-M3 is the share of sampled condition D turns whose executed call does what the player asked. The sample is 242 turns, 15% of the 1,551 D turns that did not fail (Section 4.7). The 95% interval is a Wilson (1927) interval on the sampled turns, as the protocol fixes (`docs/intent_fidelity.md` §5). Wilson intervals are computed from the counts in `docs/m3_annotation.md` §2.
+M3 is the share of sampled condition D turns whose executed call does what the player asked. The sample is 242 turns, drawn from the 1,551 D turns that did not fail as 15% of each scenario's turns, rounded up (Section 4.7). The 95% interval is a Wilson (1927) interval on the sampled turns, as the protocol fixes (`docs/intent_fidelity.md` §5). Wilson intervals are computed from the counts in `docs/m3_annotation.md` §2.
 
 **Table 5.8. M3** (`docs/m3_annotation.md` §2).
 
@@ -190,7 +190,7 @@ The verdicts are one annotator's review of an AI draft, and that review changed 
 
 **The latency target is met.** D's p95 is 7.89 s, and the upper bound of its interval, 7.98 s, is also under 10 s, as the target requires (Section 4.9). Even D's slowest turn, 9.67 s, is under 10 s.
 
-**D costs about 2 s a turn more than A to C, and the cost comes from its second model call.** Generation speed is about 60 tokens per second in every condition (Table 5.10), so the difference comes from the number of calls and the length of the prompts, not from slower generation. The slow tail consists of turns that regenerate the rolling summary: 715 such turns average 6.3 s, against 2.6 s for the rest (`docs/m6_latency.md` §4). All figures come from one laptop with an 8 GiB GPU (Section 3.8).
+**D costs about 2 s a turn more than A to C, and the cost comes from its second model call.** Generation speed is about 60 tokens per second in every condition (Table 5.10), so the difference comes from the number of calls and the length of the prompts, not from slower generation. The slow tail is summary regenerations and retries: the 715 turns that regenerate the rolling summary average 6.3 s, against 2.6 s for the rest, and D's slowest turns combine a summary with a retried tool call (`docs/m6_latency.md` §4). All figures come from one laptop with an 8 GiB GPU (Section 3.8).
 
 ## 5.7 RQ3 and H2: narrative quality
 
@@ -220,7 +220,7 @@ M5 is rated on 64 excerpts, one per scenario and condition. Both raters rated ev
 
 **C is below A on tone.** C − A is −0.41 (−0.69 to −0.12), the only headline interval in M5 that excludes 0. It does not test a hypothesis, since H2 concerns D, and it rests mostly on one rater: SD gives C 3.94 against A's 4.56, while SS rates every condition near 5 (`docs/m5_scores.md` §3).
 
-**The raters disagree on direction.** SS puts D above A on coherence, tone and engagement, while SD puts D below A on coherence, vividness and tone (Table 5.12). The two agree in direction only on vividness, where both put D below A, and engagement, where both put D above. Since agreement on every M5 item is below chance (Section 5.8), the pooled differences cannot be read as properties of the narration alone. Section 7 returns to this.
+**The raters disagree on direction.** SS puts D above A on coherence, tone and engagement, while SD puts D below A on coherence, vividness and tone (Table 5.12). The two agree in direction only on vividness, where both put D below A, and engagement, where both put D above. Since agreement on every M5 item is no better than chance (Section 5.8), the pooled differences cannot be read as properties of the narration alone. Section 7 returns to this.
 
 ## 5.8 Inter-rater agreement and Objective 3
 

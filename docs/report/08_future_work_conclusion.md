@@ -21,7 +21,7 @@ Each item below follows from a result or a limitation in this report.
 
 ## 8.2 Conclusion
 
-This project built an autonomous Dungeon Master in which a local language model never writes to game state: it proposes tool calls, a deterministic engine validates and executes them, and the model narrates the outcome. It then measured how far the narration drifts from that state under four levels of grounding, over 192 runs, 6,420 turn records, and 2,124 hand-labelled turns.
+This project built an autonomous Dungeon Master in which a local language model never writes to game state: it proposes tool calls, a deterministic engine validates and executes them, and the model narrates the outcome. It then measured how far the narration drifts from that state under four levels of grounding, over 192 runs, 6,420 turn records, and 2,124 labelled turns, each label an AI draft reviewed by a team member.
 
 **RQ1.** Grounding did not reduce narration-state divergence. Condition D, with the full engine, diverged at 57.4 per 100 narrated turns against 55.9 for condition A, which had no state at all. The ratio was 1.03 (0.74 to 1.48), so H1, a halving, is not supported. No step on the ladder showed a benefit. The state in the prompt (B) and a self-check instruction (C) did not reliably lower the rate either, so there was no point at which a benefit levelled off. The engine kept the state correct by construction, with zero state-audit violations, but the narration written from that state invented entities and misstated conditions as often as narration written with no state.
 

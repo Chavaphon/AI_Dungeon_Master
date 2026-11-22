@@ -47,7 +47,7 @@ Every scenario exercises at least two of an inventory change, a quest transition
 
 **Playing the grid.** All runs were played on the machine of Section 3.8 through the batch runner, one run at a time on a freshly loaded model with nothing else on the GPU, with the server version and model digest checked first. The twelve short scenarios ran in two batches of 72 runs on 9 November (`docs/main_run.md`), and the four long sessions in one batch of 48 on 10 November (`docs/long_run.md`). The runner wrote each run to a pending folder and moved it into the dataset only when it covered every scripted input with no transport retry. All 192 runs completed on their first attempt; none was played again.
 
-**Checking the grid.** Every log was validated: each record against the audit schema and its cross-field rules, one record per scripted input with the scripted text, and every state hash replayed (D from its own diffs, A to C against the replayed ground truth). Before annotation, an integrity check ran on the shared copy the annotators read, not on the machine that played the runs (`docs/run_integrity.md`). It confirmed that every planned run was present and valid, that every run's last attempt completed, that all 192 used the same model, and that the three seeds appear in every cell. It found no gap to re-run. The SHA-256 of each of the 192 logs is committed in `experiments/main_grid.sha256`, and every later reader of the logs checks its copy against it.
+**Checking the grid.** Every log was validated: each record against the audit schema and its cross-field rules, one record per scripted input with the scripted text, and every state hash replayed (D from its own diffs, A to C against the replayed ground truth). Before annotation, an integrity check ran on the shared copy the annotators read, not on the machine that played the runs (`docs/run_integrity.md`). It confirmed that every planned run was present and valid, that every run's last attempt completed, that all 192 used the same model, and that the three seeds appear in every cell. It found no gap to re-run: 12 logs were missing from the shared copy as first downloaded, but they were a folder misplaced in the copy, not missing runs, and were moved into place. The SHA-256 of each of the 192 logs is committed in `experiments/main_grid.sha256`, and every later reader of the logs checks its copy against it.
 
 The grid holds 54 failed turns, all in condition D, where the tool phase exhausted its budget. They are data for M2 and M6. They are not narrated, so they are not scored for divergence; every other turn is a **narrated turn**.
 
@@ -55,12 +55,12 @@ The grid holds 54 failed turns, all in condition D, where the tool phase exhaust
 
 | ID | Metric | Definition | Conditions | Data |
 |---|---|---|---|---|
-| M1 | Divergence rate | Confirmed divergences per 100 narrated turns, overall and per rubric category | A–D | Human labels on 64 whole runs, 2,124 narrated turns (§4.6) |
-| M2 | Invalid tool-call rate; recovery rate | Turns with at least one rejected or unparseable attempt / turns; rejected turns with no turn failure / rejected turns. A `{"tool": null}` reply is not a rejection. Rejected attempts / turns is given beside the headline | D | Audit log, all 48 D runs |
-| M3 | Intent fidelity | Share of sampled turns whose executed call does what the player asked | D | Human verdicts on a 15% sample, 242 turns (§4.7) |
-| M4 | Rule-violation rate | High-confidence `rule_violation` plus `state_audit` candidates per 100 narrated turns (below) | A–D | Automated, all 192 runs; human check on the M1 sample |
-| M5 | Narrative quality | Mean 1–5 rating on coherence, vividness, tone appropriateness and engagement | A–D | Two raters, 64 excerpts (§4.8) |
-| M6 | Latency and throughput | Mean and p95 seconds per turn (`turn_latency_ms`, every turn including failed ones); tokens per second (`completion_tokens / eval_ms` per model call, then the mean over calls) | A–D | Audit log, all 192 runs |
+| M1 | Divergence rate | Confirmed divergences per 100 narrated turns, overall and per rubric category | A–D | AI-drafted, human-reviewed labels on 64 whole runs, 2,124 narrated turns: 535 each in A, B and C, 519 in D (Section 4.6) |
+| M2 | Invalid tool-call rate; recovery rate | Turns with at least one rejected or unparseable attempt / turns; rejected turns with no turn failure / rejected turns. A `{"tool": null}` reply is not a rejection. Rejected attempts / turns is given beside the headline | D | Audit log, all 48 D runs, 1,605 turns |
+| M3 | Intent fidelity | Share of sampled turns whose executed call does what the player asked | D | Human-reviewed verdicts on a 15% sample, 242 turns (Section 4.7) |
+| M4 | Rule-violation rate | High-confidence `rule_violation` plus `state_audit` candidates per 100 narrated turns (below) | A–D | Automated, all 192 runs: 1,605 narrated turns each in A, B and C, 1,551 in D; human check on the M1 sample |
+| M5 | Narrative quality | Mean 1–5 rating on coherence, vividness, tone appropriateness and engagement | A–D | Two raters, 64 excerpts, 16 per condition (Section 4.8) |
+| M6 | Latency and throughput | Mean and p95 seconds per turn (`turn_latency_ms`, every turn including failed ones); tokens per second (`completion_tokens / eval_ms` per model call, then the mean over calls) | A–D | Audit log, all 192 runs, 1,605 turns per condition |
 
 Rates pooled over runs are ratios of sums, not means of per-run rates.
 
@@ -88,11 +88,11 @@ The rubric was piloted before it was frozen (`docs/rubric_pilot.md`). Two annota
 3. **Stance**, by a stance-marker lexicon, for NPCs with a recorded stance, flagged only when more than one step from the stance after the turn.
 4. **Rule violations**, the M4 checks of Section 4.4.
 
-There is no automated `RESOURCE` check. Before use, the checker was validated against 30 hand-labelled dry-run turns, drawn in hash order, 8, 8, 7 and 7 from A to D, and labelled blind to condition and checker output, by the AI-drafted labels accepted by SD described above (`docs/checker_validation.md`). Over all categories its precision was 0.25 and its recall 0.35 (0.50 and 0.25 for high-confidence candidates alone). `PHANTOM` precision was 0.19. The checker therefore cannot measure M1 by itself, and is used only to show candidates to a human, who confirms or rejects each one and reads the whole narration for what it missed. The automated pass over all 192 runs scored 6,366 narrated turns and wrote 4,457 candidates (`docs/automated_pass.md`).
+There is no automated `RESOURCE` check. Before use, the checker was validated against 30 labelled dry-run turns, drawn in hash order, 8, 8, 7 and 7 from A to D, and labelled blind to condition and checker output, by the AI-drafted labels accepted by SD described above (`docs/checker_validation.md`). Over all categories its precision was 0.25 and its recall 0.35 (0.50 and 0.25 for high-confidence candidates alone). `PHANTOM` precision was 0.19. The checker therefore cannot measure M1 by itself, and is used only to show candidates to a human, who confirms or rejects each one and reads the whole narration for what it missed. The automated pass over all 192 runs scored 6,366 narrated turns and wrote 4,457 candidates (`docs/automated_pass.md`).
 
 ## 4.6 M1 annotation
 
-**Sample.** M1 is annotated on whole runs, so that the run-level bootstrap has whole units and the long sessions keep every turn for RQ2. For each scenario, one seed of the three is chosen by SHA-256 order, and all four conditions are taken at that seed: **64 runs, 2,124 narrated turns** (`adm/eval/m1.py`). Pairing by seed means the four conditions of a scenario share their dice and inputs.
+**Sample.** M1 is annotated on whole runs, so that the run-level bootstrap has whole units and the long sessions keep every turn for RQ2. For each scenario, one seed of the three is chosen by SHA-256 order, and all four conditions are taken at that seed: **64 runs, 2,124 narrated turns** (`adm/eval/m1.py`). Pairing by seed means the four conditions of a scenario share their seed and inputs.
 
 **Procedure.** The annotation tool shows each turn blind to condition, run and seed: the player's input, the state the narration is scored against (Section 4.1), the narration, and the checker's candidates for the turn, numbered. The annotator confirms the true candidates and adds any divergence none of them covers, by rubric v1.0. Rule breaks are labelled too, as `RULE`, for the M4 check; they are not part of M1. M1 per condition is the first annotator's confirmed candidates plus added labels in the four rubric categories, per 100 narrated turns.
 
@@ -113,6 +113,8 @@ M3 is the critic layer of Section 3.9: it looks for the failure no validator can
 **Annotator and AI drafting.** M3 is single-annotated, as agreed at the Week 5 checkpoint, so no agreement statistic exists for it. As with M1, a model drafted each verdict from the annotator's view, and the annotator reviewed each turn:
 
 > M3 verdicts were drafted by an AI model from the annotator's view and reviewed turn by turn by one annotator (CI), who changed 4 of 242 drafts, all in their reason code.
+
+An earlier pass by the same annotator, made on 12 November, accepted every draft in about three minutes. It was set aside and done again, and it is not used (`docs/m3_annotation.md` §3).
 
 ## 4.8 M5 narrative quality
 

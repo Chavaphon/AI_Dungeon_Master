@@ -13,7 +13,7 @@ This appendix holds the texts the experiment was run and annotated with. The pro
 
 ## B.1 Prompt templates
 
-Eleven files reach the model. The five condition templates fill the system message; `{summary}` and `{history}` are replaced by the two shared blocks, or dropped with their blank line when there is nothing to put in them; the player's input is the user message. The retry texts are sent as user messages after the model's rejected reply (Section 3.5). Each hash is the SHA-256 of the file as committed, UTF-8 with LF line endings and a trailing newline.
+Eleven files reach the model. The five condition templates fill the system message; `{summary}` and `{history}` are replaced by the two shared blocks, or dropped with their blank line when there is nothing to put in them; the player's input is the user message. The retry texts are sent as user messages after the model's earlier reply: a rejected call, an unparseable reply, or a first reply with no call (Section 3.5). Each hash is the SHA-256 of the file as committed, UTF-8 with LF line endings and a trailing newline.
 
 How the condition templates differ (`docs/prompt_templates.md` §2):
 
@@ -302,7 +302,7 @@ Verbatim from `docs/narrative_quality.md` §4. The rater sees an excerpt of five
 >
 > - Do not check the narration against the game rules or the state. M1 does that.
 > - Do not mark down the player inputs. They are fixed by the script.
-> - The Dungeon Master is told to narrate in the second person, present tense, 2–4 sentences, and never to speak or act for the player character (§9.1). Count a reply that breaks this under **tone**.
+> - The Dungeon Master is told to narrate in the second person, present tense, 2–4 sentences, and never to speak or act for the player character (§9.1) [CLAUDE.md §9.1; Appendix B.1]. Count a reply that breaks this under **tone**.
 
 **Coherence: does it hang together?**
 
