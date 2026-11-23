@@ -209,7 +209,7 @@ config/
                       # summary_block.txt history_block.txt (shared by all five)
                       # summary.txt (the rolling summary call, section 8.1)
                       # retry_*.txt (tool-call retry messages, section 7.1)
-scenarios/            # s01..s12 + long01..long04
+scenarios/            # s01..s12 + long01..long04; tut01 tutorial, play only (item 73)
 experiments/          # run manifests
 runs/                 # audit logs, gitignored
 results/              # scored output, gitignored
@@ -933,6 +933,8 @@ Building any of these is scope creep and costs someone else their week.
 - A graphical or web client, including a FastAPI page. Text CLI only.
 - Human-participant studies. The player study was withdrawn. Sponsor Users (five friends) play development builds and give informal feedback only; their sessions are logged to `sponsor_runs/`, never to `runs/`, and are never used as data.
 
+**Post-experiment UX phase (wp-13, 3–9 Dec).** New-player UX after the defence changes only interactive `play` and its display. The list above still stands, and so do the engine, prompts, scripted runs and evaluation. The rules are item 73; the defended build is the `release-v1.0` tag.
+
 ---
 
 ## 15. Decisions made in this document
@@ -1100,13 +1102,10 @@ Added at WBS 10.3 (reasons in `docs/decisions.md`):
 Added at WBS 10.4 (reasons in `docs/decisions.md`):
 
 64. M4's headline is item 56's automated figure on all 192 runs, per narrated turn, with the low-confidence candidates apart; one annotator's confirmed `RULE` labels on the M1 sample are reported beside it as its human check. M6 counts every turn, failed ones included, and tokens per second is the mean over calls; the D p95 target is met only if its 95% interval's upper bound is under 10 s (`docs/m4_rule_violations.md`, `docs/m6_latency.md`).
+
 Added at WBS 10.1 (reasons in `docs/decisions.md`):
 
 65. M1 is the first annotator's labels on the whole 9.5 sample: per turn, confirmed candidates plus added labels in the four rubric categories (`RULE` is M4), over narrated turns, pooled per condition as 100 × divergences / turns. H1 is the D/A ratio of those rates with the shared bootstrap; the B/A and C/A ratios and the ratio without `PHANTOM` are given beside it. The overlap labels are for agreement only (`adm/eval/m1_rates.py`, `docs/m1_rates.md`).
-
-Added at WBS 10.4 (reasons in `docs/decisions.md`):
-
-65. M4's headline is item 56's automated figure on all 192 runs, per narrated turn, with the low-confidence candidates apart; one annotator's confirmed `RULE` labels on the M1 sample are reported beside it as its human check. M6 counts every turn, failed ones included, and tokens per second is the mean over calls; the D p95 target is met only if its 95% interval's upper bound is under 10 s (`docs/m4_rule_violations.md`, `docs/m6_latency.md`).
 
 Added at WBS 10.2 (reasons in `docs/decisions.md`):
 
@@ -1128,11 +1127,17 @@ Added at WBS 10.8 (reasons in `docs/decisions.md`):
 
 70. The A-versus-D exhibit pairs A's and D's narrated turns at one scripted combat input and seed of the M1 sample, in two rows fixed before the draw: what the engine fixes (A has a `CONTRADICT` or `RULE` label, D none) and what it does not (D has a `CONTRADICT` label despite its facts), each the first qualifying pair in sha256 order. The slide carries the 10.1 result, so neither row reads as the finding (`adm/eval/exhibit.py`, `docs/exhibit_a_vs_d.md`).
 
+Added at WBS 11.3 (reasons in `docs/decisions.md`):
+
 71. M5 per condition is the mean over its 16 excerpts of the two raters' mean rating. H2 and RQ3 are the D − A difference per item with the shared run-level bootstrap; D is worse on an item when the interval lies wholly below 0, and H2 is contradicted if D is worse on any item. Each rater alone, the interval paired by scenario and the short and long means are given beside it (`adm/eval/m5_scores.py`, `docs/m5_scores.md`).
 
 Added at WBS 11.11 (reasons in `docs/decisions.md`):
 
 72. The data release is one archive attached to the `release-v1.0` GitHub release, never committed: the 192 main-grid logs, the batch ledger and every annotation file a reported number comes from, AI drafts included, each checked against its recorded sha256, with `LICENSE`, `NOTICE` and `SHA256SUMS`. Derived outputs are recomputed, not released. It is built only when every file and the licence and attribution check out, and a team member publishes it (`adm/eval/release.py`, `docs/release.md`, Appendix A).
+
+Added at WBS 13.0 (reasons in `docs/decisions.md`):
+
+73. `release-v1.0` on `ecc3523` is the code release and the defended build, and the defence demo runs from it; no second tag. Post-experiment UX work (wp-13, 3–9 Dec) changes only interactive `play`, its display and the CLI-side files it reads: never `engine/`, `config/prompts/`, `config/model.json`, the scripted `run`, `smoke` and `batch`, or `adm/eval/`, and every main-grid log must still pass integrity and validation. The one schema change is the `tut` scenario id prefix for the tutorial, in the scenario id and `run_id` patterns; a `tut` scenario is never in an experiment manifest. Text CLI with `rich` panels only, no new dependencies; beginner mode is the default for `play`, veteran is opt-in; playtests log to `sponsor_runs/` only.
 
 ## 16. Open questions for the team
 

@@ -148,6 +148,7 @@ SCHEMA_REJECTS = {
     "missing_key": _delete("engine_steps"),
     "unknown_condition": _set("condition", "E"),
     "bad_run_id": _set("run_id", "D-s01_cellar-12345"),
+    "unknown_series_run_id": _set("run_id", "D_x01_foo_12345"),
     "turn_number_0": _set("turn_number", 0),
     "local_timestamp": _set("timestamp", "2026-11-09 21:22:31+07:00"),
     "bad_hash": _set("state_before_hash", "md5:abc"),
@@ -177,6 +178,14 @@ def test_schema_rejects(mutate: Callable[[Record], None]) -> None:
     record = _valid()
     mutate(record)
     assert _schema_errors(record), "schema accepted an invalid record"
+
+
+def test_schema_accepts_a_tutorial_run() -> None:
+    # WBS 13.0: tutorial play sessions (tut01, sponsor_runs/ only) are logged too.
+    record = _valid()
+    record["run_id"] = "D_tut01_first_steps_1"
+    record["scenario_id"] = "tut01_first_steps"
+    assert not _schema_errors(record)
 
 
 def test_schema_rejects_four_attempts_on_a_failed_turn() -> None:

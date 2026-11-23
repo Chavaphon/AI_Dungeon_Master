@@ -31,7 +31,7 @@ Rules:
 
 An entity id is only unique **inside its scenario**. Two scenarios can both contain `npc_rat_01`, and these are different entities. The scenario id is the namespace that keeps them apart.
 
-1. **Format.** `^(s|long)[0-9]{2}_[a-z0-9]+(_[a-z0-9]+)*$`. Short scenarios use `s01` to `s12`, and long sessions use `long01` to `long04` (CLAUDE.md §3, §12). Example: `s01_cellar`.
+1. **Format.** `^(s|long|tut)[0-9]{2}_[a-z0-9]+(_[a-z0-9]+)*$`. Short scenarios use `s01` to `s12`, and long sessions use `long01` to `long04` (CLAUDE.md §3, §12). Example: `s01_cellar`. The `tut` prefix is the tutorial (`tut01`, WBS 13.9): it is for interactive play only and is never in an experiment manifest (`docs/decisions.md`, 2026-11-23, WBS 13.0).
 2. **The series number is unique across the suite.** `s01_cellar` and `s01_crypt` cannot both exist, so a scenario can be referred to unambiguously by its number alone.
 3. **The file is named after its id.** The scenario with `scenario_id: "s01_cellar"` lives at `scenarios/s01_cellar.json`. Two files can't share a path, so two scenarios can't share an id.
 4. **The state carries its scenario.** `scenario_id` in the state must equal the `scenario_id` of the scenario it was loaded from.

@@ -35,7 +35,7 @@ VALID = {
     "npc_id": ["npc_keeper", "npc_rat_01", "npc_rat_02", "npc_old_man_of_the_hill"],
     "item_id": ["item_torch", "item_short_sword", "item_rat_bite"],
     "quest_id": ["quest_missing_ledger"],
-    "scenario_id": ["s01_cellar", "s12_last_stand", "long04_border_road"],
+    "scenario_id": ["s01_cellar", "s12_last_stand", "long04_border_road", "tut01_first_steps"],
 }
 
 INVALID = {
@@ -43,7 +43,16 @@ INVALID = {
     "npc_id": ["npc_rat__01", "npc_rat_", "npc_Rat", "rat_01", "pc_rat_01", "npc_rät"],
     "item_id": ["item_", "item_Short_sword", "item_short sword", "spell_fire_bolt"],
     "quest_id": ["quest_", "quest_missing__ledger", "q_missing_ledger"],
-    "scenario_id": ["cellar", "s1_cellar", "s001_cellar", "s01_", "S01_cellar", "long1_road"],
+    "scenario_id": [
+        "cellar",
+        "s1_cellar",
+        "s001_cellar",
+        "s01_",
+        "S01_cellar",
+        "long1_road",
+        "tut1_steps",
+        "x01_foo",
+    ],
 }
 
 
@@ -111,3 +120,18 @@ def test_scenario_state_carries_its_scenario_id(path: Path) -> None:
 def test_scenario_series_numbers_are_unique() -> None:
     numbers = [_scenario(p)["scenario_id"].split("_", 1)[0] for p in SCENARIOS]
     assert len(numbers) == len(set(numbers)), f"duplicate series numbers: {numbers}"
+
+
+def _manifest_scenarios(manifest: dict[str, Any]) -> list[str]:
+    runs = manifest.get("runs", [])
+    return list(manifest.get("scenarios", [])) + [run["scenario"] for run in runs]
+
+
+@pytest.mark.parametrize(
+    "path", sorted((ROOT / "experiments").glob("*.json")), ids=lambda p: p.stem
+)
+def test_no_tutorial_in_an_experiment_manifest(path: Path) -> None:
+    # WBS 13.0: the tut prefix is for interactive play only (docs/identifiers.md section 2).
+    scenarios = _manifest_scenarios(json.loads(path.read_text(encoding="utf-8")))
+    assert scenarios, f"{path.name} names no scenario"
+    assert not [s for s in scenarios if Path(s).stem.startswith("tut")]

@@ -4,6 +4,8 @@ How to set up and run a live demo of interactive play (`python -m adm.cli play`,
 
 A demo is not data. Its log must never go to `runs/` (CLAUDE.md §11, §14), so every command below passes `--runs` with a folder outside the repository.
 
+The defence demo runs from the tag, `git checkout release-v1.0`: the code that produced the 192 main-grid logs. `main` carries the post-experiment UX changes from 23 Nov on, which are not the defended build (`docs/decisions.md`, 2026-11-23, WBS 13.0).
+
 ## 1. Once per machine (at least a day before)
 
 1. **Python 3.11 and the package.**
