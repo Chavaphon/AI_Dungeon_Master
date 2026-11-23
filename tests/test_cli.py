@@ -19,10 +19,12 @@ import pytest
 from typer.testing import CliRunner
 
 from adm import cli
-from adm.engine.audit import AuditLog, log_path, read_log
+from adm.engine.audit import AuditLog, log_path, read_log, record_errors
+from adm.engine.replay import log_differences
 from adm.engine.scenario import Scenario, ScriptedInput, load_scenario
 from adm.orchestration.client import Message, ModelReply, ModelUnavailable, Phase
 from adm.orchestration.loop import REPHRASE
+from adm.play.commands import UNKNOWN
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_PATH = ROOT / "scenarios" / "s01_cellar.json"
@@ -85,6 +87,117 @@ def test_end_of_input_ends_the_session(monkeypatch: pytest.MonkeyPatch, tmp_path
     code, output = _play(monkeypatch, tmp_path, FakeClient(LOOK), "I look around\n")
     assert code == 0, output
     assert len(_records(tmp_path)) == 1
+
+
+# --- slash commands (WBS 13.1) ---------------------------------------------------
+
+ATTACK = json.dumps(
+    {
+        "tool": "attack",
+        "arguments": {
+            "attacker_id": "pc_lyra",
+            "target_id": "npc_rat_01",
+            "weapon_id": "item_short_sword",
+        },
+    }
+)
+
+
+class RecordingClient(FakeClient):
+    """A FakeClient that keeps every request it was sent."""
+
+    def __init__(self, *toolcalls: str) -> None:
+        super().__init__(*toolcalls)
+        self.calls: list[tuple[Phase, list[Message], int]] = []
+
+    def chat(self, messages: Sequence[Message], *, phase: Phase, seed: int) -> ModelReply:
+        self.calls.append((phase, list(messages), seed))
+        return super().chat(messages, phase=phase, seed=seed)
+
+
+def test_slash_commands_never_reach_the_model_or_the_log(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The acceptance of #251: commands mixed into a session leave its model
+    calls and its audit log exactly as without them, timings aside, and do not
+    count toward the encounter's `before_input`."""
+    inputs = [i.text for i in SCENARIO.scripted_inputs[:4]]
+    assert SCENARIO.encounters[0].before_input == 3, "the fight starts on the 4th input"
+    toolcalls = (LOOK, LOOK, LOOK, ATTACK)
+    commands = ["/help", "/status", "/inventory", "/quests", "/rules", "/glossary", "/bogus"]
+    mixed = [*commands[:3], inputs[0], inputs[1], *commands[3:], inputs[2], "/STATUS", inputs[3]]
+
+    plain, with_commands = RecordingClient(*toolcalls), RecordingClient(*toolcalls)
+    code, _ = _play(monkeypatch, tmp_path / "plain", plain, "\n".join(inputs) + "\n")
+    assert code == 0
+    keys = "\n".join([*mixed, "/status", "/quit", "never sent"]) + "\n"
+    code, output = _play(monkeypatch, tmp_path / "mixed", with_commands, keys)
+    assert code == 0, output
+
+    assert with_commands.calls == plain.calls, "the same model calls, in the same order"
+    first, second = _records(tmp_path / "plain"), _records(tmp_path / "mixed")
+    assert len(first) == len(second) == 4
+    assert log_differences(first, second) == []
+    starts = [[s["step"] for s in r["engine_steps"]].count("encounter_start") for r in second]
+    assert starts == [0, 0, 0, 1], "commands do not count toward before_input"
+    assert UNKNOWN in output
+    assert "Turn order:" in output, "/status after the fight starts shows it"
+    assert with_commands.toolcalls == [], "nothing after /quit is sent"
+
+
+def test_ctrl_c_at_the_prompt_ends_the_session_cleanly(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    typed = iter(["I look around the cellar"])
+
+    def keyboard(self: object, prompt: str = "", **kwargs: object) -> str:
+        try:
+            return next(typed)
+        except StopIteration:
+            raise KeyboardInterrupt from None
+
+    monkeypatch.setattr(cli.Console, "input", keyboard)
+    code, output = _play(monkeypatch, tmp_path, FakeClient(LOOK), "")
+    assert code == 0, output
+    assert "Traceback" not in output
+    records = _records(tmp_path)
+    assert len(records) == 1 and all(record_errors(r) == [] for r in records)
+    assert "1 turns (0 failed)" in output
+
+
+class InterruptedClient(FakeClient):
+    """Ctrl+C arrives during the second narration call."""
+
+    narrations = 0
+
+    def chat(self, messages: Sequence[Message], *, phase: Phase, seed: int) -> ModelReply:
+        if phase == "narration":
+            self.narrations += 1
+            if self.narrations == 2:
+                raise KeyboardInterrupt
+        return super().chat(messages, phase=phase, seed=seed)
+
+
+def test_ctrl_c_mid_turn_keeps_a_valid_log_of_the_finished_turns(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    keys = "I look around the cellar\nI look again\nnever played\n"
+    code, output = _play(monkeypatch, tmp_path, InterruptedClient(LOOK, LOOK, LOOK), keys)
+    assert code == 0, output
+    assert "Traceback" not in output
+    records = _records(tmp_path)
+    assert [r["player_input"] for r in records] == ["I look around the cellar"]
+    assert all(record_errors(r) == [] for r in records)
+
+
+def test_exit_still_ends_the_session(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    client = FakeClient(LOOK)
+    code, output = _play(monkeypatch, tmp_path, client, "/exit\nI look around\n")
+    assert code == 0, output
+    assert (
+        client.toolcalls == [LOOK]
+        and not log_path(tmp_path, "D", SCENARIO.scenario_id, SEED).exists()
+    )
 
 
 def test_an_existing_run_is_refused_before_the_model_loads(

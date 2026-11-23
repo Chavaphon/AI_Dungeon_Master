@@ -15,7 +15,12 @@ mechanical outcome (the player's executed call and any NPC actions: dice, hit
 or miss, damage, hit points), then the narration; a failed turn shows the
 request to rephrase. The result lines are built from the turn's audit record
 and are display only: nothing is added to the record or to any prompt.
-`/quit`, end of input or Ctrl+C ends the session. Every turn is in
+An input that starts with `/` is a slash command (`adm/play/commands.py`,
+WBS 13.1): `/help`, `/status`, `/inventory`, `/quests`, `/rules` and
+`/glossary` are answered here, from a copy of the state, before the turn loop,
+so they make no model call, write no record and do not count toward an
+encounter's `before_input`. `/quit` (or `/exit`), end of input or Ctrl+C ends
+the session. Every turn is in
 `runs/D/<scenario_id>/<seed>.jsonl` (CLAUDE.md section 11) as soon as it is shown.
 
 `run` plays the scenario's scripted inputs unattended (`session.run_script`),
@@ -75,6 +80,7 @@ from adm.orchestration.session import (
     new_run_log,
     run_script,
 )
+from adm.play.commands import is_command, run_command
 
 # The audit log's conditions (schemas/audit.schema.json), and the harness of
 # each one that is wired. Interactive play and the G2 smoke runs are condition D.
@@ -87,7 +93,6 @@ HARNESSES: dict[str, HarnessStart] = {
 }
 D = "D"
 
-QUIT = {"/quit", "/exit"}
 AI_LABEL = "Narrated by AI"
 PROMPT = "> "
 RUNS = Path("runs")
@@ -163,6 +168,7 @@ def play(scenario: ScenarioOption, seed: SeedOption, runs: RunsOption = RUNS) ->
     with _exits_on_refusal(console), open_session(console, loaded, seed, runs, D) as session:
         console.print(f"[bold]{escape(loaded.display_name)}[/bold]  [dim]{AI_LABEL}[/dim]\n")
         console.print(loaded.opening_narration, markup=False)
+        assert isinstance(session, Session), "play is always condition D"
         _loop(console, session)
 
 
@@ -316,7 +322,7 @@ def _batch_report(
         console.print(f"Stopped: {result.stopped}", markup=False)
 
 
-def _loop(console: Console, session: Harness) -> None:
+def _loop(console: Console, session: Session) -> None:
     # Ctrl+C mid-turn ends the session too: that turn is not logged.
     try:
         while True:
@@ -324,9 +330,14 @@ def _loop(console: Console, session: Harness) -> None:
                 text = console.input(f"\n{PROMPT}").strip()
             except EOFError:
                 break
-            if text in QUIT:
-                break
             if not text:
+                continue
+            if is_command(text):
+                # A copy: display code never touches the game state (invariant 1).
+                command = run_command(text, session.state.model_copy(deep=True))
+                console.print(command.renderable)
+                if command.quit:
+                    break
                 continue
             with console.status("The Dungeon Master is thinking..."):
                 turn = session.play(text)
