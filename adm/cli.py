@@ -9,12 +9,13 @@ no game logic.
 
 `play` is an interactive condition D session. The model is checked against
 `config/model.json` and freshly loaded first (docs/model_selection.md section 4).
-The player sees the scenario's title, labelled "Narrated by AI", and its opening
-narration, then types one input per turn. Each turn shows one result line per
-mechanical outcome (the player's executed call and any NPC actions: dice, hit
-or miss, damage, hit points), then the narration; a failed turn shows the
-request to rephrase. The result lines are built from the turn's audit record
-and are display only: nothing is added to the record or to any prompt.
+The player sees the scenario's title, labelled "Narrated by AI", its opening
+narration and a line pointing to `/help`, then types one input per turn. Each
+turn shows one result line per mechanical outcome (the player's executed call
+and any NPC actions: dice, hit or miss, damage, hit points), then the
+narration; a failed turn shows the request to rephrase. The result lines are
+built from the turn's audit record and are display only: nothing is added to
+the record or to any prompt.
 An input that starts with `/` is a slash command (`adm/play/commands.py`,
 WBS 13.1): `/help`, `/status`, `/inventory`, `/quests`, `/rules` and
 `/glossary` are answered here, from a copy of the state, before the turn loop,
@@ -80,7 +81,7 @@ from adm.orchestration.session import (
     new_run_log,
     run_script,
 )
-from adm.play.commands import is_command, run_command
+from adm.play.commands import HINT, is_command, run_command
 
 # The audit log's conditions (schemas/audit.schema.json), and the harness of
 # each one that is wired. Interactive play and the G2 smoke runs are condition D.
@@ -168,6 +169,8 @@ def play(scenario: ScenarioOption, seed: SeedOption, runs: RunsOption = RUNS) ->
     with _exits_on_refusal(console), open_session(console, loaded, seed, runs, D) as session:
         console.print(f"[bold]{escape(loaded.display_name)}[/bold]  [dim]{AI_LABEL}[/dim]\n")
         console.print(loaded.opening_narration, markup=False)
+        console.print()
+        console.print(HINT, style="dim", markup=False)
         assert isinstance(session, Session), "play is always condition D"
         _loop(console, session)
 

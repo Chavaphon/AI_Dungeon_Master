@@ -24,7 +24,7 @@ from adm.engine.replay import log_differences
 from adm.engine.scenario import Scenario, ScriptedInput, load_scenario
 from adm.orchestration.client import Message, ModelReply, ModelUnavailable, Phase
 from adm.orchestration.loop import REPHRASE
-from adm.play.commands import UNKNOWN
+from adm.play.commands import HINT, UNKNOWN
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_PATH = ROOT / "scenarios" / "s01_cellar.json"
@@ -71,6 +71,7 @@ def test_a_session_is_played_end_to_end(monkeypatch: pytest.MonkeyPatch, tmp_pat
     assert code == 0, output
     assert f"{SCENARIO.display_name} {cli.AI_LABEL}" in output, "the title carries the AI label"
     assert SCENARIO.opening_narration in output
+    assert output.index(SCENARIO.opening_narration) < output.index(HINT), "/help is pointed to"
     assert NARRATION in output, "narration is printed as written, brackets included"
     line = cli.result_lines(_records(tmp_path)[0])[0]
     assert line.startswith("Lyra perception check:") and "vs DC 12" in line

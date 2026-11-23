@@ -14,7 +14,7 @@ pip install -e .
 python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
 ```
 
-The title is labelled **Narrated by AI**. Type what your character does in plain English, for example `I draw my sword and attack the nearest rat`. Each turn first shows a result line for every roll the engine made (hit or miss, damage, hit points), then the narration. Commands starting with `/` are for you, not the Dungeon Master: `/help`, `/status`, `/inventory`, `/quests`, `/rules` and `/glossary` show information without using a turn, and `/quit`, Ctrl+C or end of input ends the session. The sixteen scenarios are in `scenarios/`; any seed works, but each `(scenario, seed)` can be played once per log folder.
+The title is labelled **Narrated by AI**. Type what your character does in plain English, for example `I draw my sword and attack the nearest rat`. Each turn first shows a result line for every roll the engine made (hit or miss, damage, hit points), then the narration. Commands starting with `/` are for you, not the Dungeon Master (the game reminds you under the opening): `/help`, `/status`, `/inventory`, `/quests`, `/rules` and `/glossary` show information without using a turn, and `/quit`, Ctrl+C or end of input ends the session. The sixteen scenarios are in `scenarios/`; any seed works, but each `(scenario, seed)` can be played once per log folder.
 
 ### Sponsor User sessions
 

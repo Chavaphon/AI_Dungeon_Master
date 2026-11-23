@@ -28,6 +28,8 @@ from adm.engine.combat import hp_band
 from adm.engine.state import Combatant, GameState
 
 UNKNOWN = "Unknown command. Type /help for the list."
+# Shown once, under the opening narration, so a new player finds the commands.
+HINT = "Type /help for commands, /quit to stop."
 PREFIX = "/"
 
 
