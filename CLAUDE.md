@@ -1102,13 +1102,10 @@ Added at WBS 10.3 (reasons in `docs/decisions.md`):
 Added at WBS 10.4 (reasons in `docs/decisions.md`):
 
 64. M4's headline is item 56's automated figure on all 192 runs, per narrated turn, with the low-confidence candidates apart; one annotator's confirmed `RULE` labels on the M1 sample are reported beside it as its human check. M6 counts every turn, failed ones included, and tokens per second is the mean over calls; the D p95 target is met only if its 95% interval's upper bound is under 10 s (`docs/m4_rule_violations.md`, `docs/m6_latency.md`).
+
 Added at WBS 10.1 (reasons in `docs/decisions.md`):
 
 65. M1 is the first annotator's labels on the whole 9.5 sample: per turn, confirmed candidates plus added labels in the four rubric categories (`RULE` is M4), over narrated turns, pooled per condition as 100 × divergences / turns. H1 is the D/A ratio of those rates with the shared bootstrap; the B/A and C/A ratios and the ratio without `PHANTOM` are given beside it. The overlap labels are for agreement only (`adm/eval/m1_rates.py`, `docs/m1_rates.md`).
-
-Added at WBS 10.4 (reasons in `docs/decisions.md`):
-
-65. M4's headline is item 56's automated figure on all 192 runs, per narrated turn, with the low-confidence candidates apart; one annotator's confirmed `RULE` labels on the M1 sample are reported beside it as its human check. M6 counts every turn, failed ones included, and tokens per second is the mean over calls; the D p95 target is met only if its 95% interval's upper bound is under 10 s (`docs/m4_rule_violations.md`, `docs/m6_latency.md`).
 
 Added at WBS 10.2 (reasons in `docs/decisions.md`):
 
@@ -1129,6 +1126,8 @@ Added at WBS 10.7 (reasons in `docs/decisions.md`):
 Added at WBS 10.8 (reasons in `docs/decisions.md`):
 
 70. The A-versus-D exhibit pairs A's and D's narrated turns at one scripted combat input and seed of the M1 sample, in two rows fixed before the draw: what the engine fixes (A has a `CONTRADICT` or `RULE` label, D none) and what it does not (D has a `CONTRADICT` label despite its facts), each the first qualifying pair in sha256 order. The slide carries the 10.1 result, so neither row reads as the finding (`adm/eval/exhibit.py`, `docs/exhibit_a_vs_d.md`).
+
+Added at WBS 11.3 (reasons in `docs/decisions.md`):
 
 71. M5 per condition is the mean over its 16 excerpts of the two raters' mean rating. H2 and RQ3 are the D − A difference per item with the shared run-level bootstrap; D is worse on an item when the interval lies wholly below 0, and H2 is contradicted if D is worse on any item. Each rater alone, the interval paired by scenario and the short and long means are given beside it (`adm/eval/m5_scores.py`, `docs/m5_scores.md`).
 
