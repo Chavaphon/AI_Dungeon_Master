@@ -26,6 +26,7 @@ FORBIDDEN = {
     "orchestration": {"adm.eval", "adm.cli"},
     "eval": {"adm.orchestration", "adm.cli", "httpx"},
     "bench": {"adm.orchestration", "adm.eval", "adm.cli"},
+    "play": {"adm.orchestration", "adm.eval", "adm.cli", "httpx"},
 }
 
 

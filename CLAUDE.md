@@ -202,6 +202,8 @@ adm/
     release.py        # the code and data release: pinned files, licence and attribution checks, the archive
     validate.py       # run logs: schema, script coverage, hash replay
     integrity.py      # main grid before annotation: completeness, crashes, seeds, checksums
+  play/               # interactive play display only (wp-13): reads state, never writes it
+    commands.py       # in-game slash commands: /help /status /inventory /quests /rules /glossary /quit
   cli.py
 config/
   model.json
@@ -1138,6 +1140,10 @@ Added at WBS 11.11 (reasons in `docs/decisions.md`):
 Added at WBS 13.0 (reasons in `docs/decisions.md`):
 
 73. `release-v1.0` on `ecc3523` is the code release and the defended build, and the defence demo runs from it; no second tag. Post-experiment UX work (wp-13, 3–9 Dec) changes only interactive `play`, its display and the CLI-side files it reads: never `engine/`, `config/prompts/`, `config/model.json`, the scripted `run`, `smoke` and `batch`, or `adm/eval/`, and every main-grid log must still pass integrity and validation. The one schema change is the `tut` scenario id prefix for the tutorial, in the scenario id and `run_id` patterns; a `tut` scenario is never in an experiment manifest. Text CLI with `rich` panels only, no new dependencies; beginner mode is the default for `play`, veteran is opt-in; playtests log to `sponsor_runs/` only.
+
+Added at WBS 13.1 (reasons in `docs/decisions.md`):
+
+74. In `play`, an input starting with `/` is a slash command, answered by the CLI before the turn loop from a copy of the state: no model call, no audit record, and it does not count toward an encounter's `before_input` (item 36). Play-only display code lives in `adm/play/`, which may import the engine and `rich` but never `orchestration`, `eval` or `cli` (`adm/play/commands.py`).
 
 ## 16. Open questions for the team
 

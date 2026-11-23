@@ -4,13 +4,14 @@ WBS 1.4 · Owner: SS · Status: **signed off 2026-10-24** · CLAUDE.md wins on a
 
 ## 1. Module boundaries
 
-Dependencies point one way: `cli → orchestration → engine`, and `eval → engine`. Nothing imports `cli`.
+Dependencies point one way: `cli → orchestration → engine`, `eval → engine`, and `cli → play → engine` (WBS 13.1). Nothing imports `cli`.
 
 | Package | Owns | May import | Must never |
 |---|---|---|---|
 | `adm/engine/` | `GameState` and every mutation of it; dice; rules; tool dispatch; validator; audit records | stdlib, `pydantic`, `jsonschema` | import `orchestration`, `eval`, `cli` or `httpx`; do network I/O; read the clock or env inside rule code |
 | `adm/orchestration/` | Ollama client, prompt assembly, parser, rolling summary, safety filter, turn loop | `engine` public API | assign to a state field; parse model output into anything but a *proposed* tool call; import `eval` |
 | `adm/eval/` | checker, HP-band lexicon, metrics, annotation CLI | `engine` (offline replay for A–C ground truth; band thresholds) | import `orchestration` (the checker must not depend on how a run was produced); call the model |
+| `adm/play/` | display code for interactive `play` only (wp-13): slash commands and, later, the other new-player screens | `engine` public API (reading state only), `rich` | assign to a state field; import `orchestration`, `eval`, `cli` or `httpx`; be used by the scripted `run`, `smoke` or `batch` |
 | `adm/cli.py` | composition root: reads `config/`, wires the packages, typer commands | everything | contain game logic |
 
 The rules behind this table:
