@@ -209,7 +209,7 @@ config/
                       # summary_block.txt history_block.txt (shared by all five)
                       # summary.txt (the rolling summary call, section 8.1)
                       # retry_*.txt (tool-call retry messages, section 7.1)
-scenarios/            # s01..s12 + long01..long04
+scenarios/            # s01..s12 + long01..long04; tut01 tutorial, play only (item 73)
 experiments/          # run manifests
 runs/                 # audit logs, gitignored
 results/              # scored output, gitignored
@@ -933,6 +933,8 @@ Building any of these is scope creep and costs someone else their week.
 - A graphical or web client, including a FastAPI page. Text CLI only.
 - Human-participant studies. The player study was withdrawn. Sponsor Users (five friends) play development builds and give informal feedback only; their sessions are logged to `sponsor_runs/`, never to `runs/`, and are never used as data.
 
+**Post-experiment UX phase (wp-13, 3–9 Dec).** New-player UX after the defence changes only interactive `play` and its display. The list above still stands, and so do the engine, prompts, scripted runs and evaluation. The rules are item 73; the defended build is the `release-v1.0` tag.
+
 ---
 
 ## 15. Decisions made in this document
@@ -1133,6 +1135,10 @@ Added at WBS 10.8 (reasons in `docs/decisions.md`):
 Added at WBS 11.11 (reasons in `docs/decisions.md`):
 
 72. The data release is one archive attached to the `release-v1.0` GitHub release, never committed: the 192 main-grid logs, the batch ledger and every annotation file a reported number comes from, AI drafts included, each checked against its recorded sha256, with `LICENSE`, `NOTICE` and `SHA256SUMS`. Derived outputs are recomputed, not released. It is built only when every file and the licence and attribution check out, and a team member publishes it (`adm/eval/release.py`, `docs/release.md`, Appendix A).
+
+Added at WBS 13.0 (reasons in `docs/decisions.md`):
+
+73. `release-v1.0` on `ecc3523` is the code release and the defended build, and the defence demo runs from it; no second tag. Post-experiment UX work (wp-13, 3–9 Dec) changes only interactive `play`, its display and the CLI-side files it reads: never `engine/`, `config/prompts/`, `config/model.json`, the scripted `run`, `smoke` and `batch`, or `adm/eval/`, and every main-grid log must still pass integrity and validation. The one schema change is the `tut` scenario id prefix for the tutorial, in the scenario id and `run_id` patterns; a `tut` scenario is never in an experiment manifest. Text CLI with `rich` panels only, no new dependencies; beginner mode is the default for `play`, veteran is opt-in; playtests log to `sponsor_runs/` only.
 
 ## 16. Open questions for the team
 
