@@ -2,7 +2,9 @@
 end to end (the done-when of #72). `play` shows the scenario's opening, takes
 one input per turn, shows the narration or the request to rephrase, and stops on
 `/quit` or end of input with every turn in the audit log. `run` is the one
-entry point for every condition (the done-when of #78).
+entry point for every condition (the done-when of #78). `play` is in beginner
+mode unless `--mode veteran` is given, and both modes log the same session
+(WBS 13.2, #255).
 
 No test calls a model: `connect` is replaced by a fake client.
 
@@ -21,10 +23,13 @@ from typer.testing import CliRunner
 from adm import cli
 from adm.engine.audit import AuditLog, log_path, read_log, record_errors
 from adm.engine.replay import log_differences
-from adm.engine.scenario import Scenario, ScriptedInput, load_scenario
+from adm.engine.scenario import Scenario, ScriptedInput, initial_state, load_scenario
+from adm.engine.state import GameState
 from adm.orchestration.client import Message, ModelReply, ModelUnavailable, Phase
 from adm.orchestration.loop import REPHRASE
 from adm.play.commands import HINT, UNKNOWN
+from adm.play.results import result_lines
+from adm.play.vocabulary import JARGON, Mode
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_PATH = ROOT / "scenarios" / "s01_cellar.json"
@@ -49,17 +54,25 @@ class FakeClient:
 
 
 def _play(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, client: FakeClient, keys: str
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    client: FakeClient,
+    keys: str,
+    *extra: str,
 ) -> tuple[int, str]:
     monkeypatch.setattr(cli, "connect", lambda config: nullcontext(client))
     args = ["play", "--scenario", str(SCENARIO_PATH), "--seed", str(SEED), "--runs", str(tmp_path)]
-    result = CliRunner().invoke(cli.app, args, input=keys)
+    result = CliRunner().invoke(cli.app, [*args, *extra], input=keys)
     # Rich wraps at the terminal width; compare the words.
     return result.exit_code, " ".join(result.output.split())
 
 
 def _records(tmp_path: Path) -> list[dict]:
     return read_log(log_path(tmp_path, "D", SCENARIO.scenario_id, SEED))
+
+
+def _initial() -> GameState:
+    return initial_state(SCENARIO, SEED)
 
 
 def test_a_session_is_played_end_to_end(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -73,8 +86,8 @@ def test_a_session_is_played_end_to_end(monkeypatch: pytest.MonkeyPatch, tmp_pat
     assert SCENARIO.opening_narration in output
     assert output.index(SCENARIO.opening_narration) < output.index(HINT), "/help is pointed to"
     assert NARRATION in output, "narration is printed as written, brackets included"
-    line = cli.result_lines(_records(tmp_path)[0])[0]
-    assert line.startswith("Lyra perception check:") and "vs DC 12" in line
+    line = result_lines(_records(tmp_path)[0], _initial(), Mode.BEGINNER)[0]
+    assert line.startswith("Your perception check:"), "beginner mode by default"
     assert output.index(line) < output.index(NARRATION), "the result line comes first"
     assert REPHRASE in output
     records = _records(tmp_path)
@@ -144,6 +157,53 @@ def test_slash_commands_never_reach_the_model_or_the_log(
     assert UNKNOWN in output
     assert "Turn order:" in output, "/status after the fight starts shows it"
     assert with_commands.toolcalls == [], "nothing after /quit is sent"
+
+
+# --- beginner and veteran modes (WBS 13.2) ----------------------------------------
+
+
+def test_beginner_and_veteran_log_the_same_session(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The acceptance of #255: one session played in each mode makes the same
+    model calls and a log identical but for timings; the mode is never logged."""
+    inputs = [i.text for i in SCENARIO.scripted_inputs[:4]]
+    toolcalls = (LOOK, LOOK, LOOK, ATTACK)
+    keys = "\n".join([*inputs, "/status", "/rules", "/glossary"]) + "\n"
+    beginner, veteran = RecordingClient(*toolcalls), RecordingClient(*toolcalls)
+    code, plain = _play(monkeypatch, tmp_path / "beginner", beginner, keys)
+    assert code == 0, plain
+    code, numbers = _play(monkeypatch, tmp_path / "veteran", veteran, keys, "--mode", "veteran")
+    assert code == 0, numbers
+
+    assert beginner.calls == veteran.calls, "the model never sees the mode"
+    first, second = _records(tmp_path / "beginner"), _records(tmp_path / "veteran")
+    assert len(first) == len(second) == 4
+    assert log_differences(first, second) == []
+    for folder in ("beginner", "veteran"):
+        text = log_path(tmp_path / folder, "D", SCENARIO.scenario_id, SEED).read_text("utf-8")
+        assert "beginner" not in text and "veteran" not in text
+    assert "vs AC" in numbers and "vs DC 12" in numbers, "veteran shows the rolls"
+    assert plain != numbers
+
+
+def test_beginner_output_has_no_jargon(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The acceptance of #255: a beginner session, through the start of a fight
+    and every command, shows no dice notation and no AC, DC or HP."""
+    inputs = [i.text for i in SCENARIO.scripted_inputs[:4]]
+    commands = ["/help", "/status", "/inventory", "/quests", "/rules", "/glossary", "/bogus"]
+    keys = "\n".join([*commands, *inputs, *commands]) + "\n"
+    code, output = _play(monkeypatch, tmp_path, FakeClient(LOOK, LOOK, LOOK, ATTACK), keys)
+    assert code == 0, output
+    assert "Turn order:" in output, "the fight started"
+    assert JARGON.search(output) is None, JARGON.search(output)
+
+
+def test_an_unknown_mode_is_refused(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(cli, "connect", _never_connect)
+    code, output = _play(monkeypatch, tmp_path, FakeClient(), "", "--mode", "expert")
+    assert code == 2 and "expert" in output
+    assert not any(tmp_path.iterdir())
 
 
 def test_ctrl_c_at_the_prompt_ends_the_session_cleanly(
@@ -405,63 +465,12 @@ def test_smoke_plays_a_manifest_and_writes_the_summary(
     assert summary["model_digest"]
 
 
-# ---------------------------------------------------------------------------
-# Result lines (ideation form section 3.vi): one line per mechanical outcome,
-# read from the audit record, shown before the narration.
-# ---------------------------------------------------------------------------
-
-EXAMPLES = ROOT / "schemas" / "examples"
-
-
-def _example(name: str) -> dict:
-    return json.loads((EXAMPLES / f"{name}.json").read_text(encoding="utf-8"))
-
-
-@pytest.mark.parametrize(
-    ("example", "line"),
-    [
-        (
-            "result_attack",
-            "Lyra -> giant rat (short sword): 17 vs AC 12, hit, 7 damage; giant rat 4/11 HP",
-        ),
-        (
-            "result_cast_spell_fire_bolt",
-            "Lyra -> giant rat (Fire Bolt): 13 vs AC 12, disadvantage, hit, 7 damage; "
-            "giant rat 4/11 HP",
-        ),
-        (
-            "result_cast_spell_cure_wounds",
-            "Lyra -> Lyra (Cure Wounds): +6 HP; Lyra 20/20 HP; 1 slot(s) left",
-        ),
-        ("result_dodge", "Lyra dodges"),
-        ("result_skill_check", "Lyra perception check: 12 vs DC 12, success"),
-        ("result_modify_inventory", "Lyra -1 torch (now 1)"),
-        ("result_update_npc_relationship", "the Keeper: neutral -> friendly"),
-        ("result_update_quest", "Quest The Missing Ledger: active -> active (stage 3/3)"),
-    ],
-)
-def test_every_tool_has_a_result_line(example: str, line: str) -> None:
-    result = _example(example)
-    record = {"engine_steps": [], "validation": [result], "executed_call": {"tool": result["tool"]}}
-    assert cli.result_lines(record) == [line]
-
-
-def test_result_lines_follow_the_order_of_the_turn() -> None:
-    record = _example("audit_turn_valid")
-    lines = cli.result_lines(record)
-    assert len(lines) == 3, "the player's attack, then the two NPC attacks after it"
-    assert lines[0].startswith("Lyra -> giant rat (short sword)")
-    assert all(line.startswith("giant rat -> Lyra (bite)") for line in lines[1:])
-
-
-def test_a_failed_turn_has_no_player_result_line() -> None:
-    assert cli.result_lines(_example("audit_turn_rejected")) == []
-
-
 def test_result_lines_are_display_only(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _play(monkeypatch, tmp_path, FakeClient(LOOK), "I look around\n")
-    line = cli.result_lines(_records(tmp_path)[0])[0]
-    assert line not in log_path(tmp_path, "D", SCENARIO.scenario_id, SEED).read_text("utf-8")
+    text = log_path(tmp_path, "D", SCENARIO.scenario_id, SEED).read_text("utf-8")
+    for mode in Mode:
+        line = result_lines(_records(tmp_path)[0], _initial(), mode)[0]
+        assert line not in text
 
 
 # --- batch: the main grid, resumable (WBS 7.6) ---------------------------------
