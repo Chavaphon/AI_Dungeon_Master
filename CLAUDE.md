@@ -206,6 +206,7 @@ adm/
     commands.py       # in-game slash commands: /help /status /inventory /quests /rules /glossary /quit
     results.py        # result lines (item 42), veteran and beginner wording
     vocabulary.py     # play modes and the beginner vocabulary, shared by every wp-13 screen
+    hints.py          # beginner action hints: 2-4 things to type, each checked by the validator
   cli.py
 config/
   model.json
@@ -1150,6 +1151,10 @@ Added at WBS 13.1 (reasons in `docs/decisions.md`):
 Added at WBS 13.2 (reasons in `docs/decisions.md`):
 
 75. `play` has two display modes, `--mode beginner` (the default) and `--mode veteran`. Beginner result lines and commands use the vocabulary in `adm/play/vocabulary.py` and show no dice notation, modifiers or AC, DC and HP; veteran shows item 42's lines and the numbers. The mode is passed only to display code, never to the session: it is not logged, not sent to the model, and both modes write the same log (`adm/play/results.py`).
+
+Added at WBS 13.7 (reasons in `docs/decisions.md`):
+
+76. In beginner mode, `play` shows "You could try:" with two to four hints before the first input and after each turn, worked out from a copy of the state in a fixed order: in a fight on the player's turn, attack, Fire Bolt, Cure Wounds and dodge; outside one, look around, talk to a known NPC and use an item. Each hint carries the tool call it stands for and is shown only if the validator accepts that call at that moment; the calls are never executed, logged or sent to the model, and hints never touch the dice (`adm/play/hints.py`).
 
 ## 16. Open questions for the team
 

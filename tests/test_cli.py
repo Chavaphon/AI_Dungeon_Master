@@ -4,7 +4,8 @@ one input per turn, shows the narration or the request to rephrase, and stops on
 `/quit` or end of input with every turn in the audit log. `run` is the one
 entry point for every condition (the done-when of #78). `play` is in beginner
 mode unless `--mode veteran` is given, and both modes log the same session
-(WBS 13.2, #255).
+(WBS 13.2, #255). Beginner mode shows action hints that leave the session
+unchanged (WBS 13.7, #257).
 
 No test calls a model: `connect` is replaced by a fake client.
 
@@ -28,6 +29,7 @@ from adm.engine.state import GameState
 from adm.orchestration.client import Message, ModelReply, ModelUnavailable, Phase
 from adm.orchestration.loop import REPHRASE
 from adm.play.commands import HINT, UNKNOWN
+from adm.play.hints import TITLE
 from adm.play.results import result_lines
 from adm.play.vocabulary import JARGON, Mode
 
@@ -197,6 +199,52 @@ def test_beginner_output_has_no_jargon(monkeypatch: pytest.MonkeyPatch, tmp_path
     assert code == 0, output
     assert "Turn order:" in output, "the fight started"
     assert JARGON.search(output) is None, JARGON.search(output)
+
+
+# --- action hints (WBS 13.7) ------------------------------------------------------
+
+
+def test_hints_leave_the_session_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The acceptance of #257: a beginner session with hints on and the same
+    session with hints off make the same model calls and a log identical but
+    for timings, so its state hashes and rolls are the same."""
+    inputs = [i.text for i in SCENARIO.scripted_inputs[:4]]
+    toolcalls = (LOOK, LOOK, LOOK, ATTACK)
+    keys = "\n".join([*inputs, "/status"]) + "\n"
+    on, off = RecordingClient(*toolcalls), RecordingClient(*toolcalls)
+    code, shown = _play(monkeypatch, tmp_path / "on", on, keys)
+    assert code == 0, shown
+    monkeypatch.setattr(cli, "hint_block", lambda state: None)
+    code, hidden = _play(monkeypatch, tmp_path / "off", off, keys)
+    assert code == 0, hidden
+
+    assert TITLE in shown and TITLE not in hidden
+    assert on.calls == off.calls, "hints never reach the model"
+    first, second = _records(tmp_path / "on"), _records(tmp_path / "off")
+    assert len(first) == len(second) == 4
+    assert log_differences(first, second) == []
+    assert [r["state_after_hash"] for r in first] == [r["state_after_hash"] for r in second]
+    assert [r["rolls"] for r in first] == [r["rolls"] for r in second]
+
+
+def test_beginner_mode_shows_hints_before_each_input(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    inputs = [i.text for i in SCENARIO.scripted_inputs[:4]]
+    keys = "\n".join([inputs[0], "/status", *inputs[1:]]) + "\n"
+    code, output = _play(monkeypatch, tmp_path, FakeClient(LOOK, LOOK, LOOK, ATTACK), keys)
+    assert code == 0, output
+
+    assert output.index(HINT) < output.index(TITLE), "the first hints come before input 1"
+    assert output.count(TITLE) == 5, "at the start and after each of the 4 turns, not /status"
+    assert "with your short sword" in output, "a fight hint once the fight is on"
+
+
+def test_veteran_mode_shows_no_hints(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    keys = SCENARIO.scripted_inputs[0].text + "\n"
+    code, output = _play(monkeypatch, tmp_path, FakeClient(LOOK), keys, "--mode", "veteran")
+    assert code == 0, output
+    assert TITLE not in output
 
 
 def test_an_unknown_mode_is_refused(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
