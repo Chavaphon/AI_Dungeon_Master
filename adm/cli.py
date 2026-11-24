@@ -14,8 +14,12 @@ narration and a line pointing to `/help`, then types one input per turn. Each
 turn shows one result line per mechanical outcome (the player's executed call
 and any NPC actions: dice, hit or miss, damage, hit points), then the
 narration; a failed turn shows the request to rephrase. The result lines are
-built from the turn's audit record and are display only: nothing is added to
-the record or to any prompt.
+built from the turn's audit record (`adm/play/results.py`) and are display
+only: nothing is added to the record or to any prompt.
+`play` is in beginner mode by default (WBS 13.2): result lines and commands
+use plain words (`adm/play/vocabulary.py`) and show no dice, AC, DC or HP.
+`--mode veteran` shows the rolls, AC and DC. The mode is never logged and never
+sent to the model, so both modes write the same log.
 An input that starts with `/` is a slash command (`adm/play/commands.py`,
 WBS 13.1): `/help`, `/status`, `/inventory`, `/quests`, `/rules` and
 `/glossary` are answered here, from a copy of the state, before the turn loop,
@@ -52,7 +56,7 @@ from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -82,6 +86,8 @@ from adm.orchestration.session import (
     run_script,
 )
 from adm.play.commands import HINT, is_command, run_command
+from adm.play.results import result_lines
+from adm.play.vocabulary import Mode
 
 # The audit log's conditions (schemas/audit.schema.json), and the harness of
 # each one that is wired. Interactive play and the G2 smoke runs are condition D.
@@ -125,6 +131,13 @@ ScenarioOption = Annotated[
 ]
 SeedOption = Annotated[int, typer.Option(help="Run seed: fixes the dice and the model's sampling.")]
 RunsOption = Annotated[Path, typer.Option(help="Directory the audit log is written under.")]
+ModeOption = Annotated[
+    Mode,
+    typer.Option(
+        help="beginner: plain words, no dice numbers. veteran: rolls, AC and DC. "
+        "Display only: the log and the model are the same in both."
+    ),
+]
 
 
 @contextmanager
@@ -162,7 +175,12 @@ def _exits_on_refusal(console: Console) -> Iterator[None]:
 
 
 @app.command()
-def play(scenario: ScenarioOption, seed: SeedOption, runs: RunsOption = RUNS) -> None:
+def play(
+    scenario: ScenarioOption,
+    seed: SeedOption,
+    runs: RunsOption = RUNS,
+    mode: ModeOption = Mode.BEGINNER,
+) -> None:
     """Play a scenario interactively under condition D."""
     console = Console(highlight=False)
     loaded = load_scenario(scenario)
@@ -172,7 +190,7 @@ def play(scenario: ScenarioOption, seed: SeedOption, runs: RunsOption = RUNS) ->
         console.print()
         console.print(HINT, style="dim", markup=False)
         assert isinstance(session, Session), "play is always condition D"
-        _loop(console, session)
+        _loop(console, session, mode)
 
 
 @app.command()
@@ -325,8 +343,9 @@ def _batch_report(
         console.print(f"Stopped: {result.stopped}", markup=False)
 
 
-def _loop(console: Console, session: Session) -> None:
-    # Ctrl+C mid-turn ends the session too: that turn is not logged.
+def _loop(console: Console, session: Session, mode: Mode) -> None:
+    # Ctrl+C mid-turn ends the session too: that turn is not logged. The mode
+    # only reaches display code, never the session (CLAUDE.md item 75).
     try:
         while True:
             try:
@@ -337,7 +356,7 @@ def _loop(console: Console, session: Session) -> None:
                 continue
             if is_command(text):
                 # A copy: display code never touches the game state (invariant 1).
-                command = run_command(text, session.state.model_copy(deep=True))
+                command = run_command(text, session.state.model_copy(deep=True), mode)
                 console.print(command.renderable)
                 if command.quit:
                     break
@@ -345,72 +364,13 @@ def _loop(console: Console, session: Session) -> None:
             with console.status("The Dungeon Master is thinking..."):
                 turn = session.play(text)
             console.print()
-            for line in result_lines(turn.record):
+            state = session.state.model_copy(deep=True)
+            for line in result_lines(turn.record, state, mode):
                 console.print(line, style="dim", markup=False)
             console.print(turn.message, markup=False)
     except KeyboardInterrupt:
         pass
     _report(console, session)
-
-
-def result_lines(record: dict[str, Any]) -> list[str]:
-    """One line per mechanical outcome of a turn, in the order it happened: the
-    NPC actions before the call, the player's executed call, then the NPC
-    actions after it. Read from the audit record only (`engine_steps`,
-    `validation`, `executed_call`), so a failed or narration-only turn shows
-    just the NPC actions that ran."""
-    steps = record["engine_steps"]
-
-    def npc(when: str) -> list[tuple[str, dict[str, Any]]]:
-        return [
-            (s["result"]["tool"], s["result"]["narration_facts"])
-            for s in steps
-            if s["step"] == "npc_action" and s["when"] == when
-        ]
-
-    player: list[tuple[str, dict[str, Any]]] = []
-    last = record["validation"][-1] if record["validation"] else None
-    if record["executed_call"] is not None and last is not None and last.get("ok"):
-        player = [(last["tool"], last["narration_facts"])]
-    outcomes = [*npc("before_call"), *player, *npc("after_call")]
-    return [_result_line(tool, facts) for tool, facts in outcomes]
-
-
-def _result_line(tool: str, f: dict[str, Any]) -> str:
-    if tool == "attack" or (tool == "cast_spell" and f["spell"] == "fire bolt"):
-        who = f["attacker"] if tool == "attack" else f["caster"]
-        how = f["weapon"] if tool == "attack" else "Fire Bolt"
-        mode = "" if f["advantage_mode"] == "normal" else f", {f['advantage_mode']}"
-        outcome = "critical hit" if f["critical"] else ("hit" if f["hit"] else "miss")
-        damage = f", {f['damage']} damage" if f["hit"] else ""
-        return (
-            f"{who} -> {f['target']} ({how}): {f['attack_roll']} vs AC {f['target_ac']}{mode}, "
-            f"{outcome}{damage}; {f['target']} {f['target_hp_after']}/{f['target_hp_max']} HP"
-        )
-    if tool == "cast_spell":
-        revived = ", revived" if f["revived"] else ""
-        return (
-            f"{f['caster']} -> {f['target']} (Cure Wounds): +{f['healed_applied']} HP{revived}; "
-            f"{f['target']} {f['target_hp_after']}/{f['target_hp_max']} HP; "
-            f"{f['slots_remaining']} slot(s) left"
-        )
-    if tool == "dodge":
-        return f"{f['actor']} dodges"
-    if tool == "skill_check":
-        mode = "" if f["advantage_mode"] == "normal" else f", {f['advantage_mode']}"
-        outcome = "success" if f["success"] else "failure"
-        roll = f"{f['check_total']} vs DC {f['dc']}{mode}"
-        return f"{f['actor']} {f['skill']} check: {roll}, {outcome}"
-    if tool == "modify_inventory":
-        return f"{f['actor']} {f['delta']:+d} {f['item']} (now {f['quantity_after']})"
-    if tool == "update_npc_relationship":
-        return f"{f['npc']}: {f['stance_before']} -> {f['stance_after']}"
-    if tool == "update_quest":
-        return (
-            f"Quest {f['quest']}: {f['state_before']} -> {f['state_after']} "
-            f"(stage {f['stage_after']}/{f['max_stage']})"
-        )
-    raise ValueError(f"no result line for tool {tool!r}")
 
 
 def _report(console: Console, session: Harness) -> None:

@@ -4,10 +4,12 @@ Any input that starts with `/` is a command. `play` handles it before the turn
 loop, so a command makes no model call, writes no audit record and does not
 count toward an encounter's `before_input` (CLAUDE.md section 15, items 36 and
 74). `/status`, `/inventory` and `/quests` only read the state they are given;
-`/help`, `/rules` and `/glossary` are fixed text.
+`/help`, `/rules` and `/glossary` are fixed text. In beginner mode (WBS 13.2, the
+default) every command uses the beginner vocabulary and shows no dice notation
+or AC, DC or HP; veteran mode shows the numbers.
 
     /help       what you can type, and the commands
-    /status     your health, spell charges and the fight in progress
+    /status     your health, spells and the fight in progress
     /inventory  what you carry
     /quests     your quests and how far along they are
     /rules      the rules in brief
@@ -22,10 +24,12 @@ from dataclasses import dataclass
 
 from rich.console import RenderableType
 from rich.panel import Panel
+from rich.table import Table
 from rich.text import Text
 
 from adm.engine.combat import hp_band
 from adm.engine.state import Combatant, GameState
+from adm.play.vocabulary import BAND_WORDS, QUEST_WORDS, TERMS, Mode
 
 UNKNOWN = "Unknown command. Type /help for the list."
 # Shown once, under the opening narration, so a new player finds the commands.
@@ -46,9 +50,10 @@ def is_command(text: str) -> bool:
     return text.startswith(PREFIX)
 
 
-def run_command(text: str, state: GameState) -> CommandResult:
-    """Run the command `text` names against `state`, which is only read.
-    The command word is matched without case; anything after it is ignored."""
+def run_command(text: str, state: GameState, mode: Mode) -> CommandResult:
+    """Run the command `text` names against `state`, which is only read, as
+    `mode` shows it. The command word is matched without case; anything after
+    it is ignored."""
     words = text.split()
     name = words[0].lower() if words else PREFIX
     if name in QUIT:
@@ -56,7 +61,7 @@ def run_command(text: str, state: GameState) -> CommandResult:
     command = COMMANDS.get(name)
     if command is None:
         return CommandResult(Text(UNKNOWN))
-    return CommandResult(command.show(state))
+    return CommandResult(command.show(state, mode))
 
 
 # --- the commands ------------------------------------------------------------
@@ -68,14 +73,6 @@ def _panel(title: str, lines: list[str]) -> Panel:
 
 def _player(state: GameState) -> Combatant:
     return next(c for c in state.combatants.values() if c.is_player_character)
-
-
-BAND_WORDS = {
-    "healthy": "healthy",
-    "wounded": "wounded",
-    "badly_hurt": "badly hurt",
-    "unconscious": "knocked out",
-}
 
 
 def combatant_labels(state: GameState) -> dict[str, str]:
@@ -91,11 +88,14 @@ def combatant_labels(state: GameState) -> dict[str, str]:
     return labels
 
 
-def _health(c: Combatant) -> str:
-    return f"{c.current_hp}/{c.max_hp} HP ({BAND_WORDS[hp_band(c.current_hp, c.max_hp)]})"
+def _health(c: Combatant, mode: Mode) -> str:
+    band = BAND_WORDS[hp_band(c.current_hp, c.max_hp)]
+    if mode is Mode.BEGINNER:
+        return band
+    return f"{c.current_hp}/{c.max_hp} HP ({band})"
 
 
-def _help(state: GameState) -> Panel:
+def _help(state: GameState, mode: Mode) -> Panel:
     lines = [
         "Type what your character does in plain English, one action at a time,",
         'for example "I look around the room" or "I attack the rat with my sword".',
@@ -108,12 +108,16 @@ def _help(state: GameState) -> Panel:
     return _panel("Help", lines)
 
 
-def _status(state: GameState) -> Panel:
+def _status(state: GameState, mode: Mode) -> Panel:
     pc = _player(state)
-    lines = [f"{pc.display_name}: {_health(pc)}"]
+    lines = [f"{pc.display_name}: {_health(pc, mode)}"]
     if pc.dodging:
         lines.append("You are dodging: attacks against you are harder until your next turn.")
-    if pc.spell_slots_1 is not None:
+    if pc.spell_slots_1 is not None and mode is Mode.BEGINNER:
+        lines.append(
+            f"Spell charges for Cure Wounds: {pc.spell_slots_1}. Fire Bolt is {TERMS['cantrip']}."
+        )
+    elif pc.spell_slots_1 is not None:
         lines.append(f"Spell slots for Cure Wounds: {pc.spell_slots_1}. Fire Bolt is always ready.")
     lines.append("")
     if not state.encounter_active:
@@ -125,11 +129,11 @@ def _status(state: GameState) -> Panel:
     lines.append("Turn order:")
     for cid in state.initiative_order:
         marker = ">" if cid == state.active_combatant_id else " "
-        lines.append(f" {marker} {labels[cid]}: {_health(state.combatants[cid])}")
+        lines.append(f" {marker} {labels[cid]}: {_health(state.combatants[cid], mode)}")
     return _panel("Status", lines)
 
 
-def _inventory(state: GameState) -> Panel:
+def _inventory(state: GameState, mode: Mode) -> Panel:
     pc = _player(state)
     held = state.inventory.get(pc.combatant_id, {})
     lines = []
@@ -142,15 +146,7 @@ def _inventory(state: GameState) -> Panel:
     return _panel("Inventory", lines or ["You carry nothing."])
 
 
-QUEST_WORDS = {
-    "not_started": "not started",
-    "active": "in progress",
-    "completed": "completed",
-    "failed": "failed",
-}
-
-
-def _quests(state: GameState) -> Panel:
+def _quests(state: GameState, mode: Mode) -> Panel:
     lines = []
     for quest_id in sorted(state.quests):
         q = state.quests[quest_id]
@@ -159,6 +155,7 @@ def _quests(state: GameState) -> Panel:
     return _panel("Quests", lines or ["You have no quests."])
 
 
+# Veteran mode.
 RULES = [
     "A small rule set inspired by tabletop fantasy role-playing games.",
     "",
@@ -182,6 +179,33 @@ RULES = [
     "A skill check succeeds if a d20 roll plus your bonus reaches the DC.",
 ]
 
+# Beginner mode: the same rules in the beginner vocabulary, with no numbers.
+BEGINNER_RULES = [
+    "A small rule set inspired by tabletop fantasy role-playing games.",
+    "",
+    "Fights: everyone takes turns in a fixed turn order, set when the fight starts.",
+    "On your turn you do one thing: attack, cast a spell, or dodge.",
+    "Looking around, sneaking, lifting, using items and talking do not use your turn.",
+    "There is no map: everyone in the fight is close enough to reach.",
+    "",
+    "Attacks: the dice decide whether you hit. Some enemies are harder to hit than others.",
+    "A lucky roll always hits and does extra harm; an unlucky one always misses.",
+    "Dodging makes attacks against you harder until the start of your next turn.",
+    "",
+    "Health: a character with no health left is knocked out, not killed, and cannot",
+    "be attacked. Cure Wounds brings a knocked-out character back. The fight is won",
+    "when every enemy is knocked out, and lost if you are.",
+    "",
+    "Spells: Fire Bolt is a fire attack, a spell you can always cast.",
+    "Cure Wounds heals and uses one spell charge; charges do not come back.",
+    "",
+    "Skills: strength (lifting, forcing), perception (noticing), stealth (sneaking).",
+    "The dice decide whether a skill check succeeds; harder tasks have a higher difficulty.",
+    "When you have the upper hand the dice favour you; when the odds are against you,",
+    "they do not.",
+]
+
+# Veteran mode.
 GLOSSARY = [
     ("HP", "hit points: your health. At 0 you are knocked out."),
     ("AC", "armour class: how hard you are to hit."),
@@ -198,24 +222,46 @@ GLOSSARY = [
 ]
 
 
-def _rules(state: GameState) -> Panel:
-    return _panel("Rules", RULES)
+# Beginner mode: the words beginner screens use, explained without jargon.
+BEGINNER_GLOSSARY = [
+    (TERMS["HP"], "how much harm you can take. With none left you are knocked out."),
+    (TERMS["unconscious"], "out of the fight until healed. Nobody dies in this game."),
+    (TERMS["AC"], "how tough a character is to hit with an attack."),
+    (TERMS["DC"], "how hard a skill check is."),
+    (TERMS["spell slot"], "what Cure Wounds uses up. Charges do not come back."),
+    (TERMS["cantrip"], "a spell that needs no charge, such as Fire Bolt."),
+    (TERMS["initiative"], "who acts when in a fight, fixed when the fight starts."),
+    ("round", "one pass through the turn order."),
+    ("dodge", "an action that makes you harder to hit until your next turn."),
+    ("the upper hand", "the dice are on your side for this roll."),
+    ("the odds are against you", "the dice are against you for this roll."),
+    ("skill check", "a roll to see if you manage something risky."),
+]
 
 
-def _glossary(state: GameState) -> Panel:
-    width = max(len(term) for term, _ in GLOSSARY)
-    return _panel("Glossary", [f"{term:<{width}}  {meaning}" for term, meaning in GLOSSARY])
+def _rules(state: GameState, mode: Mode) -> Panel:
+    return _panel("Rules", BEGINNER_RULES if mode is Mode.BEGINNER else RULES)
+
+
+def _glossary(state: GameState, mode: Mode) -> Panel:
+    # A grid, so a long meaning wraps under itself rather than under the terms.
+    grid = Table.grid(padding=(0, 2))
+    grid.add_column(no_wrap=True)
+    grid.add_column()
+    for term, meaning in BEGINNER_GLOSSARY if mode is Mode.BEGINNER else GLOSSARY:
+        grid.add_row(term, meaning)
+    return Panel(grid, title="Glossary", title_align="left", expand=False)
 
 
 @dataclass(frozen=True)
 class Command:
     summary: str
-    show: Callable[[GameState], RenderableType]
+    show: Callable[[GameState, Mode], RenderableType]
 
 
 COMMANDS: dict[str, Command] = {
     "/help": Command("what you can type, and these commands", _help),
-    "/status": Command("your health, spell slots and the fight in progress", _status),
+    "/status": Command("your health, spells and the fight in progress", _status),
     "/inventory": Command("what you carry", _inventory),
     "/quests": Command("your quests and how far along they are", _quests),
     "/rules": Command("the rules in brief", _rules),

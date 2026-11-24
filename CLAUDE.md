@@ -58,7 +58,7 @@ pip install -e ".[dev]"
 pytest -q
 ruff check . && ruff format --check .
 
-# play a session interactively
+# play a session interactively (beginner mode; add --mode veteran for rolls, AC and DC)
 python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
 
 # run one scripted scenario under one condition
@@ -204,6 +204,8 @@ adm/
     integrity.py      # main grid before annotation: completeness, crashes, seeds, checksums
   play/               # interactive play display only (wp-13): reads state, never writes it
     commands.py       # in-game slash commands: /help /status /inventory /quests /rules /glossary /quit
+    results.py        # result lines (item 42), veteran and beginner wording
+    vocabulary.py     # play modes and the beginner vocabulary, shared by every wp-13 screen
   cli.py
 config/
   model.json
@@ -1144,6 +1146,10 @@ Added at WBS 13.0 (reasons in `docs/decisions.md`):
 Added at WBS 13.1 (reasons in `docs/decisions.md`):
 
 74. In `play`, an input starting with `/` is a slash command, answered by the CLI before the turn loop from a copy of the state: no model call, no audit record, and it does not count toward an encounter's `before_input` (item 36). Play-only display code lives in `adm/play/`, which may import the engine and `rich` but never `orchestration`, `eval` or `cli` (`adm/play/commands.py`).
+
+Added at WBS 13.2 (reasons in `docs/decisions.md`):
+
+75. `play` has two display modes, `--mode beginner` (the default) and `--mode veteran`. Beginner result lines and commands use the vocabulary in `adm/play/vocabulary.py` and show no dice notation, modifiers or AC, DC and HP; veteran shows item 42's lines and the numbers. The mode is passed only to display code, never to the session: it is not logged, not sent to the model, and both modes write the same log (`adm/play/results.py`).
 
 ## 16. Open questions for the team
 
