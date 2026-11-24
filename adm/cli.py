@@ -19,7 +19,10 @@ only: nothing is added to the record or to any prompt.
 `play` is in beginner mode by default (WBS 13.2): result lines and commands
 use plain words (`adm/play/vocabulary.py`) and show no dice, AC, DC or HP.
 `--mode veteran` shows the rolls, AC and DC. The mode is never logged and never
-sent to the model, so both modes write the same log.
+sent to the model, so both modes write the same log. Beginner mode also shows
+"You could try:" with two to four hints before the first input and after each
+turn (`adm/play/hints.py`, WBS 13.7), worked out from a copy of the state and
+checked against the validator, never the dice or the model.
 An input that starts with `/` is a slash command (`adm/play/commands.py`,
 WBS 13.1): `/help`, `/status`, `/inventory`, `/quests`, `/rules` and
 `/glossary` are answered here, from a copy of the state, before the turn loop,
@@ -86,6 +89,7 @@ from adm.orchestration.session import (
     run_script,
 )
 from adm.play.commands import HINT, is_command, run_command
+from adm.play.hints import hint_block
 from adm.play.results import result_lines
 from adm.play.vocabulary import Mode
 
@@ -346,8 +350,16 @@ def _batch_report(
 def _loop(console: Console, session: Session, mode: Mode) -> None:
     # Ctrl+C mid-turn ends the session too: that turn is not logged. The mode
     # only reaches display code, never the session (CLAUDE.md item 75).
+    # Hints are shown when the state may have changed: at the start and after
+    # each turn, not again after a command or a blank line.
+    fresh = True
     try:
         while True:
+            if fresh and mode is Mode.BEGINNER:
+                block = hint_block(session.state.model_copy(deep=True))
+                if block is not None:
+                    console.print(f"\n{block}", style="dim", markup=False)
+            fresh = False
             try:
                 text = console.input(f"\n{PROMPT}").strip()
             except EOFError:
@@ -368,6 +380,7 @@ def _loop(console: Console, session: Session, mode: Mode) -> None:
             for line in result_lines(turn.record, state, mode):
                 console.print(line, style="dim", markup=False)
             console.print(turn.message, markup=False)
+            fresh = True
     except KeyboardInterrupt:
         pass
     _report(console, session)
