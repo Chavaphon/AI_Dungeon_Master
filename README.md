@@ -14,7 +14,7 @@ pip install -e .
 python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
 ```
 
-The title is labelled **Narrated by AI**. Type what your character does in plain English, for example `I draw my sword and attack the nearest rat`. Each turn first shows a result line for every roll the engine made (hit or miss, damage, hit points), then the narration. Commands starting with `/` are for you, not the Dungeon Master (the game reminds you under the opening): `/help`, `/status`, `/inventory`, `/quests`, `/rules` and `/glossary` show information without using a turn, and `/quit`, Ctrl+C or end of input ends the session. The sixteen scenarios are in `scenarios/`; any seed works, but each `(scenario, seed)` can be played once per log folder.
+The title is labelled **Narrated by AI**. Type what your character does in plain English, for example `I draw my sword and attack the nearest rat`. Each turn first shows a result line for every outcome the engine resolved, then the narration. The game starts in beginner mode, which says what happened in plain words ("You hit giant rat 2 with your short sword. Giant rat 2 is wounded.") with no dice numbers; `--mode veteran` shows the rolls, AC, DC and hit points ("Lyra -> giant rat (short sword): 17 vs AC 12, hit, 7 damage; giant rat 4/11 HP"). Both modes play and log the same game. Commands starting with `/` are for you, not the Dungeon Master (the game reminds you under the opening): `/help`, `/status`, `/inventory`, `/quests`, `/rules` and `/glossary` show information without using a turn, and `/quit`, Ctrl+C or end of input ends the session. The sixteen scenarios are in `scenarios/`; any seed works, but each `(scenario, seed)` can be played once per log folder.
 
 ### Sponsor User sessions
 
@@ -91,7 +91,9 @@ No test calls the model or needs Ollama running; orchestration tests use a recor
 | Test file | What it checks |
 |---|---|
 | `tests/test_boundaries.py` | Package import boundaries from `docs/conventions.md`, and that only `adm/engine/dice.py` imports `random` |
-| `tests/play/test_commands.py` | Each slash command of `adm/play/commands.py` shows what the state holds (the player's own items, quests, health and the fight's turn order, with shared names numbered), ignores case and arguments, names an unknown command, and leaves the state hash unchanged |
+| `tests/play/test_commands.py` | Each slash command of `adm/play/commands.py` shows what the state holds (the player's own items, quests, health and the fight's turn order, with shared names numbered), ignores case and arguments, names an unknown command, and leaves the state hash unchanged; in beginner mode no command shows dice notation or AC, DC or HP |
+| `tests/play/test_results.py` | Every tool has a veteran result line (rolls, AC, DC) and a beginner one in plain words with no jargon; lines follow the order of the turn, call the player "you" and number shared names; a failed turn has no player line |
+| `tests/play/test_vocabulary.py` | The beginner vocabulary is #255's table, and the jargon pattern finds dice notation, modifiers and AC, DC, HP but not plain words |
 | `tests/test_state_schema.py` | `schemas/state.schema.json` accepts the examples in `schemas/examples/` and rejects states that break CLAUDE.md §4–5 |
 | `tests/test_identifiers.py` | Id patterns in `schemas/state.schema.json` follow `docs/identifiers.md`, and every file in `scenarios/` is named after its id and stays in its own namespace |
 | `tests/test_tool_contract.py` | `schemas/tools.schema.json` accepts the example calls and results, rejects ones that break CLAUDE.md §6, and matches the §6.1 and §6.3 tables and the matrix in `docs/tool_contract.md` |
