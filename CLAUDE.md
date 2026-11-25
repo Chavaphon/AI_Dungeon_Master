@@ -211,6 +211,7 @@ adm/
     vocabulary.py     # play modes and the beginner vocabulary, shared by every wp-13 screen
     hints.py          # beginner action hints: 2-4 things to type, each checked by the validator
     guide.py          # the how-to-play guide: HOW_TO_PLAY.md for `cli guide`, the pointer /help shows
+    briefing.py       # the scenario briefing before play: who you are, what you carry, quests, people, places
   cli.py
 config/
   model.json
@@ -1163,6 +1164,10 @@ Added at WBS 13.7 (reasons in `docs/decisions.md`):
 Added at WBS 13.3 (reasons in `docs/decisions.md`):
 
 78. `HOW_TO_PLAY.md` at the repository root is the guide for players new to role-playing games: #256's eight topics in its order, in the beginner vocabulary with no dice notation, modifiers or AC, DC and HP, "inspired by" and never 5e. `python -m adm.cli guide` prints it with `rich` and needs no model; `/help` is its short version, the same in both modes, and points to it (`adm/play/guide.py`).
+
+Added at WBS 13.4 (reasons in `docs/decisions.md`):
+
+79. Before the first input, `play` shows a briefing in `rich` panels, in both modes: the title with its AI label and the opening narration, then who the player is (name, health, spells and charges left), what they carry (each item of their own inventory, a weapon "use it to attack", anything else "an item you can use"), their quests, the NPCs of `npc_relationships` and their stance, and the scenario's `locations`; veteran mode adds HP, armour class, ability scores and weapon damage dice. It is built from a copy of the starting state and the scenario's own fields, never names a combatant of any `encounters` entry other than the player or an item only such combatants hold, and waits for Enter; what is typed there is not an input. No model call, no audit record, no schema change (`adm/play/briefing.py`).
 
 ## 16. Open questions for the team
 
