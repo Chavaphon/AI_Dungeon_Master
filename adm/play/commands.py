@@ -8,7 +8,7 @@ count toward an encounter's `before_input` (CLAUDE.md section 15, items 36 and
 default) every command uses the beginner vocabulary and shows no dice notation
 or AC, DC or HP; veteran mode shows the numbers.
 
-    /help       what you can type, and the commands
+    /help       what you can type, and the commands; points to HOW_TO_PLAY.md
     /status     your health, spells and the fight in progress
     /inventory  what you carry
     /quests     your quests and how far along they are
@@ -29,6 +29,7 @@ from rich.text import Text
 
 from adm.engine.combat import hp_band
 from adm.engine.state import Combatant, GameState
+from adm.play.guide import POINTER
 from adm.play.vocabulary import BAND_WORDS, QUEST_WORDS, TERMS, Mode
 
 UNKNOWN = "Unknown command. Type /help for the list."
@@ -96,15 +97,22 @@ def _health(c: Combatant, mode: Mode) -> str:
 
 
 def _help(state: GameState, mode: Mode) -> Panel:
+    # The short version of HOW_TO_PLAY.md (WBS 13.3), the same in both modes.
     lines = [
-        "Type what your character does in plain English, one action at a time,",
-        'for example "I look around the room" or "I attack the rat with my sword".',
+        "Type what your character does in plain English, one action at a time:",
+        '  "I look around"   "I attack the rat with my sword"   "I talk to the guard"',
+        "",
+        "In a fight everyone takes turns. On yours: attack, cast a spell or dodge.",
+        "Looking around, sneaking, using items and talking do not use your turn.",
+        "With no health left you are knocked out, not dead. Cure Wounds heals.",
+        "Asked to rephrase? Try one action at a time, and name who or what.",
         "",
         "Commands (they do not use your turn and the Dungeon Master never sees them):",
     ]
     width = max(len(name) for name in COMMANDS)
     lines += [f"  {name:<{width}}  {c.summary}" for name, c in COMMANDS.items()]
     lines.append(f"  {'/quit':<{width}}  end the session")
+    lines += ["", POINTER]
     return _panel("Help", lines)
 
 
