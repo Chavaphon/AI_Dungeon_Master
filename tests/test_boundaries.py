@@ -76,3 +76,16 @@ def test_random_only_imported_by_dice_and_bootstrap_modules() -> None:
         or _matches(module, "numpy.random")
     ]
     assert not violations, "\n".join(violations)
+
+
+def test_only_the_play_picker_draws_seeds_from_the_system() -> None:
+    """The random seed of `play` (WBS 13.6) is drawn in the CLI layer, never in
+    the engine or orchestration; the dice stay with `DiceRoller` (invariant 3)."""
+    picker = ADM / "play" / "picker.py"
+    violations = [
+        f"{path.relative_to(ADM.parent)} imports {module}"
+        for path in _source_files()
+        for module in _imported_modules(path)
+        if _matches(module, "secrets") and path != picker
+    ]
+    assert not violations, "\n".join(violations)

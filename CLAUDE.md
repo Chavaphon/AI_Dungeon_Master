@@ -59,6 +59,7 @@ pytest -q
 ruff check . && ruff format --check .
 
 # play a session interactively (beginner mode; add --mode veteran for rolls, AC and DC)
+python -m adm.cli play                     # pick from a menu; a random seed is drawn and printed
 python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
 
 # run one scripted scenario under one condition
@@ -207,6 +208,7 @@ adm/
     results.py        # result lines (item 42), veteran and beginner wording
     vocabulary.py     # play modes and the beginner vocabulary, shared by every wp-13 screen
     hints.py          # beginner action hints: 2-4 things to type, each checked by the validator
+    picker.py         # scenario menu (tutorial first) and the random play seed, drawn outside engine/orchestration
   cli.py
 config/
   model.json
@@ -1155,6 +1157,10 @@ Added at WBS 13.2 (reasons in `docs/decisions.md`):
 Added at WBS 13.7 (reasons in `docs/decisions.md`):
 
 76. In beginner mode, `play` shows "You could try:" with two to four hints before the first input and after each turn, worked out from a copy of the state in a fixed order: in a fight on the player's turn, attack, Fire Bolt, Cure Wounds and dodge; outside one, look around, talk to a known NPC and use an item. Each hint carries the tool call it stands for and is shown only if the validator accepts that call at that moment; the calls are never executed, logged or sent to the model, and hints never touch the dice (`adm/play/hints.py`).
+
+Added at WBS 13.6 (reasons in `docs/decisions.md`):
+
+77. `play` with no `--scenario` shows a numbered menu of `scenarios/` (name, short or long, scripted turns), a `tut` tutorial first and marked "Start here", then short, then long, each in id order. With no `--seed`, a six-digit seed (100000–999999, never an experiment seed) is drawn in `adm/play/picker.py` with `secrets`, never `random` and never in `engine/` or `orchestration/`, and is printed with the command that replays the game at the start and the end of the session. The session's dice are still the one `DiceRoller` seeded with it (invariant 3). `--scenario` and `--seed` skip the menu and the draw.
 
 ## 16. Open questions for the team
 
