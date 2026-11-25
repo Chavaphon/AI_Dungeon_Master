@@ -31,6 +31,9 @@ encounter's `before_input`. `/quit` (or `/exit`), end of input or Ctrl+C ends
 the session. Every turn is in
 `runs/D/<scenario_id>/<seed>.jsonl` (CLAUDE.md section 11) as soon as it is shown.
 
+`guide` prints `HOW_TO_PLAY.md`, the guide for players new to role-playing
+games (`adm/play/guide.py`, WBS 13.3); `/help` in `play` is its short version.
+
 `run` plays the scenario's scripted inputs unattended (`session.run_script`),
 printing one line per input. It is the one entry point for every condition
 (WBS 7.4): `HARNESSES` maps a condition to the `HarnessStart` that builds its
@@ -89,6 +92,7 @@ from adm.orchestration.session import (
     run_script,
 )
 from adm.play.commands import HINT, is_command, run_command
+from adm.play.guide import guide as how_to_play
 from adm.play.hints import hint_block
 from adm.play.results import result_lines
 from adm.play.vocabulary import Mode
@@ -195,6 +199,12 @@ def play(
         console.print(HINT, style="dim", markup=False)
         assert isinstance(session, Session), "play is always condition D"
         _loop(console, session, mode)
+
+
+@app.command()
+def guide() -> None:
+    """Show the how-to-play guide for players new to role-playing games."""
+    Console(highlight=False).print(how_to_play())
 
 
 @app.command()

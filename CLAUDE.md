@@ -61,6 +61,9 @@ ruff check . && ruff format --check .
 # play a session interactively (beginner mode; add --mode veteran for rolls, AC and DC)
 python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
 
+# the how-to-play guide for players new to role-playing games (HOW_TO_PLAY.md)
+python -m adm.cli guide
+
 # run one scripted scenario under one condition
 python -m adm.cli run --scenario scenarios/s01_cellar.json --condition D --seed 12345
 
@@ -207,6 +210,7 @@ adm/
     results.py        # result lines (item 42), veteran and beginner wording
     vocabulary.py     # play modes and the beginner vocabulary, shared by every wp-13 screen
     hints.py          # beginner action hints: 2-4 things to type, each checked by the validator
+    guide.py          # the how-to-play guide: HOW_TO_PLAY.md for `cli guide`, the pointer /help shows
   cli.py
 config/
   model.json
@@ -1155,6 +1159,10 @@ Added at WBS 13.2 (reasons in `docs/decisions.md`):
 Added at WBS 13.7 (reasons in `docs/decisions.md`):
 
 76. In beginner mode, `play` shows "You could try:" with two to four hints before the first input and after each turn, worked out from a copy of the state in a fixed order: in a fight on the player's turn, attack, Fire Bolt, Cure Wounds and dodge; outside one, look around, talk to a known NPC and use an item. Each hint carries the tool call it stands for and is shown only if the validator accepts that call at that moment; the calls are never executed, logged or sent to the model, and hints never touch the dice (`adm/play/hints.py`).
+
+Added at WBS 13.3 (reasons in `docs/decisions.md`):
+
+78. `HOW_TO_PLAY.md` at the repository root is the guide for players new to role-playing games: #256's eight topics in its order, in the beginner vocabulary with no dice notation, modifiers or AC, DC and HP, "inspired by" and never 5e. `python -m adm.cli guide` prints it with `rich` and needs no model; `/help` is its short version, the same in both modes, and points to it (`adm/play/guide.py`).
 
 ## 16. Open questions for the team
 
