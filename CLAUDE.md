@@ -58,7 +58,8 @@ pip install -e ".[dev]"
 pytest -q
 ruff check . && ruff format --check .
 
-# play a session interactively (beginner mode; add --mode veteran for rolls, AC and DC)
+# play a session interactively (beginner mode; add --mode veteran for rolls, AC and DC,
+# --no-color for plain output with no colour or box drawing)
 python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
 
 # the how-to-play guide for players new to role-playing games (HOW_TO_PLAY.md)
@@ -212,6 +213,8 @@ adm/
     hints.py          # beginner action hints: 2-4 things to type, each checked by the validator
     guide.py          # the how-to-play guide: HOW_TO_PLAY.md for `cli guide`, the pointer /help shows
     briefing.py       # the scenario briefing before play: who you are, what you carry, quests, people, places
+    status.py         # the status panel after each turn: health word and bar, charges, dodging, the fight
+    screen.py         # how play draws: narration, result and system styles, spinner, --no-color
   cli.py
 config/
   model.json
@@ -1168,6 +1171,10 @@ Added at WBS 13.3 (reasons in `docs/decisions.md`):
 Added at WBS 13.4 (reasons in `docs/decisions.md`):
 
 79. Before the first input, `play` shows a briefing in `rich` panels, in both modes: the title with its AI label and the opening narration, then who the player is (name, health, spells and charges left), what they carry (each item of their own inventory, a weapon "use it to attack", anything else "an item you can use"), their quests, the NPCs of `npc_relationships` and their stance, and the scenario's `locations`; veteran mode adds HP, armour class, ability scores and weapon damage dice. It is built from a copy of the starting state and the scenario's own fields, never names a combatant of any `encounters` entry other than the player or an item only such combatants hold, and waits for Enter; what is typed there is not an input. No model call, no audit record, no schema change (`adm/play/briefing.py`).
+
+Added at WBS 13.5 (reasons in `docs/decisions.md`):
+
+80. After each turn, `play` shows a status panel read from a copy of the state: the player's health as a band word and a 10-cell bar (the numbers in veteran mode), spell charges, dodging, and in a fight the round, whose turn it is and the turn order (`adm/play/status.py`). Everything `play` prints goes through a `Screen` (`adm/play/screen.py`): narration plain, result lines cyan, system messages dimmed, and a spinner while the model replies. `--no-color` makes a plain screen: no colour system, so no ANSI escape codes, every panel flattened to its title line and text, no health bar, and the spinner one printed line. The panel and the screen are display only: the log and the model calls are the same with the panel on or off and with or without `--no-color`. `rich` and `typer` only.
 
 ## 16. Open questions for the team
 
