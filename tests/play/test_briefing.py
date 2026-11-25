@@ -73,7 +73,7 @@ def test_an_npc_who_fights_later_is_not_among_the_people_you_know() -> None:
         update={"encounters": [Encounter(before_input=3, combatant_ids=[*fights, "npc_keeper"])]}
     )
     people = sections(scenario, initial_state(S01, SEED), Mode.BEGINNER)[4]
-    assert people == Section("People you know", ("You do not know anyone here yet.",))
+    assert people == Section("People you know", ("Nobody yet.",))
     assert "npc_keeper" in hidden_combatants(scenario)
     assert "pc_lyra" not in hidden_combatants(scenario), "the player is never hidden"
 
@@ -116,40 +116,38 @@ def test_the_s01_beginner_briefing() -> None:
         Section(
             "You are...",
             (
-                "You are Lyra, and you feel healthy.",
-                "",
-                "Your spells:",
-                "• Fire Bolt: a fire attack you can always cast",
-                "• Cure Wounds: heals, 2 spell charges left",
+                "Name: Lyra",
+                "Health: healthy",
+                "Spells: Fire Bolt (a spell you can always cast), "
+                "Cure Wounds (2 spell charges left)",
             ),
         ),
         Section(
             "You carry...",
-            ("• Short sword: a weapon, use it to attack", "• Torch (2): an item you can use"),
+            ("Short sword: a weapon, use it to attack", "Torch x2: an item you can use"),
         ),
-        Section("Your quests", ("• The Missing Ledger: not started",)),
-        Section("People you know", ("• The Keeper: unfriendly towards you",)),
-        Section("Places", ("• The cellar", "• The cellar stairs", "• The barrels")),
+        Section("Your quests", ("The Missing Ledger: not started",)),
+        Section("People you know", ("The Keeper: unfriendly towards you",)),
+        Section("Places", ("The cellar", "The cellar stairs", "The barrels")),
     ]
 
 
 def test_the_s01_veteran_briefing_adds_the_numbers() -> None:
     you, carry = sections(S01, initial_state(S01, SEED), Mode.VETERAN)[1:3]
     assert you.lines == (
-        "You are Lyra: 20/20 HP (healthy), armour class 14.",
+        "Name: Lyra",
+        "Health: 20/20 HP (healthy)",
+        "Armour class: 14",
         "Ability scores: str 12, dex 16, con 14, int 10, wis 13, cha 11",
-        "",
-        "Your spells:",
-        "• Fire Bolt: cantrip, always ready",
-        "• Cure Wounds: heals, 2 spell slots left",
+        "Spells: Fire Bolt (cantrip), Cure Wounds (2 spell slots left)",
     )
     assert carry.lines == (
-        "• Short sword: a weapon, use it to attack (damage 1d6+3)",
-        "• Torch (2): an item you can use",
+        "Short sword: a weapon, use it to attack (damage 1d6+3)",
+        "Torch x2: an item you can use",
     )
 
 
 def test_a_non_caster_is_told_they_cast_no_spells() -> None:
     scenario = load_scenario(ROOT / "scenarios" / "s02_toll_bridge.json")
     you = sections(scenario, initial_state(scenario, SEED), Mode.BEGINNER)[1]
-    assert you.lines[-1] == "You do not know any spells."
+    assert you.lines[-1] == "Spells: none, you cannot cast spells"

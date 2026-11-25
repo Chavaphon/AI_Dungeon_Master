@@ -148,7 +148,7 @@ def test_veteran_mode_briefs_with_the_numbers(
 ) -> None:
     code, output = _play(monkeypatch, tmp_path, FakeClient(), "/quit\n", "--mode", "veteran")
     assert code == 0, output
-    assert "armour class 14" in output and "(damage 1d6+3)" in output
+    assert "Armour class: 14" in output and "(damage 1d6+3)" in output
 
 
 # --- slash commands (WBS 13.1) ---------------------------------------------------
