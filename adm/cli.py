@@ -7,7 +7,11 @@ no game logic.
     python -m adm.cli smoke --manifest experiments/smoke_grid.json
     python -m adm.cli batch --manifest experiments/main_grid.json
 
-`play` is an interactive condition D session. The model is checked against
+`play` is an interactive condition D session. With no `--scenario` it first
+shows a numbered menu of the scenarios, the tutorial first; with no `--seed` it
+draws one from the operating system, never from `random`, and prints it with
+the command that replays the game, at the start and at the end
+(`adm/play/picker.py`, WBS 13.6). The model is checked against
 `config/model.json` and freshly loaded first (docs/model_selection.md section 4).
 The player sees the scenario's title, labelled "Narrated by AI", its opening
 narration and a line pointing to `/help`, then types one input per turn. Each
@@ -91,6 +95,7 @@ from adm.orchestration.session import (
     new_run_log,
     run_script,
 )
+from adm.play import picker
 from adm.play.commands import HINT, is_command, run_command
 from adm.play.guide import guide as how_to_play
 from adm.play.hints import hint_block
@@ -138,6 +143,23 @@ ScenarioOption = Annotated[
     Path, typer.Option(exists=True, dir_okay=False, help="Scenario JSON file.")
 ]
 SeedOption = Annotated[int, typer.Option(help="Run seed: fixes the dice and the model's sampling.")]
+PickedScenarioOption = Annotated[
+    Path | None,
+    typer.Option(
+        "--scenario",
+        exists=True,
+        dir_okay=False,
+        help="Scenario JSON file. Leave out to choose from a menu.",
+    ),
+]
+PickedSeedOption = Annotated[
+    int | None,
+    typer.Option(
+        "--seed",
+        help="Run seed: fixes the dice and the model's sampling. "
+        "Leave out to draw one, which is printed so the game can be replayed.",
+    ),
+]
 RunsOption = Annotated[Path, typer.Option(help="Directory the audit log is written under.")]
 ModeOption = Annotated[
     Mode,
@@ -184,21 +206,48 @@ def _exits_on_refusal(console: Console) -> Iterator[None]:
 
 @app.command()
 def play(
-    scenario: ScenarioOption,
-    seed: SeedOption,
+    scenario: PickedScenarioOption = None,
+    seed: PickedSeedOption = None,
     runs: RunsOption = RUNS,
     mode: ModeOption = Mode.BEGINNER,
 ) -> None:
-    """Play a scenario interactively under condition D."""
+    """Play a scenario interactively under condition D. With no --scenario, choose
+    one from a menu; with no --seed, a seed is drawn and printed so the game can
+    be played again."""
     console = Console(highlight=False)
+    if scenario is None:
+        scenario = _pick(console)
+    if seed is None:
+        seed = picker.draw_seed()
+    replay = f"Seed {seed}. To play this game again: {picker.replay_command(scenario, seed)}"
     loaded = load_scenario(scenario)
     with _exits_on_refusal(console), open_session(console, loaded, seed, runs, D) as session:
         console.print(f"[bold]{escape(loaded.display_name)}[/bold]  [dim]{AI_LABEL}[/dim]\n")
+        console.print(replay, style="dim", markup=False)
+        console.print()
         console.print(loaded.opening_narration, markup=False)
         console.print()
         console.print(HINT, style="dim", markup=False)
         assert isinstance(session, Session), "play is always condition D"
         _loop(console, session, mode)
+        console.print(replay, style="dim", markup=False)
+
+
+def _pick(console: Console) -> Path:
+    """The scenario the player picks from the menu. End of input or Ctrl+C
+    leaves before any model loads."""
+    rows = picker.choices()
+    console.print(picker.menu(rows))
+    try:
+        while True:
+            index = picker.parse_choice(console.input(f"\n{picker.CHOOSE} {PROMPT}"), len(rows))
+            if index is not None:
+                console.print()
+                return rows[index].path
+            console.print(picker.INVALID, markup=False)
+    except (EOFError, KeyboardInterrupt):
+        console.print()
+        raise typer.Exit(0) from None
 
 
 @app.command()

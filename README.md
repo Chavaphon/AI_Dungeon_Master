@@ -11,8 +11,10 @@ ollama pull llama3.1:8b
 python -m venv .venv
 source .venv/bin/activate        # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -e .
-python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
+python -m adm.cli play
 ```
+
+With no options, `play` shows a numbered menu of the scenarios (name, short or long, number of turns) and draws a random seed, which it prints at the start and the end with the command that replays the same game: `python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 123456`. Giving `--scenario` and `--seed` skips the menu and the draw.
 
 New to role-playing games? Read [HOW_TO_PLAY.md](HOW_TO_PLAY.md) first, or print it with `python -m adm.cli guide`.
 
@@ -95,6 +97,7 @@ No test calls the model or needs Ollama running; orchestration tests use a recor
 | `tests/test_boundaries.py` | Package import boundaries from `docs/conventions.md`, and that only `adm/engine/dice.py` imports `random` |
 | `tests/play/test_commands.py` | Each slash command of `adm/play/commands.py` shows what the state holds (the player's own items, quests, health and the fight's turn order, with shared names numbered), ignores case and arguments, names an unknown command, and leaves the state hash unchanged; in beginner mode no command shows dice notation or AC, DC or HP |
 | `tests/play/test_hints.py` | Across every scripted session (16 scenarios, seeds 2001–2003), every beginner hint is a call the validator accepts in that state, there are 2 to 4 of them (none for a knocked-out player), they are plain words, fixed in order, leave the state unchanged and never roll a die |
+| `tests/play/test_picker.py` | The menu lists every scenario with its name, length and turns, the tutorial first and marked "Start here", then short, then long; a menu number names one row; a drawn seed is six digits and never an experiment seed |
 | `tests/play/test_guide.py` | `HOW_TO_PLAY.md` covers #256's eight topics in order, has 8 to 10 example phrases covering every kind of action, has no jargon, defines each game word in the first section that uses it, says "inspired by" and never 5e, quotes the game's request to rephrase and lists every command; `guide` prints it without a model, and `/help` is a short version that points to it |
 | `tests/play/test_results.py` | Every tool has a veteran result line (rolls, AC, DC) and a beginner one in plain words with no jargon; lines follow the order of the turn, call the player "you" and number shared names; a failed turn has no player line |
 | `tests/play/test_vocabulary.py` | The beginner vocabulary is #255's table, and the jargon pattern finds dice notation, modifiers and AC, DC, HP but not plain words |

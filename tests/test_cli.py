@@ -13,6 +13,7 @@ Run: pytest tests/test_cli.py -v
 """
 
 import json
+import re
 from collections.abc import Sequence
 from contextlib import nullcontext
 from dataclasses import dataclass, replace
@@ -28,6 +29,7 @@ from adm.engine.scenario import Scenario, ScriptedInput, initial_state, load_sce
 from adm.engine.state import GameState
 from adm.orchestration.client import Message, ModelReply, ModelUnavailable, Phase
 from adm.orchestration.loop import REPHRASE
+from adm.play import picker
 from adm.play.commands import HINT, UNKNOWN
 from adm.play.hints import TITLE
 from adm.play.results import result_lines
@@ -602,3 +604,81 @@ def test_batch_stops_when_the_server_is_down(
     assert result.exit_code == 1, output
     assert "Stopped: ModelUnavailable: connection refused" in output
     assert "0/1 runs complete" in output
+
+
+# WBS 13.6 (#254): the scenario picker and the random seed.
+
+
+def _play_without(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, client: FakeClient, keys: str, *extra: str
+) -> tuple[int, str]:
+    """`play` with only the options in `extra`: no --scenario or --seed unless given."""
+    monkeypatch.setattr(cli, "connect", lambda config: nullcontext(client))
+    result = CliRunner().invoke(cli.app, ["play", "--runs", str(tmp_path), *extra], input=keys)
+    return result.exit_code, " ".join(result.output.split())
+
+
+def _menu_number(scenario_id: str) -> str:
+    ids = [row.scenario_id for row in picker.choices()]
+    return str(ids.index(scenario_id) + 1)
+
+
+def test_play_with_no_scenario_opens_the_menu(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    keys = f"seventeen\n0\n{_menu_number(SCENARIO.scenario_id)}\nI look around\n"
+    code, output = _play_without(monkeypatch, tmp_path, FakeClient(LOOK), keys, "--seed", str(SEED))
+
+    assert code == 0, output
+    assert "Choose a scenario" in output
+    assert output.count(picker.INVALID) == 2, "a word and an out-of-range number are refused"
+    assert SCENARIO.opening_narration in output
+    assert len(_records(tmp_path)) == 1, "the picked scenario is played at the given seed"
+
+
+def test_leaving_the_menu_loads_no_model(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(cli, "connect", _never_connect)
+    result = CliRunner().invoke(cli.app, ["play", "--runs", str(tmp_path)], input="")
+    assert result.exit_code == 0, result.output
+    assert not list(tmp_path.rglob("*.jsonl"))
+
+
+def test_a_given_scenario_and_seed_skip_the_menu(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    code, output = _play(monkeypatch, tmp_path, FakeClient(LOOK), "I look around\n")
+    assert code == 0, output
+    assert "Choose a scenario" not in output
+    replay = f"Seed {SEED}. To play this game again: python -m adm.cli play --scenario"
+    assert output.count(replay) == 2, "the seed is shown at the start and the end"
+
+
+def test_a_drawn_seed_is_printed_and_replays_the_session(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Acceptance of #254: the printed seed and the same inputs give the same
+    state hashes, and the same log but for timings."""
+    keys = "I look around the cellar\nI search the barrels\nI look again\n"
+    toolcalls = (LOOK, LOOK, LOOK)
+    scenario = ("--scenario", str(SCENARIO_PATH))
+    code, output = _play_without(
+        monkeypatch, tmp_path / "first", FakeClient(*toolcalls), keys, *scenario
+    )
+    assert code == 0, output
+    found = re.findall(r"Seed (\d+)\. To play this game again: .*? --seed (\d+)", output)
+    assert len(found) == 2 and all(a == b == found[0][0] for a, b in found), output
+    seed = int(found[0][0])
+    assert picker.SEED_MIN <= seed <= picker.SEED_MAX
+
+    args = (*scenario, "--seed", str(seed))
+    code, again = _play_without(
+        monkeypatch, tmp_path / "again", FakeClient(*toolcalls), keys, *args
+    )
+    assert code == 0, again
+
+    first = read_log(log_path(tmp_path / "first", "D", SCENARIO.scenario_id, seed))
+    second = read_log(log_path(tmp_path / "again", "D", SCENARIO.scenario_id, seed))
+    assert len(first) == 3 and first[0]["seed"] == seed
+    hashes = [(r["state_before_hash"], r["state_after_hash"]) for r in first]
+    assert hashes == [(r["state_before_hash"], r["state_after_hash"]) for r in second]
+    assert log_differences(first, second) == []
