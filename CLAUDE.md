@@ -62,6 +62,9 @@ ruff check . && ruff format --check .
 python -m adm.cli play                     # pick from a menu; a random seed is drawn and printed
 python -m adm.cli play --scenario scenarios/s01_cellar.json --seed 12345
 
+# the how-to-play guide for players new to role-playing games (HOW_TO_PLAY.md)
+python -m adm.cli guide
+
 # run one scripted scenario under one condition
 python -m adm.cli run --scenario scenarios/s01_cellar.json --condition D --seed 12345
 
@@ -209,6 +212,7 @@ adm/
     vocabulary.py     # play modes and the beginner vocabulary, shared by every wp-13 screen
     hints.py          # beginner action hints: 2-4 things to type, each checked by the validator
     picker.py         # scenario menu (tutorial first) and the random play seed, drawn outside engine/orchestration
+    guide.py          # the how-to-play guide: HOW_TO_PLAY.md for `cli guide`, the pointer /help shows
   cli.py
 config/
   model.json
@@ -1161,6 +1165,10 @@ Added at WBS 13.7 (reasons in `docs/decisions.md`):
 Added at WBS 13.6 (reasons in `docs/decisions.md`):
 
 77. `play` with no `--scenario` shows a numbered menu of `scenarios/` (name, short or long, scripted turns), a `tut` tutorial first and marked "Start here", then short, then long, each in id order. With no `--seed`, a six-digit seed (100000–999999, never an experiment seed) is drawn in `adm/play/picker.py` with `secrets`, never `random` and never in `engine/` or `orchestration/`, and is printed with the command that replays the game at the start and the end of the session. The session's dice are still the one `DiceRoller` seeded with it (invariant 3). `--scenario` and `--seed` skip the menu and the draw.
+
+Added at WBS 13.3 (reasons in `docs/decisions.md`):
+
+78. `HOW_TO_PLAY.md` at the repository root is the guide for players new to role-playing games: #256's eight topics in its order, in the beginner vocabulary with no dice notation, modifiers or AC, DC and HP, "inspired by" and never 5e. `python -m adm.cli guide` prints it with `rich` and needs no model; `/help` is its short version, the same in both modes, and points to it (`adm/play/guide.py`).
 
 ## 16. Open questions for the team
 
