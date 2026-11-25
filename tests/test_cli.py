@@ -5,7 +5,8 @@ one input per turn, shows the narration or the request to rephrase, and stops on
 entry point for every condition (the done-when of #78). `play` is in beginner
 mode unless `--mode veteran` is given, and both modes log the same session
 (WBS 13.2, #255). Beginner mode shows action hints that leave the session
-unchanged (WBS 13.7, #257).
+unchanged (WBS 13.7, #257). The scenario briefing comes first, waits for
+Enter and makes no model call and no audit record (WBS 13.4, #252).
 
 No test calls a model: `connect` is replaced by a fake client.
 
@@ -28,6 +29,7 @@ from adm.engine.scenario import Scenario, ScriptedInput, initial_state, load_sce
 from adm.engine.state import GameState
 from adm.orchestration.client import Message, ModelReply, ModelUnavailable, Phase
 from adm.orchestration.loop import REPHRASE
+from adm.play.briefing import AI_LABEL, BEGIN
 from adm.play.commands import HINT, UNKNOWN
 from adm.play.hints import TITLE
 from adm.play.results import result_lines
@@ -61,12 +63,15 @@ def _play(
     client: FakeClient,
     keys: str,
     *extra: str,
+    begin: str = "\n",
 ) -> tuple[int, str]:
+    """Play `keys` after `begin`, the Enter that starts the session after the
+    briefing."""
     monkeypatch.setattr(cli, "connect", lambda config: nullcontext(client))
     args = ["play", "--scenario", str(SCENARIO_PATH), "--seed", str(SEED), "--runs", str(tmp_path)]
-    result = CliRunner().invoke(cli.app, [*args, *extra], input=keys)
-    # Rich wraps at the terminal width; compare the words.
-    return result.exit_code, " ".join(result.output.split())
+    result = CliRunner().invoke(cli.app, [*args, *extra], input=begin + keys)
+    # Rich wraps at the terminal width and draws panel borders; compare the words.
+    return result.exit_code, " ".join(result.output.replace("│", " ").split())
 
 
 def _records(tmp_path: Path) -> list[dict]:
@@ -84,7 +89,7 @@ def test_a_session_is_played_end_to_end(monkeypatch: pytest.MonkeyPatch, tmp_pat
     code, output = _play(monkeypatch, tmp_path, client, keys)
 
     assert code == 0, output
-    assert f"{SCENARIO.display_name} {cli.AI_LABEL}" in output, "the title carries the AI label"
+    assert f"{SCENARIO.display_name} {AI_LABEL}" in output, "the title carries the AI label"
     assert SCENARIO.opening_narration in output
     assert output.index(SCENARIO.opening_narration) < output.index(HINT), "/help is pointed to"
     assert NARRATION in output, "narration is printed as written, brackets included"
@@ -103,6 +108,47 @@ def test_end_of_input_ends_the_session(monkeypatch: pytest.MonkeyPatch, tmp_path
     code, output = _play(monkeypatch, tmp_path, FakeClient(LOOK), "I look around\n")
     assert code == 0, output
     assert len(_records(tmp_path)) == 1
+
+
+# --- the briefing (WBS 13.4) -------------------------------------------------------
+
+
+def test_the_briefing_comes_first_and_waits_for_enter(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The acceptance of #252: the briefing makes no model call and no audit
+    record, and what is typed at its prompt is not an input."""
+    client = RecordingClient(LOOK)
+    code, output = _play(monkeypatch, tmp_path, client, "/quit\n", begin="I attack the rats\n")
+    assert code == 0, output
+
+    assert client.calls == [], "no model call"
+    assert not log_path(tmp_path, "D", SCENARIO.scenario_id, SEED).exists(), "no audit record"
+    for shown in ("You are...", "You carry...", "Your quests", "People you know", "Places"):
+        assert shown in output
+    assert "The Keeper: unfriendly towards you" in output
+    assert "giant rat" not in output, "the rats are not named before the fight"
+    assert output.index(SCENARIO.opening_narration) < output.index("You are...")
+    assert output.index("Places") < output.index(BEGIN.strip()) < output.index(HINT)
+    assert "0 turns (0 failed)" in output
+
+
+def test_end_of_input_at_the_briefing_ends_the_session(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    client = RecordingClient(LOOK)
+    code, output = _play(monkeypatch, tmp_path, client, "", begin="")
+    assert code == 0, output
+    assert client.calls == [] and HINT not in output
+    assert "0 turns (0 failed)" in output
+
+
+def test_veteran_mode_briefs_with_the_numbers(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    code, output = _play(monkeypatch, tmp_path, FakeClient(), "/quit\n", "--mode", "veteran")
+    assert code == 0, output
+    assert "Armour class: 14" in output and "(damage 1d6+3)" in output
 
 
 # --- slash commands (WBS 13.1) ---------------------------------------------------
@@ -257,7 +303,7 @@ def test_an_unknown_mode_is_refused(monkeypatch: pytest.MonkeyPatch, tmp_path: P
 def test_ctrl_c_at_the_prompt_ends_the_session_cleanly(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    typed = iter(["I look around the cellar"])
+    typed = iter(["", "I look around the cellar"])
 
     def keyboard(self: object, prompt: str = "", **kwargs: object) -> str:
         try:

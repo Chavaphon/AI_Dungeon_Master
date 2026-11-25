@@ -9,8 +9,11 @@ no game logic.
 
 `play` is an interactive condition D session. The model is checked against
 `config/model.json` and freshly loaded first (docs/model_selection.md section 4).
-The player sees the scenario's title, labelled "Narrated by AI", its opening
-narration and a line pointing to `/help`, then types one input per turn. Each
+The player first sees the briefing (`adm/play/briefing.py`, WBS 13.4): the
+scenario's title, labelled "Narrated by AI", and its opening narration, then who
+they are, what they carry, their quests, the people they know and the places,
+never a combatant of an encounter. It waits for Enter, then shows a line
+pointing to `/help`, and the player types one input per turn. Each
 turn shows one result line per mechanical outcome (the player's executed call
 and any NPC actions: dice, hit or miss, damage, hit points), then the
 narration; a failed turn shows the request to rephrase. The result lines are
@@ -91,6 +94,7 @@ from adm.orchestration.session import (
     new_run_log,
     run_script,
 )
+from adm.play.briefing import BEGIN, briefing
 from adm.play.commands import HINT, is_command, run_command
 from adm.play.guide import guide as how_to_play
 from adm.play.hints import hint_block
@@ -108,7 +112,6 @@ HARNESSES: dict[str, HarnessStart] = {
 }
 D = "D"
 
-AI_LABEL = "Narrated by AI"
 PROMPT = "> "
 RUNS = Path("runs")
 SMOKE_RESULTS = Path("results/bench/smoke")
@@ -193,10 +196,8 @@ def play(
     console = Console(highlight=False)
     loaded = load_scenario(scenario)
     with _exits_on_refusal(console), open_session(console, loaded, seed, runs, D) as session:
-        console.print(f"[bold]{escape(loaded.display_name)}[/bold]  [dim]{AI_LABEL}[/dim]\n")
-        console.print(loaded.opening_narration, markup=False)
-        console.print()
-        console.print(HINT, style="dim", markup=False)
+        # A copy: display code never touches the game state (invariant 1).
+        console.print(briefing(loaded, session.state.model_copy(deep=True), mode))
         assert isinstance(session, Session), "play is always condition D"
         _loop(console, session, mode)
 
@@ -362,38 +363,54 @@ def _loop(console: Console, session: Session, mode: Mode) -> None:
     # only reaches display code, never the session (CLAUDE.md item 75).
     # Hints are shown when the state may have changed: at the start and after
     # each turn, not again after a command or a blank line.
-    fresh = True
+    # The briefing waits for Enter (WBS 13.4): whatever is typed there is not
+    # an input, and end of input there ends the session before any turn.
     try:
-        while True:
-            if fresh and mode is Mode.BEGINNER:
-                block = hint_block(session.state.model_copy(deep=True))
-                if block is not None:
-                    console.print(f"\n{block}", style="dim", markup=False)
-            fresh = False
-            try:
-                text = console.input(f"\n{PROMPT}").strip()
-            except EOFError:
-                break
-            if not text:
-                continue
-            if is_command(text):
-                # A copy: display code never touches the game state (invariant 1).
-                command = run_command(text, session.state.model_copy(deep=True), mode)
-                console.print(command.renderable)
-                if command.quit:
-                    break
-                continue
-            with console.status("The Dungeon Master is thinking..."):
-                turn = session.play(text)
-            console.print()
-            state = session.state.model_copy(deep=True)
-            for line in result_lines(turn.record, state, mode):
-                console.print(line, style="dim", markup=False)
-            console.print(turn.message, markup=False)
-            fresh = True
+        if _begins(console):
+            _turns(console, session, mode)
     except KeyboardInterrupt:
         pass
     _report(console, session)
+
+
+def _begins(console: Console) -> bool:
+    try:
+        console.input(f"\n{BEGIN}")
+    except EOFError:
+        return False
+    console.print(f"\n{HINT}", style="dim", markup=False)
+    return True
+
+
+def _turns(console: Console, session: Session, mode: Mode) -> None:
+    fresh = True
+    while True:
+        if fresh and mode is Mode.BEGINNER:
+            block = hint_block(session.state.model_copy(deep=True))
+            if block is not None:
+                console.print(f"\n{block}", style="dim", markup=False)
+        fresh = False
+        try:
+            text = console.input(f"\n{PROMPT}").strip()
+        except EOFError:
+            return
+        if not text:
+            continue
+        if is_command(text):
+            # A copy: display code never touches the game state (invariant 1).
+            command = run_command(text, session.state.model_copy(deep=True), mode)
+            console.print(command.renderable)
+            if command.quit:
+                return
+            continue
+        with console.status("The Dungeon Master is thinking..."):
+            turn = session.play(text)
+        console.print()
+        state = session.state.model_copy(deep=True)
+        for line in result_lines(turn.record, state, mode):
+            console.print(line, style="dim", markup=False)
+        console.print(turn.message, markup=False)
+        fresh = True
 
 
 def _report(console: Console, session: Harness) -> None:
