@@ -26,6 +26,13 @@ sent to the model, so both modes write the same log. Beginner mode also shows
 "You could try:" with two to four hints before the first input and after each
 turn (`adm/play/hints.py`, WBS 13.7), worked out from a copy of the state and
 checked against the validator, never the dice or the model.
+After each turn a status panel shows the player's health as a word and a bar,
+spell charges and dodging, and in a fight the round, whose turn it is and the
+turn order (`adm/play/status.py`, WBS 13.5). Everything is drawn through a
+`Screen` (`adm/play/screen.py`): narration, result lines and system messages
+are styled differently, and "The Dungeon Master is thinking..." spins while
+the model replies. `--no-color` draws with no colour and no box drawing, for
+screen readers and light terminals. Neither is logged or sent to the model.
 An input that starts with `/` is a slash command (`adm/play/commands.py`,
 WBS 13.1): `/help`, `/status`, `/inventory`, `/quests`, `/rules` and
 `/glossary` are answered here, from a copy of the state, before the turn loop,
@@ -99,6 +106,8 @@ from adm.play.commands import HINT, is_command, run_command
 from adm.play.guide import guide as how_to_play
 from adm.play.hints import hint_block
 from adm.play.results import result_lines
+from adm.play.screen import SYSTEM, Screen
+from adm.play.status import status_panel
 from adm.play.vocabulary import Mode
 
 # The audit log's conditions (schemas/audit.schema.json), and the harness of
@@ -149,6 +158,14 @@ ModeOption = Annotated[
         "Display only: the log and the model are the same in both."
     ),
 ]
+NoColorOption = Annotated[
+    bool,
+    typer.Option(
+        "--no-color",
+        help="Plain output with no colour or box drawing, for screen readers "
+        "and light terminals. Display only.",
+    ),
+]
 
 
 @contextmanager
@@ -159,15 +176,17 @@ def open_session(
     runs: Path,
     condition: str,
     wrap: Callable[[ModelClient], ModelClient] = lambda client: client,
+    working: Callable[[str], AbstractContextManager[object]] | None = None,
 ) -> Iterator[Harness]:
     """A new run of `condition` on a freshly loaded model, whose client is
-    passed through `wrap`. A run that already has a log is refused before the
+    passed through `wrap`, showing `working` (a spinner on `console` unless
+    given) while it loads. A run that already has a log is refused before the
     model loads."""
     start = HARNESSES[condition]
     config = load_model_config()
     texts = load_templates()
     log = new_run_log(runs, condition, scenario.scenario_id, seed)
-    with console.status(f"Loading {config.model}..."):
+    with (working or console.status)(f"Loading {config.model}..."):
         client_cm = connect(config)
     with client_cm as client:
         yield start(wrap(client), config, texts, scenario, log, seed=seed)
@@ -191,15 +210,18 @@ def play(
     seed: SeedOption,
     runs: RunsOption = RUNS,
     mode: ModeOption = Mode.BEGINNER,
+    no_color: NoColorOption = False,
 ) -> None:
     """Play a scenario interactively under condition D."""
-    console = Console(highlight=False)
+    screen = Screen.make(plain=no_color)
+    console = screen.console
     loaded = load_scenario(scenario)
-    with _exits_on_refusal(console), open_session(console, loaded, seed, runs, D) as session:
+    opened = open_session(console, loaded, seed, runs, D, working=screen.working)
+    with _exits_on_refusal(console), opened as session:
         # A copy: display code never touches the game state (invariant 1).
-        console.print(briefing(loaded, session.state.model_copy(deep=True), mode))
+        screen.show(briefing(loaded, session.state.model_copy(deep=True), mode))
         assert isinstance(session, Session), "play is always condition D"
-        _loop(console, session, mode)
+        _loop(screen, session, mode)
 
 
 @app.command()
@@ -358,40 +380,44 @@ def _batch_report(
         console.print(f"Stopped: {result.stopped}", markup=False)
 
 
-def _loop(console: Console, session: Session, mode: Mode) -> None:
+def _loop(screen: Screen, session: Session, mode: Mode) -> None:
     # Ctrl+C mid-turn ends the session too: that turn is not logged. The mode
-    # only reaches display code, never the session (CLAUDE.md item 75).
-    # Hints are shown when the state may have changed: at the start and after
-    # each turn, not again after a command or a blank line.
+    # and the screen only reach display code, never the session (CLAUDE.md
+    # items 75 and 80).
     # The briefing waits for Enter (WBS 13.4): whatever is typed there is not
     # an input, and end of input there ends the session before any turn.
     try:
-        if _begins(console):
-            _turns(console, session, mode)
+        if _begins(screen):
+            _turns(screen, session, mode)
     except KeyboardInterrupt:
         pass
-    _report(console, session)
+    _report(screen.console, session, style=SYSTEM)
 
 
-def _begins(console: Console) -> bool:
+def _begins(screen: Screen) -> bool:
     try:
-        console.input(f"\n{BEGIN}")
+        screen.input(f"\n{BEGIN}")
     except EOFError:
         return False
-    console.print(f"\n{HINT}", style="dim", markup=False)
+    screen.blank()
+    screen.system(HINT)
     return True
 
 
-def _turns(console: Console, session: Session, mode: Mode) -> None:
+def _turns(screen: Screen, session: Session, mode: Mode) -> None:
+    # Hints are shown when the state may have changed: at the start and after
+    # each turn, not again after a command or a blank line. The status panel
+    # is shown after each turn (WBS 13.5). Both read a copy of the state.
     fresh = True
     while True:
         if fresh and mode is Mode.BEGINNER:
             block = hint_block(session.state.model_copy(deep=True))
             if block is not None:
-                console.print(f"\n{block}", style="dim", markup=False)
+                screen.blank()
+                screen.system(block)
         fresh = False
         try:
-            text = console.input(f"\n{PROMPT}").strip()
+            text = screen.input(f"\n{PROMPT}").strip()
         except EOFError:
             return
         if not text:
@@ -399,25 +425,31 @@ def _turns(console: Console, session: Session, mode: Mode) -> None:
         if is_command(text):
             # A copy: display code never touches the game state (invariant 1).
             command = run_command(text, session.state.model_copy(deep=True), mode)
-            console.print(command.renderable)
+            screen.show(command.renderable)
             if command.quit:
                 return
             continue
-        with console.status("The Dungeon Master is thinking..."):
+        with screen.working():
             turn = session.play(text)
-        console.print()
+        screen.blank()
         state = session.state.model_copy(deep=True)
         for line in result_lines(turn.record, state, mode):
-            console.print(line, style="dim", markup=False)
-        console.print(turn.message, markup=False)
+            screen.result(line)
+        if turn.record["turn_failure"] is None:
+            screen.narration(turn.message)
+        else:
+            screen.system(turn.message)
+        screen.blank()
+        screen.show(status_panel(state, mode, bar=not screen.plain))
         fresh = True
 
 
-def _report(console: Console, session: Harness) -> None:
+def _report(console: Console, session: Harness, style: str = "none") -> None:
     records = session.log.records()
     failures = sum(turn_failure_counts(records).values())
     console.print(
         f"\n{len(records)} turns ({failures} failed) logged to {session.log.path}",
+        style=style,
         markup=False,
     )
 

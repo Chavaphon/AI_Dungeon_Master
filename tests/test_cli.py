@@ -6,7 +6,9 @@ entry point for every condition (the done-when of #78). `play` is in beginner
 mode unless `--mode veteran` is given, and both modes log the same session
 (WBS 13.2, #255). Beginner mode shows action hints that leave the session
 unchanged (WBS 13.7, #257). The scenario briefing comes first, waits for
-Enter and makes no model call and no audit record (WBS 13.4, #252).
+Enter and makes no model call and no audit record (WBS 13.4, #252). The status
+panel after each turn leaves the session unchanged, and `--no-color` shows no
+escape codes or box drawing (WBS 13.5, #253).
 
 No test calls a model: `connect` is replaced by a fake client.
 
@@ -14,12 +16,14 @@ Run: pytest tests/test_cli.py -v
 """
 
 import json
+import re
 from collections.abc import Sequence
 from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
+from rich.text import Text
 from typer.testing import CliRunner
 
 from adm import cli
@@ -33,6 +37,7 @@ from adm.play.briefing import AI_LABEL, BEGIN
 from adm.play.commands import HINT, UNKNOWN
 from adm.play.hints import TITLE
 from adm.play.results import result_lines
+from adm.play.screen import THINKING
 from adm.play.vocabulary import JARGON, Mode
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -149,6 +154,95 @@ def test_veteran_mode_briefs_with_the_numbers(
     code, output = _play(monkeypatch, tmp_path, FakeClient(), "/quit\n", "--mode", "veteran")
     assert code == 0, output
     assert "Armour class: 14" in output and "(damage 1d6+3)" in output
+
+
+# --- the play screen (WBS 13.5) ------------------------------------------------------
+
+GARBLED = "Lyra looks."
+
+
+def _calls() -> tuple[str, ...]:
+    """The model replies to `_screen_keys`: four calls, then three garbled."""
+    return (LOOK, LOOK, LOOK, ATTACK, GARBLED, GARBLED, GARBLED)
+
+
+COMMANDS = ["/help", "/status", "/inventory", "/quests", "/rules", "/glossary", "/bogus"]
+# Box drawing (U+2500-U+257F) and block elements (U+2580-U+259F), the health bar's.
+BOXES = re.compile("[─-▟]")
+
+
+def _screen_keys() -> str:
+    """Four scripted inputs through the start of s01's fight, a failed turn,
+    and every command."""
+    inputs = [i.text for i in SCENARIO.scripted_inputs[:4]]
+    return "\n".join([*inputs, "mumble", *COMMANDS]) + "\n"
+
+
+def test_the_status_panel_leaves_the_session_unchanged(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The acceptance of #253: the same session with the status panel on and
+    off makes the same model calls and a log identical but for timings."""
+    on, off = RecordingClient(*_calls()), RecordingClient(*_calls())
+    code, shown = _play(monkeypatch, tmp_path / "on", on, _screen_keys())
+    assert code == 0, shown
+    monkeypatch.setattr(cli, "status_panel", lambda state, mode, bar: Text())
+    code, hidden = _play(monkeypatch, tmp_path / "off", off, _screen_keys())
+    assert code == 0, hidden
+
+    assert "Fight, round " in shown and "Fight, round " not in hidden
+    assert on.calls == off.calls, "the panel never reaches the model"
+    first, second = _records(tmp_path / "on"), _records(tmp_path / "off")
+    assert len(first) == len(second) == 5
+    assert log_differences(first, second) == []
+
+
+def test_the_status_panel_follows_each_turn(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    keys = "\n".join(i.text for i in SCENARIO.scripted_inputs[:2]) + "\n"
+    code, output = _play(monkeypatch, tmp_path, FakeClient(LOOK, LOOK), keys)
+    assert code == 0, output
+    assert output.count("Lyra: healthy") == 2, "once after each turn"
+    assert output.index(NARRATION) < output.index("Lyra: healthy")
+
+
+def _raw_play(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, client: FakeClient, *extra: str
+) -> str:
+    """The session's output as the terminal gets it, on a forced terminal so
+    that any style is an escape code."""
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setattr(cli, "connect", lambda config: nullcontext(client))
+    args = ["play", "--scenario", str(SCENARIO_PATH), "--seed", str(SEED), "--runs", str(tmp_path)]
+    result = CliRunner().invoke(cli.app, [*args, *extra], input="\n" + _screen_keys())
+    assert result.exit_code == 0, result.output
+    return result.output
+
+
+def test_no_color_has_no_escape_codes_and_no_box_drawing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The acceptance of #253: a whole session, the briefing, a fight, a
+    failed turn and every command, in both modes."""
+    styled = _raw_play(monkeypatch, tmp_path / "styled", FakeClient(*_calls()))
+    assert "\x1b" in styled and BOXES.search(styled), "the check would catch them"
+    for mode in Mode:
+        plain = _raw_play(
+            monkeypatch,
+            tmp_path / mode.value,
+            FakeClient(*_calls()),
+            "--no-color",
+            "--mode",
+            mode.value,
+        )
+        assert "\x1b" not in plain
+        assert BOXES.search(plain) is None, BOXES.search(plain)
+        for shown in ("You are...", "Fight, round ", "Glossary", REPHRASE, THINKING):
+            assert shown in plain
+    first = _records(tmp_path / "styled")
+    assert log_differences(first, _records(tmp_path / "beginner")) == [], "the same log"
 
 
 # --- slash commands (WBS 13.1) ---------------------------------------------------
